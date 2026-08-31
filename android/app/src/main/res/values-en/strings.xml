@@ -57,4 +57,21 @@
     <string name="onboard_start">Get started</string>
     <string name="banner_protection_title">Notifications may not go through</string>
     <string name="banner_protection_action">Check in settings</string>
+
+    <string name="settings_section_protection">Protection status</string>
+    <string name="settings_perm_notifications">Notification permission</string>
+    <string name="settings_perm_location">Location permission</string>
+    <string name="settings_perm_background">Allow all the time (background)</string>
+    <string name="settings_perm_battery">Battery optimization exemption</string>
+    <string name="settings_perm_ok">On</string>
+    <string name="settings_perm_off">Off — tap to fix in settings</string>
+    <string name="settings_battery_guide">On Samsung devices, add Record of P as an exception under [Settings &gt; Battery &gt; Power saving mode/App power management] so notifications keep arriving reliably.</string>
+    <string name="settings_section_policy">Notification policy</string>
+    <string name="settings_cooldown">Repeat interval for the same item</string>
+    <string name="settings_daily_cap">Daily notification limit</string>
+    <string name="settings_cap_unlimited">Unlimited</string>
+    <string name="settings_quiet">Quiet hours</string>
+    <string name="settings_diagnostics">Troubleshooting (diagnostics)</string>
+    <string name="settings_hours_fmt">%dh</string>
+    <string name="settings_count_fmt">%d</string>
 </resources>

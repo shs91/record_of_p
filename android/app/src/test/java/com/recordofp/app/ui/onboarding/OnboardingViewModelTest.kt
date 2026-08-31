@@ -1,5 +1,6 @@
 package com.recordofp.app.ui.onboarding
 
+import com.recordofp.app.data.repo.NotificationPolicySettings
 import com.recordofp.app.data.repo.SettingsStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -23,6 +24,8 @@ class OnboardingViewModelTest {
         val flag = MutableStateFlow(false)
         override val onboardingDone: Flow<Boolean> = flag
         override suspend fun setOnboardingDone() { flag.value = true }
+        override val policy: Flow<NotificationPolicySettings> = MutableStateFlow(NotificationPolicySettings())
+        override suspend fun updatePolicy(transform: (NotificationPolicySettings) -> NotificationPolicySettings) {}
     }
 
     @Before fun setUp() = Dispatchers.setMain(dispatcher)

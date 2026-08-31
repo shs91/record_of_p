@@ -21,12 +21,8 @@ data class AlertGroup(val poiId: String?, val poiName: String?, val reminders: L
 
 data class EventOutcome(val sentinelExited: Boolean, val groups: List<AlertGroup>)
 
-/** 알림 정책 공급 — v1 기본값. T11에서 SettingsStore 기반 구현으로 교체된다. */
+/** 알림 정책 공급 (스펙 §4.5) — 구현은 [StoreGatePolicyProvider] (SettingsStore 기반). */
 interface GatePolicyProvider { suspend fun policy(): NotificationGate.Policy }
-
-class DefaultGatePolicyProvider @Inject constructor() : GatePolicyProvider {
-    override suspend fun policy() = NotificationGate.Policy()
-}
 
 /** 지오펜스 이벤트 → 필터 체인 → POI 그룹 (스펙 §6.5). 발행은 NearbyNotifier 몫. */
 @Singleton

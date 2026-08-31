@@ -10,8 +10,8 @@ import com.recordofp.app.data.db.AppDatabase
 import com.recordofp.app.data.engine.EngineStateStore
 import com.recordofp.app.data.engine.FenceApplier
 import com.recordofp.app.data.engine.ReseedStateStore
-import com.recordofp.app.data.engine.DefaultGatePolicyProvider
 import com.recordofp.app.data.engine.GatePolicyProvider
+import com.recordofp.app.data.engine.StoreGatePolicyProvider
 import com.recordofp.app.data.poi.KakaoLocalApi
 import com.recordofp.app.data.poi.KakaoPoiRepository
 import com.recordofp.app.data.poi.PoiRepository
@@ -143,7 +143,7 @@ abstract class BindsModule {
     abstract fun locationProvider(impl: FusedLocationProvider): LocationProvider
 
     @Binds
-    abstract fun gatePolicyProvider(impl: DefaultGatePolicyProvider): GatePolicyProvider
+    abstract fun gatePolicyProvider(impl: StoreGatePolicyProvider): GatePolicyProvider
 
     @Binds
     abstract fun reseedRequester(impl: WorkManagerReseedRequester): ReseedRequester
