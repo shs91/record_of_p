@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compose 진입 전 시스템 창 테마. 실제 테마는 ui/theme/Theme.kt -->
+    <style name="Theme.RecordOfP" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

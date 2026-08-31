@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">P의기록</string>
+
+    <string name="title_home">할 일</string>
+    <string name="title_editor">새 기록</string>
+    <string name="title_nearby">주변 보기</string>
+    <string name="title_settings">설정</string>
+    <string name="action_add">기록 추가</string>
+
+    <string name="channel_nearby_name">근처 알림</string>
+    <string name="channel_nearby_desc">기록해둔 일을 처리할 수 있는 장소 근처에서 알려줍니다</string>
+    <string name="channel_status_name">서비스 상태</string>
+    <string name="channel_status_desc">권한·동작 상태 관련 안내</string>
+
+    <string name="stub_screen_todo">구현 예정 화면입니다</string>
+</resources>

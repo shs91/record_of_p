@@ -1,0 +1,39 @@
+package com.recordofp.app.domain.engine
+
+import com.recordofp.app.domain.model.GeoPoint
+
+enum class FenceKind { SENTINEL, POI, PLACE }
+
+enum class FenceTransition { ENTER, DWELL, EXIT }
+
+/** ReseedPlanner의 출력. 플랫폼 계층이 이를 GeofencingRequest로 변환한다. */
+data class PlannedFence(
+    /** 등록·차분 비교용 안정 키 */
+    val key: String,
+    val kind: FenceKind,
+    val center: GeoPoint,
+    val radiusM: Float,
+    val transition: FenceTransition,
+    /** DWELL일 때만 사용 */
+    val loiteringDelayMs: Int? = null,
+    /** 이 펜스가 대변하는 트리거 matchKey 집합 (N:M, 설계 §5.3) */
+    val matchKeys: Set<String> = emptySet(),
+    val poiName: String? = null,
+    val poiId: String? = null,
+)
+
+/** 재배치 입력: 트리거 1개와 그 후보 POI 목록 (거리 오름차순 정렬 전제) */
+data class TriggerCandidates(
+    val matchKey: String,
+    val isPlace: Boolean = false,
+    val placePoint: GeoPoint? = null,
+    val placeName: String? = null,
+    val candidates: List<PoiCandidate> = emptyList(),
+)
+
+data class PoiCandidate(
+    val id: String,
+    val name: String,
+    val point: GeoPoint,
+    val distanceM: Double,
+)
