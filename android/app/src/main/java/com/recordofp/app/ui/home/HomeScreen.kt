@@ -54,6 +54,7 @@ import com.recordofp.app.ui.permissions.readPermissionSnapshot
 @Composable
 fun HomeScreen(
     onAddClick: () -> Unit,
+    onItemClick: (Long) -> Unit,
     onNearbyClick: () -> Unit,
     onSettingsClick: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
@@ -108,7 +109,7 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(items, key = { it.id }) { item ->
-                        ReminderRow(item, onComplete = { viewModel.complete(item.id) })
+                        ReminderRow(item, onComplete = { viewModel.complete(item.id) }, onClick = { onItemClick(item.id) })
                     }
                 }
             }
@@ -118,7 +119,7 @@ fun HomeScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ReminderRow(item: Reminder, onComplete: () -> Unit) {
+private fun ReminderRow(item: Reminder, onComplete: () -> Unit, onClick: () -> Unit) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value != SwipeToDismissBoxValue.Settled) { onComplete(); true } else false
@@ -132,7 +133,7 @@ private fun ReminderRow(item: Reminder, onComplete: () -> Unit) {
             }
         },
     ) {
-        Card(Modifier.fillMaxWidth()) {
+        Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(item.title, style = MaterialTheme.typography.titleMedium)
                 if (item.triggers.isNotEmpty()) {

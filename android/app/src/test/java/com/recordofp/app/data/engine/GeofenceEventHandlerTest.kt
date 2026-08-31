@@ -13,13 +13,17 @@ import com.recordofp.app.data.db.ReminderWithTriggers
 import com.recordofp.app.data.db.TriggerSpecDao
 import com.recordofp.app.data.db.TriggerSpecEntity
 import com.recordofp.app.domain.engine.NotificationGate
+import com.recordofp.app.domain.model.GeoPoint
+import com.recordofp.app.domain.model.distanceMeters
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -104,7 +108,7 @@ class GeofenceEventHandlerTest {
     )
 
     @Test
-    fun `통과한 리마인더는 POI 그룹으로 묶이고 NotificationLog가 기록된다`() = runTest {
+    fun `통과한 리마인더는 POI 그룹으로 묶이고 recordShown 호출로 NotificationLog가 기록된다`() = runTest {
         val regs = FakeRegs().apply {
             regs["poi:100"] = poiReg("poi:100", "100", "CU 역삼점")
             links += listOf(RegTriggerEntity("poi:100", 11), RegTriggerEntity("poi:100", 12))
@@ -116,10 +120,13 @@ class GeofenceEventHandlerTest {
             FakeReminderDao(mapOf(1L to reminder(1), 2L to reminder(2))),
             notifLog = notifLog,
         )
-        val out = handler.onFenceEvent(listOf("poi:100"))
+        val out = handler.onFenceEvent(listOf("poi:100"), null)
         val group = out.groups.single()
         assertEquals("CU 역삼점", group.poiName)
         assertEquals(listOf(1L, 2L), group.reminders.map { it.id })
+        assertTrue(notifLog.rows.isEmpty()) // 표시 전이므로 아직 기록되지 않는다 (M1)
+
+        handler.recordShown(group.reminders.map { it.id }, group.poiId)
         assertEquals(2, notifLog.rows.size) // 리마인더별 1행 (쿨다운 원본)
     }
 
@@ -134,7 +141,7 @@ class GeofenceEventHandlerTest {
         } // 1분 전 알림 → 항목 쿨다운 4h 차단
         val runs = FakeRuns()
         val handler = build(regs, FakeSpecs(mapOf(11L to spec(11, 1))), FakeReminderDao(mapOf(1L to reminder(1))), notifLog, runs)
-        val out = handler.onFenceEvent(listOf("poi:100"))
+        val out = handler.onFenceEvent(listOf("poi:100"), null)
         assertTrue(out.groups.isEmpty())
         assertTrue(runs.entries.any { it.result == "BLOCK_ITEM_COOLDOWN" })
     }
@@ -142,7 +149,7 @@ class GeofenceEventHandlerTest {
     @Test
     fun `등록에 없는 stale 이벤트는 무시된다`() = runTest {
         val handler = build(FakeRegs(), FakeSpecs(emptyMap()), FakeReminderDao(emptyMap()))
-        val out = handler.onFenceEvent(listOf("poi:ghost"))
+        val out = handler.onFenceEvent(listOf("poi:ghost"), null)
         assertTrue(out.groups.isEmpty())
         assertTrue(!out.sentinelExited)
     }
@@ -152,7 +159,24 @@ class GeofenceEventHandlerTest {
         val regs = FakeRegs().apply {
             regs["sentinel"] = GeofenceRegEntity("sentinel", "SENTINEL", 37.5, 127.0, 1000f, null, null, null, "b", 0)
         }
-        val out = build(regs, FakeSpecs(emptyMap()), FakeReminderDao(emptyMap())).onFenceEvent(listOf("sentinel"))
+        val out = build(regs, FakeSpecs(emptyMap()), FakeReminderDao(emptyMap())).onFenceEvent(listOf("sentinel"), null)
         assertTrue(out.sentinelExited)
+    }
+
+    @Test
+    fun `triggeringPoint가 없으면 거리 없이, 있으면 미터로 반올림해 그룹에 채운다`() = runTest {
+        val regs = FakeRegs().apply {
+            regs["poi:100"] = poiReg("poi:100", "100", "CU 역삼점") // lat=37.5, lng=127.0
+            links += RegTriggerEntity("poi:100", 11)
+        }
+        val handler = build(regs, FakeSpecs(mapOf(11L to spec(11, 1))), FakeReminderDao(mapOf(1L to reminder(1))))
+
+        val withoutPoint = handler.onFenceEvent(listOf("poi:100"), null)
+        assertNull(withoutPoint.groups.single().distanceM)
+
+        val triggeringPoint = GeoPoint(37.5009, 127.0) // 약 100m 북쪽
+        val expected = distanceMeters(triggeringPoint, GeoPoint(37.5, 127.0)).roundToInt()
+        val withPoint = handler.onFenceEvent(listOf("poi:100"), triggeringPoint)
+        assertEquals(expected, withPoint.groups.single().distanceM)
     }
 }

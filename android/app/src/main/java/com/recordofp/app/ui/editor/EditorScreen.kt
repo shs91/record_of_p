@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -27,6 +28,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,8 +59,27 @@ fun EditorScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var brandInput by remember { mutableStateOf("") }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.saved) { if (state.saved) onDone() }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text(stringResource(R.string.editor_delete)) },
+            text = { Text(stringResource(R.string.editor_delete_confirm)) },
+            confirmButton = {
+                TextButton(onClick = { showDeleteConfirm = false; viewModel.delete() }) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -67,6 +88,13 @@ fun EditorScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
+        if (state.editingId != null) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = { showDeleteConfirm = true }) {
+                    Text(stringResource(R.string.editor_delete))
+                }
+            }
+        }
         OutlinedTextField(
             value = state.title,
             onValueChange = viewModel::onTitleChange,

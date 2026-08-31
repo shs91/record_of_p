@@ -25,6 +25,8 @@ interface ReminderRepository {
     suspend fun muteUntil(id: Long, untilEpochMs: Long)
     suspend fun delete(id: Long)
     suspend fun activeTriggers(): List<TriggerSpec>
+    /** 에디터 편집 모드 로드 — 트리거 포함 (§3.1 CRUD 갭) */
+    suspend fun byId(id: Long): Reminder?
 }
 
 @Singleton
@@ -67,6 +69,11 @@ class RoomReminderRepository @Inject constructor(
 
     override suspend fun activeTriggers(): List<TriggerSpec> =
         triggerSpecDao.allActive().map { it.toDomain() }
+
+    override suspend fun byId(id: Long): Reminder? {
+        val row = reminderDao.byId(id) ?: return null
+        return row.toDomain().copy(triggers = triggerSpecDao.byReminder(id).map { it.toDomain() })
+    }
 }
 
 private fun ReminderEntity.toDomain() = Reminder(

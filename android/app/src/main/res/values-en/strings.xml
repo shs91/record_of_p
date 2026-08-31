@@ -14,6 +14,7 @@
     <string name="channel_status_desc">Permission and health notices</string>
 
     <string name="notif_nearby_title">📍 Near %1$s</string>
+    <string name="notif_nearby_title_dist">📍 Near %1$s (~%2$dm)</string>
     <string name="notif_more_items">\'%1$s\' and %2$d more</string>
     <string name="action_complete">Done</string>
     <string name="action_mute_today">Not today</string>
@@ -48,6 +49,8 @@
     <string name="editor_place_search_failed">Couldn\'t search for places. Please check your location and network.</string>
     <string name="editor_place_distance">About %1$dm away</string>
     <string name="editor_save">Save</string>
+    <string name="editor_delete">Delete</string>
+    <string name="editor_delete_confirm">Delete this note?</string>
     <string name="home_empty">No notes yet.\nWrite it down the moment you think of it.</string>
     <string name="home_completed">Done</string>
 

@@ -15,9 +15,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // 근처 알림 탭으로 열렸으면 해당 기록으로 딥링크 (§4.1.2)
+        val deepLinkReminderId = intent.getLongExtra("reminder_id", -1L).takeIf { it >= 0 }
         setContent {
             RecordOfPTheme {
-                AppNavHost()
+                AppNavHost(deepLinkReminderId = deepLinkReminderId)
             }
         }
 

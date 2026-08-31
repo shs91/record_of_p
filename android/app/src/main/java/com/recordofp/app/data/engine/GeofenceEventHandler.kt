@@ -9,15 +9,18 @@ import com.recordofp.app.data.db.ReminderDao
 import com.recordofp.app.data.db.TriggerSpecDao
 import com.recordofp.app.domain.engine.FenceKind
 import com.recordofp.app.domain.engine.NotificationGate
+import com.recordofp.app.domain.model.GeoPoint
 import com.recordofp.app.domain.model.Reminder
 import com.recordofp.app.domain.model.ReminderStatus
+import com.recordofp.app.domain.model.distanceMeters
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.roundToInt
 
-data class AlertGroup(val poiId: String?, val poiName: String?, val reminders: List<Reminder>)
+data class AlertGroup(val poiId: String?, val poiName: String?, val reminders: List<Reminder>, val distanceM: Int? = null)
 
 data class EventOutcome(val sentinelExited: Boolean, val groups: List<AlertGroup>)
 
@@ -38,7 +41,7 @@ class GeofenceEventHandler @Inject constructor(
     private val clock: Clock,
 ) {
 
-    suspend fun onFenceEvent(fenceIds: List<String>): EventOutcome {
+    suspend fun onFenceEvent(fenceIds: List<String>, triggeringPoint: GeoPoint?): EventOutcome {
         val now = clock.instant()
         val startOfDay = now.atZone(zone).toLocalDate().atStartOfDay(zone).toInstant().toEpochMilli()
         val policy = policyProvider.policy()
@@ -76,9 +79,7 @@ class GeofenceEventHandler @Inject constructor(
                         status = ReminderStatus.valueOf(row.status), snoozeUntil = row.snoozeUntil,
                         createdAt = row.createdAt, updatedAt = row.updatedAt, completedAt = row.completedAt,
                     )
-                    notificationLogDao.insert(
-                        NotificationLogEntity(reminderId = reminderId, poiKakaoId = reg.poiKakaoId, shownAt = now.toEpochMilli()),
-                    )
+                    // NotificationLog 기록은 실제 표시 후(recordShown) — 여기서 기록하면 표시 전 카운트가 된다 (M1)
                 } else {
                     runLogDao.insert(
                         EngineRunLogEntity(
@@ -88,8 +89,21 @@ class GeofenceEventHandler @Inject constructor(
                     )
                 }
             }
-            if (passed.isNotEmpty()) groups += AlertGroup(reg.poiKakaoId, reg.poiName, passed)
+            if (passed.isNotEmpty()) {
+                val distanceM = triggeringPoint?.let {
+                    distanceMeters(it, GeoPoint(reg.lat, reg.lng)).roundToInt()
+                }
+                groups += AlertGroup(reg.poiKakaoId, reg.poiName, passed, distanceM)
+            }
         }
         return EventOutcome(sentinelExited, groups)
+    }
+
+    /** 알림이 실제로 화면에 뜬 뒤에만 쿨다운 계산의 원본을 남긴다 (표시 전 기록 금지, §6.5 5단계) */
+    suspend fun recordShown(reminderIds: List<Long>, poiId: String?) {
+        val shownAt = clock.millis()
+        reminderIds.forEach { id ->
+            notificationLogDao.insert(NotificationLogEntity(reminderId = id, poiKakaoId = poiId, shownAt = shownAt))
+        }
     }
 }

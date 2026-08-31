@@ -21,9 +21,10 @@ import org.junit.Test
 private class FakeDao : ReminderDao {
     val flow = MutableStateFlow<List<ReminderWithTriggers>>(emptyList())
     val statusCalls = mutableListOf<Pair<Long, String>>()
+    var byIdResult: ReminderEntity? = null
     override fun observeActive(): Flow<List<ReminderEntity>> = MutableStateFlow(emptyList())
     override fun observeActiveWithTriggers(): Flow<List<ReminderWithTriggers>> = flow
-    override suspend fun byId(id: Long): ReminderEntity? = null
+    override suspend fun byId(id: Long): ReminderEntity? = byIdResult
     override suspend fun upsert(entity: ReminderEntity): Long = 42L
     override suspend fun setStatus(id: Long, status: String, completedAt: Long?, updatedAt: Long) {
         statusCalls += id to status
@@ -34,7 +35,8 @@ private class FakeDao : ReminderDao {
 
 private class FakeSpecDao : TriggerSpecDao {
     val upserted = mutableListOf<TriggerSpecEntity>()
-    override suspend fun byReminder(reminderId: Long) = emptyList<TriggerSpecEntity>()
+    var byReminderResult: List<TriggerSpecEntity> = emptyList()
+    override suspend fun byReminder(reminderId: Long) = byReminderResult
     override suspend fun allActive() = emptyList<TriggerSpecEntity>()
     override suspend fun byIds(ids: List<Long>) = emptyList<TriggerSpecEntity>()
     override suspend fun upsertAll(entities: List<TriggerSpecEntity>) { upserted += entities }
@@ -89,5 +91,18 @@ class RoomReminderRepositoryTest {
         repo.delete(2)
         assertEquals(listOf(1L to "DONE"), dao.statusCalls)
         assertEquals(2, requester.count)
+    }
+
+    @Test
+    fun `byId는 트리거가 채워진 도메인 모델을 낸다`() = runTest {
+        dao.byIdResult = ReminderEntity(1, "건전지", null, "ACTIVE", null, 0, 0, null)
+        specDao.byReminderResult = listOf(
+            TriggerSpecEntity(10, 1, "CATEGORY", "convenience", null, null, null, null, null),
+        )
+
+        val item = repo.byId(1)
+
+        assertEquals("건전지", item?.title)
+        assertEquals("cat:convenience", item?.triggers?.single()?.matchKey)
     }
 }

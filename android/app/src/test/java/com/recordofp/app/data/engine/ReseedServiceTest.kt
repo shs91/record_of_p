@@ -36,6 +36,7 @@ private class FakeReminders(var triggers: List<TriggerSpec>) : ReminderRepositor
     override suspend fun muteUntil(id: Long, untilEpochMs: Long) {}
     override suspend fun delete(id: Long) {}
     override suspend fun activeTriggers() = triggers
+    override suspend fun byId(id: Long): Reminder? = null
 }
 
 private class FakePoi(

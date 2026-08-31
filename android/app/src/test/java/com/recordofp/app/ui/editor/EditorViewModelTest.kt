@@ -1,5 +1,6 @@
 package com.recordofp.app.ui.editor
 
+import androidx.lifecycle.SavedStateHandle
 import com.recordofp.app.data.location.LocationProvider
 import com.recordofp.app.data.poi.PoiRepository
 import com.recordofp.app.data.repo.ReminderRepository
@@ -7,6 +8,7 @@ import com.recordofp.app.domain.engine.PoiCandidate
 import com.recordofp.app.domain.model.GeoPoint
 import com.recordofp.app.domain.model.PoiResolution
 import com.recordofp.app.domain.model.Reminder
+import com.recordofp.app.domain.model.TriggerSpec
 import com.recordofp.app.domain.model.TriggerType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,12 +32,15 @@ class EditorViewModelTest {
 
     private class FakeRepo : ReminderRepository {
         var saved: Reminder? = null
+        var deletedId: Long? = null
+        var byIdResult: Reminder? = null
         override fun observeActive(): Flow<List<Reminder>> = emptyFlow()
         override suspend fun upsert(reminder: Reminder): Long { saved = reminder; return 1 }
         override suspend fun complete(id: Long) {}
         override suspend fun muteUntil(id: Long, untilEpochMs: Long) {}
-        override suspend fun delete(id: Long) {}
+        override suspend fun delete(id: Long) { deletedId = id }
         override suspend fun activeTriggers() = emptyList<com.recordofp.app.domain.model.TriggerSpec>()
+        override suspend fun byId(id: Long): Reminder? = byIdResult
     }
 
     private class FakePoi : PoiRepository {
@@ -46,11 +51,12 @@ class EditorViewModelTest {
 
     private val repo = FakeRepo()
 
-    private fun vm(location: GeoPoint? = GeoPoint(37.5, 127.0)) = EditorViewModel(
+    private fun vm(location: GeoPoint? = GeoPoint(37.5, 127.0), reminderId: Long = -1L) = EditorViewModel(
         repository = repo, poiRepository = FakePoi(),
         locationProvider = object : LocationProvider {
             override suspend fun currentOrLast() = location
         },
+        savedStateHandle = SavedStateHandle(mapOf("reminderId" to reminderId)),
     )
 
     @Before fun setUp() = Dispatchers.setMain(dispatcher)
@@ -102,5 +108,40 @@ class EditorViewModelTest {
         vm.searchPlace()
         dispatcher.scheduler.advanceUntilIdle()
         assertTrue(vm.state.value.placeSearchFailed)
+    }
+
+    @Test
+    fun `SavedStateHandle에 id를 주면 기존 항목이 상태로 로드되고 저장 시 id·생성시각을 유지한다`() = runTest {
+        repo.byIdResult = Reminder(
+            id = 7, title = "건전지 사기", memo = "메모", createdAt = 100, updatedAt = 200,
+            triggers = listOf(TriggerSpec(id = 1, reminderId = 7, type = TriggerType.CATEGORY, categoryId = "convenience")),
+        )
+        val vm = vm(reminderId = 7)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val loaded = vm.state.value
+        assertEquals(7L, loaded.editingId)
+        assertEquals("건전지 사기", loaded.title)
+        assertEquals("메모", loaded.memo)
+        assertEquals(setOf("convenience"), loaded.selectedCategoryIds)
+
+        vm.save()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(7L, repo.saved?.id) // 새 id로 새 레코드가 만들어지면 안 된다
+        assertEquals(100L, repo.saved?.createdAt) // 원래 생성 시각 보존
+    }
+
+    @Test
+    fun `delete는 repository의 delete를 호출하고 saved가 선다`() = runTest {
+        repo.byIdResult = Reminder(id = 7, title = "건전지 사기", createdAt = 100, updatedAt = 200)
+        val vm = vm(reminderId = 7)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        vm.delete()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(7L, repo.deletedId)
+        assertTrue(vm.state.value.saved)
     }
 }

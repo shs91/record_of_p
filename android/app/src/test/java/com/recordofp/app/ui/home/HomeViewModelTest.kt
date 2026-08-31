@@ -30,6 +30,7 @@ class HomeViewModelTest {
         override suspend fun muteUntil(id: Long, untilEpochMs: Long) {}
         override suspend fun delete(id: Long) {}
         override suspend fun activeTriggers() = emptyList<com.recordofp.app.domain.model.TriggerSpec>()
+        override suspend fun byId(id: Long): Reminder? = null
     }
 
     @Before fun setUp() = Dispatchers.setMain(dispatcher)

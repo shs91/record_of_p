@@ -1,5 +1,6 @@
 package com.recordofp.app.ui.editor
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.recordofp.app.data.location.LocationProvider
@@ -15,6 +16,7 @@ import com.recordofp.app.domain.model.TriggerType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -32,6 +34,8 @@ data class EditorUiState(
     val placeResults: List<PoiCandidate> = emptyList(),
     val placeSearchFailed: Boolean = false,
     val saved: Boolean = false,
+    /** null이면 새 기록, 값이 있으면 편집 중인 기존 기록의 id (§3.1 CRUD 갭) */
+    val editingId: Long? = null,
 ) {
     val canSave: Boolean
         get() = title.isNotBlank() &&
@@ -43,10 +47,49 @@ class EditorViewModel @Inject constructor(
     private val repository: ReminderRepository,
     private val poiRepository: PoiRepository,
     private val locationProvider: LocationProvider,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(EditorUiState())
     val state: StateFlow<EditorUiState> = _state
+
+    /** 편집 대상의 원래 생성 시각 — save()에서 upsert()에 그대로 넘겨줘야 새 것으로 취급되지 않는다 */
+    private var createdAt: Long = 0L
+    private var searchJob: Job? = null
+
+    init {
+        val reminderId: Long = savedStateHandle.get<Long>(ARG_REMINDER_ID) ?: -1L
+        if (reminderId >= 0) {
+            viewModelScope.launch {
+                repository.byId(reminderId)?.let(::applyLoaded)
+            }
+        }
+    }
+
+    private fun applyLoaded(reminder: Reminder) {
+        createdAt = reminder.createdAt
+        _state.update {
+            it.copy(
+                editingId = reminder.id,
+                title = reminder.title,
+                memo = reminder.memo ?: "",
+                selectedCategoryIds = reminder.triggers
+                    .filter { t -> t.type == TriggerType.CATEGORY }
+                    .mapNotNull { t -> t.categoryId }
+                    .toSet(),
+                brandKeywords = reminder.triggers
+                    .filter { t -> t.type == TriggerType.BRAND }
+                    .mapNotNull { t -> t.brandKeyword },
+                place = reminder.triggers.firstOrNull { t -> t.type == TriggerType.PLACE }?.let { t ->
+                    PickedPlace(
+                        name = t.placeName ?: "",
+                        kakaoId = t.placeKakaoId ?: "",
+                        point = t.placePoint ?: GeoPoint(0.0, 0.0),
+                    )
+                },
+            )
+        }
+    }
 
     fun onTitleChange(v: String) = _state.update { it.copy(title = v) }
     fun onMemoChange(v: String) = _state.update { it.copy(memo = v) }
@@ -67,7 +110,10 @@ class EditorViewModel @Inject constructor(
     fun searchPlace() {
         val query = _state.value.placeQuery.trim()
         if (query.isEmpty()) return
-        viewModelScope.launch {
+        // T12(NearbyViewModel.load)와 동일한 취소-재시작 가드 — 연타 시 먼저 보낸 검색이 늦게 도착해
+        // 최신 결과를 덮어쓰는 경쟁을 막는다 (M8).
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
             val here = locationProvider.currentOrLast()
             if (here == null) {
                 _state.update { it.copy(placeSearchFailed = true) }
@@ -109,9 +155,29 @@ class EditorViewModel @Inject constructor(
         }
         viewModelScope.launch {
             repository.upsert(
-                Reminder(title = s.title.trim(), memo = s.memo.trim().ifEmpty { null }, createdAt = 0, updatedAt = 0, triggers = triggers),
+                Reminder(
+                    id = s.editingId ?: 0L,
+                    title = s.title.trim(),
+                    memo = s.memo.trim().ifEmpty { null },
+                    createdAt = createdAt,
+                    updatedAt = 0,
+                    triggers = triggers,
+                ),
             )
             _state.update { it.copy(saved = true) }
         }
+    }
+
+    /** 편집 모드에서 기록 삭제. 저장과 동일하게 saved 플래그를 재사용해 화면을 닫는다 (§3.1 CRUD 갭) */
+    fun delete() {
+        val id = _state.value.editingId ?: return
+        viewModelScope.launch {
+            repository.delete(id)
+            _state.update { it.copy(saved = true) }
+        }
+    }
+
+    companion object {
+        const val ARG_REMINDER_ID = "reminderId"
     }
 }
