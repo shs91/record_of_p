@@ -17,6 +17,7 @@ data class PermissionSnapshot(
     val backgroundLocation: Boolean,
     val batteryUnrestricted: Boolean,
 ) {
+    // 배터리 최적화는 의도적으로 제외 — 배너 과잉 노출 방지, 대시보드(§4.3)에서만 표시
     val fullyProtected: Boolean get() = notifications && fineLocation && backgroundLocation
 }
 

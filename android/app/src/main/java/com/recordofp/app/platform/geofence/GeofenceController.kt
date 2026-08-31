@@ -54,6 +54,7 @@ class GeofenceController @Inject constructor(
 
     private fun geofencePendingIntent(): PendingIntent = PendingIntent.getBroadcast(
         context, 0, Intent(context, GeofenceBroadcastReceiver::class.java),
+        // 시스템이 지오펜스 이벤트 extra를 채워야 하므로 MUTABLE 필수
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
     )
 }

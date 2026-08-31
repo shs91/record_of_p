@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import com.recordofp.app.data.repo.ReminderRepository
 import com.recordofp.app.domain.engine.MuteToday
@@ -11,6 +12,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.time.Clock
 import java.time.ZoneId
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -38,6 +40,11 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     )
                 }
                 NotificationManagerCompat.from(context).cancel(notificationId)
+            } catch (c: CancellationException) {
+                throw c
+            } catch (e: Exception) {
+                // EngineRunLog에 남길 방법이 없는 지점(리시버 자체 예외) — 시스템 로그로만 남긴다 (M2)
+                Log.w("RecordOfP", "알림 액션 처리 실패", e)
             } finally {
                 pending.finish()
             }
@@ -53,7 +60,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
         fun pendingIntent(context: Context, action: String, reminderId: Long, notificationId: Int): PendingIntent =
             PendingIntent.getBroadcast(
                 context,
-                (action + reminderId).hashCode(),
+                (action + reminderId + notificationId).hashCode(),
                 Intent(context, NotificationActionReceiver::class.java)
                     .setAction(action)
                     .putExtra(EXTRA_REMINDER_ID, reminderId)
