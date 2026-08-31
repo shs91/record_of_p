@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.recordofp.app.data.db.EngineRunLogDao
 import com.recordofp.app.data.db.EngineRunLogEntity
+import com.recordofp.app.domain.engine.EngineParams
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Clock
 import java.time.Instant
@@ -28,7 +29,7 @@ class DiagnosticsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            runLogDao.pruneOlderThan(clock.millis() - RETENTION_MS)
+            runLogDao.pruneOlderThan(clock.millis() - EngineParams.RUN_LOG_RETENTION_MS)
         }
     }
 
@@ -39,9 +40,5 @@ class DiagnosticsViewModel @Inject constructor(
             val t = fmt.format(Instant.ofEpochMilli(e.at).atZone(ZoneId.systemDefault()))
             "[$t] ${e.cause} -> ${e.result} (fences=${e.registeredCount})${e.note?.let { " $it" } ?: ""}"
         }
-    }
-
-    companion object {
-        private const val RETENTION_MS = 14L * 24 * 3600 * 1000
     }
 }
