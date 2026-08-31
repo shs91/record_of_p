@@ -1,9 +1,11 @@
 package com.recordofp.app.data.db
 
+import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import androidx.room.Relation
 
 @Entity(tableName = "reminder")
 data class ReminderEntity(
@@ -82,4 +84,10 @@ data class EngineRunLogEntity(
     val result: String,
     val registeredCount: Int,
     val note: String?,
+)
+
+data class ReminderWithTriggers(
+    @Embedded val reminder: ReminderEntity,
+    @Relation(parentColumn = "id", entityColumn = "reminderId")
+    val triggers: List<TriggerSpecEntity>,
 )

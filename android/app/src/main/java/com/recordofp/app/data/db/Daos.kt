@@ -12,6 +12,10 @@ interface ReminderDao {
     @Query("SELECT * FROM reminder WHERE status = 'ACTIVE' ORDER BY createdAt DESC")
     fun observeActive(): Flow<List<ReminderEntity>>
 
+    @Transaction
+    @Query("SELECT * FROM reminder WHERE status = 'ACTIVE' ORDER BY createdAt DESC")
+    fun observeActiveWithTriggers(): Flow<List<ReminderWithTriggers>>
+
     @Query("SELECT * FROM reminder WHERE id = :id")
     suspend fun byId(id: Long): ReminderEntity?
 

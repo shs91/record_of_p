@@ -9,6 +9,7 @@ import com.recordofp.app.data.db.NotificationLogEntity
 import com.recordofp.app.data.db.RegTriggerEntity
 import com.recordofp.app.data.db.ReminderDao
 import com.recordofp.app.data.db.ReminderEntity
+import com.recordofp.app.data.db.ReminderWithTriggers
 import com.recordofp.app.data.db.TriggerSpecDao
 import com.recordofp.app.data.db.TriggerSpecEntity
 import com.recordofp.app.domain.engine.NotificationGate
@@ -45,6 +46,7 @@ private class FakeSpecs(val specs: Map<Long, TriggerSpecEntity>) : TriggerSpecDa
 }
 private class FakeReminderDao(val rows: Map<Long, ReminderEntity>) : ReminderDao {
     override fun observeActive(): Flow<List<ReminderEntity>> = emptyFlow()
+    override fun observeActiveWithTriggers(): Flow<List<ReminderWithTriggers>> = emptyFlow()
     override suspend fun byId(id: Long) = rows[id]
     override suspend fun upsert(entity: ReminderEntity) = 0L
     override suspend fun setStatus(id: Long, status: String, completedAt: Long?, updatedAt: Long) {}

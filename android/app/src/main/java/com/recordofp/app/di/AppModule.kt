@@ -24,7 +24,9 @@ import com.recordofp.app.domain.engine.ReseedPlanner
 import com.recordofp.app.domain.engine.TriggerResolver
 import com.recordofp.app.platform.geofence.GeofenceController
 import com.recordofp.app.data.location.LocationProvider
+import com.recordofp.app.data.repo.ReseedRequester
 import com.recordofp.app.platform.location.FusedLocationProvider
+import com.recordofp.app.platform.work.WorkManagerReseedRequester
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -140,4 +142,7 @@ abstract class BindsModule {
 
     @Binds
     abstract fun gatePolicyProvider(impl: DefaultGatePolicyProvider): GatePolicyProvider
+
+    @Binds
+    abstract fun reseedRequester(impl: WorkManagerReseedRequester): ReseedRequester
 }
