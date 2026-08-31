@@ -95,5 +95,8 @@ dependencies {
     implementation(libs.coroutines.android)
     implementation(libs.coroutines.play.services)
 
+    testImplementation(libs.coroutines.test)
+    testImplementation(libs.mockwebserver)
+    testImplementation(libs.turbine)
     testImplementation(libs.junit)
 }
