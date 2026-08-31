@@ -10,6 +10,7 @@ import com.recordofp.app.domain.model.GeoPoint
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
 import com.recordofp.app.data.location.LocationProvider
 
@@ -22,7 +23,7 @@ class FusedLocationProvider @Inject constructor(
 
     @SuppressLint("MissingPermission") // 호출부(Worker)가 권한 확인 후 진입
     override suspend fun currentOrLast(): GeoPoint? {
-        val current = runCatching {
+        val current = orNull {
             client.getCurrentLocation(
                 CurrentLocationRequest.Builder()
                     .setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY)
@@ -30,8 +31,11 @@ class FusedLocationProvider @Inject constructor(
                     .build(),
                 CancellationTokenSource().token,
             ).await()
-        }.getOrNull()
-        val location = current ?: runCatching { client.lastLocation.await() }.getOrNull() ?: return null
+        }
+        val location = current ?: orNull { client.lastLocation.await() } ?: return null
         return GeoPoint(location.latitude, location.longitude)
     }
+
+    private suspend fun <T> orNull(block: suspend () -> T?): T? =
+        try { block() } catch (e: CancellationException) { throw e } catch (e: Exception) { null }
 }
