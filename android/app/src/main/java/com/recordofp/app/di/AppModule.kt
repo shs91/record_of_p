@@ -7,11 +7,19 @@ import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.recordofp.app.BuildConfig
 import com.recordofp.app.data.db.AppDatabase
+import com.recordofp.app.data.engine.EngineStateStore
+import com.recordofp.app.data.engine.FenceApplier
+import com.recordofp.app.data.engine.ReseedStateStore
 import com.recordofp.app.data.poi.KakaoLocalApi
 import com.recordofp.app.data.poi.KakaoPoiRepository
 import com.recordofp.app.data.poi.PoiRepository
 import com.recordofp.app.data.repo.ReminderRepository
 import com.recordofp.app.data.repo.RoomReminderRepository
+import com.recordofp.app.domain.engine.DiffCalculator
+import com.recordofp.app.domain.engine.ReseedGovernor
+import com.recordofp.app.domain.engine.ReseedPlanner
+import com.recordofp.app.domain.engine.TriggerResolver
+import com.recordofp.app.platform.geofence.GeofenceController
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -89,6 +97,18 @@ object AppModule {
     @Provides
     @Singleton
     fun dataStore(@ApplicationContext context: Context): DataStore<Preferences> = context.appDataStore
+
+    @Provides
+    fun triggerResolver() = TriggerResolver()
+
+    @Provides
+    fun reseedPlanner() = ReseedPlanner()
+
+    @Provides
+    fun diffCalculator() = DiffCalculator()
+
+    @Provides
+    fun reseedGovernor() = ReseedGovernor()
 }
 
 @Module
@@ -100,4 +120,10 @@ abstract class BindsModule {
 
     @Binds
     abstract fun reminderRepository(impl: RoomReminderRepository): ReminderRepository
+
+    @Binds
+    abstract fun fenceApplier(impl: GeofenceController): FenceApplier
+
+    @Binds
+    abstract fun reseedStateStore(impl: EngineStateStore): ReseedStateStore
 }

@@ -51,6 +51,8 @@ data class GeofenceRegEntity(
     val radiusM: Float,
     val poiName: String?,
     val poiKakaoId: String?,
+    /** 카테고리 id 또는 브랜드 키워드 (여러 트리거가 매칭되면 콤마로 합침) */
+    val matchKey: String?,
     val reseedBatchId: String,
     val registeredAt: Long,
 )

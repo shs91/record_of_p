@@ -14,12 +14,12 @@ import kotlinx.coroutines.flow.first
 @Singleton
 class EngineStateStore @Inject constructor(
     private val dataStore: DataStore<Preferences>,
-) {
+) : ReseedStateStore {
     private val atKey = longPreferencesKey("last_reseed_at")
     private val latKey = doublePreferencesKey("last_reseed_lat")
     private val lngKey = doublePreferencesKey("last_reseed_lng")
 
-    suspend fun lastReseed(): ReseedStamp? {
+    override suspend fun lastReseed(): ReseedStamp? {
         val p = dataStore.data.first()
         val at = p[atKey] ?: return null
         val lat = p[latKey] ?: return null
@@ -27,7 +27,7 @@ class EngineStateStore @Inject constructor(
         return ReseedStamp(at, GeoPoint(lat, lng))
     }
 
-    suspend fun recordReseed(stamp: ReseedStamp) {
+    override suspend fun recordReseed(stamp: ReseedStamp) {
         dataStore.edit {
             it[atKey] = stamp.atMs
             it[latKey] = stamp.point.lat
