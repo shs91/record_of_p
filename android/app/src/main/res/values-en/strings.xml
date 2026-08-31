@@ -17,6 +17,31 @@
     <string name="notif_more_items">\'%1$s\' and %2$d more</string>
     <string name="action_complete">Done</string>
     <string name="action_mute_today">Not today</string>
+    <string name="action_add_brand">Add brand</string>
+    <string name="action_remove">Remove</string>
 
     <string name="stub_screen_todo">Screen to be implemented</string>
+
+    <string name="cat_convenience">Convenience store</string>
+    <string name="cat_mart">Supermarket</string>
+    <string name="cat_pharmacy">Pharmacy</string>
+    <string name="cat_bank">Bank</string>
+    <string name="cat_post">Post office</string>
+    <string name="cat_fuel">Gas station</string>
+    <string name="cat_laundry">Laundry</string>
+    <string name="cat_cafe">Cafe</string>
+    <string name="cat_hospital">Hospital</string>
+    <string name="cat_subway">Subway</string>
+    <string name="cat_daiso">Daiso</string>
+    <string name="cat_oliveyoung">Olive Young</string>
+    <string name="editor_title_hint">What do you need to do?</string>
+    <string name="editor_memo_hint">Note (optional)</string>
+    <string name="editor_section_category">Where should we remind you?</string>
+    <string name="editor_brand_hint">Add a brand (e.g. GS25)</string>
+    <string name="editor_place_hint">Search for a specific place</string>
+    <string name="editor_place_search_failed">Couldn\'t search for places. Please check your location and network.</string>
+    <string name="editor_place_distance">About %1$dm away</string>
+    <string name="editor_save">Save</string>
+    <string name="home_empty">No notes yet.\nWrite it down the moment you think of it.</string>
+    <string name="home_completed">Done</string>
 </resources>

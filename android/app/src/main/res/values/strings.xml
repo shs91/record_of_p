@@ -17,6 +17,31 @@
     <string name="notif_more_items">\'%1$s\' 외 %2$d건</string>
     <string name="action_complete">완료</string>
     <string name="action_mute_today">오늘 그만</string>
+    <string name="action_add_brand">브랜드 추가</string>
+    <string name="action_remove">삭제</string>
 
     <string name="stub_screen_todo">구현 예정 화면입니다</string>
+
+    <string name="cat_convenience">편의점</string>
+    <string name="cat_mart">대형마트</string>
+    <string name="cat_pharmacy">약국</string>
+    <string name="cat_bank">은행</string>
+    <string name="cat_post">우체국</string>
+    <string name="cat_fuel">주유소</string>
+    <string name="cat_laundry">세탁소</string>
+    <string name="cat_cafe">카페</string>
+    <string name="cat_hospital">병원</string>
+    <string name="cat_subway">지하철역</string>
+    <string name="cat_daiso">다이소</string>
+    <string name="cat_oliveyoung">올리브영</string>
+    <string name="editor_title_hint">무엇을 해야 하나요?</string>
+    <string name="editor_memo_hint">메모 (선택)</string>
+    <string name="editor_section_category">어디서 알려드릴까요?</string>
+    <string name="editor_brand_hint">브랜드 추가 (예: GS25)</string>
+    <string name="editor_place_hint">특정 장소 검색</string>
+    <string name="editor_place_search_failed">장소를 검색하지 못했어요. 위치와 네트워크를 확인해주세요.</string>
+    <string name="editor_place_distance">약 %1$dm</string>
+    <string name="editor_save">저장</string>
+    <string name="home_empty">아직 기록이 없어요.\n생각난 순간, 여기에 적어두세요.</string>
+    <string name="home_completed">완료했어요</string>
 </resources>

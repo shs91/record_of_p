@@ -31,6 +31,10 @@ object EngineParams {
     /** 도보 통과(~170초 체류)는 잡고 차량 통과(~20초)는 거르는 값 */
     const val LOITERING_DELAY_MS = 60_000
 
+    // ── 에디터 수동 장소 검색 (설계 §4.1 — 재배치 엔진의 QUERY_RADIUS_M과는 별개)
+    const val PLACE_SEARCH_RADIUS_M = 20_000
+    const val PLACE_SEARCH_MAX_RESULTS = 10
+
     // ── 알림 정책 기본값 (설계 §4.5)
     const val COOLDOWN_PER_ITEM_MS = 4 * 3_600_000L
     const val COOLDOWN_PER_ITEM_PLACE_MS = 24 * 3_600_000L
