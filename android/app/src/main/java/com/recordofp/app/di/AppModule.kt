@@ -1,6 +1,9 @@
 package com.recordofp.app.di
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.recordofp.app.BuildConfig
 import com.recordofp.app.data.db.AppDatabase
@@ -23,6 +26,8 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+
+private val Context.appDataStore by preferencesDataStore(name = "record_of_p_prefs")
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -80,6 +85,10 @@ object AppModule {
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
             .create(KakaoLocalApi::class.java)
+
+    @Provides
+    @Singleton
+    fun dataStore(@ApplicationContext context: Context): DataStore<Preferences> = context.appDataStore
 }
 
 @Module
