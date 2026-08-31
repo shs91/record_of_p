@@ -10,12 +10,15 @@ import com.recordofp.app.data.db.AppDatabase
 import com.recordofp.app.data.engine.EngineStateStore
 import com.recordofp.app.data.engine.FenceApplier
 import com.recordofp.app.data.engine.ReseedStateStore
+import com.recordofp.app.data.engine.DefaultGatePolicyProvider
+import com.recordofp.app.data.engine.GatePolicyProvider
 import com.recordofp.app.data.poi.KakaoLocalApi
 import com.recordofp.app.data.poi.KakaoPoiRepository
 import com.recordofp.app.data.poi.PoiRepository
 import com.recordofp.app.data.repo.ReminderRepository
 import com.recordofp.app.data.repo.RoomReminderRepository
 import com.recordofp.app.domain.engine.DiffCalculator
+import com.recordofp.app.domain.engine.NotificationGate
 import com.recordofp.app.domain.engine.ReseedGovernor
 import com.recordofp.app.domain.engine.ReseedPlanner
 import com.recordofp.app.domain.engine.TriggerResolver
@@ -111,6 +114,9 @@ object AppModule {
 
     @Provides
     fun reseedGovernor() = ReseedGovernor()
+
+    @Provides
+    fun notificationGate(zone: ZoneId) = NotificationGate(zone)
 }
 
 @Module
@@ -131,4 +137,7 @@ abstract class BindsModule {
 
     @Binds
     abstract fun locationProvider(impl: FusedLocationProvider): LocationProvider
+
+    @Binds
+    abstract fun gatePolicyProvider(impl: DefaultGatePolicyProvider): GatePolicyProvider
 }

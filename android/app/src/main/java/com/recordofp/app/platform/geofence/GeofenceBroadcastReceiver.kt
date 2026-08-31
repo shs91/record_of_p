@@ -4,21 +4,37 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.google.android.gms.location.GeofencingEvent
+import com.recordofp.app.data.engine.GeofenceEventHandler
+import com.recordofp.app.domain.engine.ReseedCause
+import com.recordofp.app.platform.notify.NearbyNotifier
+import com.recordofp.app.platform.work.ReseedWorker
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
-/** 지오펜스 전이 이벤트 진입점 (설계 §6.5 파이프라인의 시작) */
+/** 지오펜스 전이 이벤트 진입점 (스펙 §6.5) */
 @AndroidEntryPoint
 class GeofenceBroadcastReceiver : BroadcastReceiver() {
+
+    @Inject lateinit var handler: GeofenceEventHandler
+    @Inject lateinit var notifier: NearbyNotifier
 
     override fun onReceive(context: Context, intent: Intent) {
         val event = GeofencingEvent.fromIntent(intent) ?: return
         if (event.hasError()) return
+        val ids = event.triggeringGeofences?.map { it.requestId } ?: return
 
-        // TODO(v1): §6.5 — goAsync() 후:
-        //  1. geofenceId가 GeofenceRegDao에 유효한지 검증 (stale 이벤트 폐기)
-        //  2. RegTrigger → TriggerSpec → 활성 Reminder 로드
-        //  3. NotificationGate 필터 체인 평가 (차단 사유는 EngineRunLog 기록)
-        //  4. 통과 항목을 POI 단위로 그룹핑해 Notifier로 알림 1건 발행
-        //  5. 센티널 EXIT면 ReseedWorker.runNow()
+        val pending = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val outcome = handler.onFenceEvent(ids)
+                outcome.groups.forEach { notifier.show(it) }
+                if (outcome.sentinelExited) ReseedWorker.runNow(context, ReseedCause.SENTINEL_EXIT)
+            } finally {
+                pending.finish()
+            }
+        }
     }
 }

@@ -39,6 +39,9 @@ interface TriggerSpecDao {
     )
     suspend fun allActive(): List<TriggerSpecEntity>
 
+    @Query("SELECT * FROM trigger_spec WHERE id IN (:ids)")
+    suspend fun byIds(ids: List<Long>): List<TriggerSpecEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(entities: List<TriggerSpecEntity>)
 
