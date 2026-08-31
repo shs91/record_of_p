@@ -15,8 +15,10 @@ import com.recordofp.app.data.engine.GatePolicyProvider
 import com.recordofp.app.data.poi.KakaoLocalApi
 import com.recordofp.app.data.poi.KakaoPoiRepository
 import com.recordofp.app.data.poi.PoiRepository
+import com.recordofp.app.data.repo.DataStoreSettingsStore
 import com.recordofp.app.data.repo.ReminderRepository
 import com.recordofp.app.data.repo.RoomReminderRepository
+import com.recordofp.app.data.repo.SettingsStore
 import com.recordofp.app.domain.engine.DiffCalculator
 import com.recordofp.app.domain.engine.NotificationGate
 import com.recordofp.app.domain.engine.ReseedGovernor
@@ -145,4 +147,7 @@ abstract class BindsModule {
 
     @Binds
     abstract fun reseedRequester(impl: WorkManagerReseedRequester): ReseedRequester
+
+    @Binds
+    abstract fun settingsStore(impl: DataStoreSettingsStore): SettingsStore
 }

@@ -44,4 +44,17 @@
     <string name="editor_save">저장</string>
     <string name="home_empty">아직 기록이 없어요.\n생각난 순간, 여기에 적어두세요.</string>
     <string name="home_completed">완료했어요</string>
+
+    <string name="onboard_1_title">지나칠 때, 다시 떠오르게</string>
+    <string name="onboard_1_body">\"편의점 가면 건전지 사야지\" — 기록해두면 근처를 지날 때 알려드려요.</string>
+    <string name="onboard_2_title">알림 허용</string>
+    <string name="onboard_2_body">장소 근처에서 알려드리려면 알림 권한이 필요해요.</string>
+    <string name="onboard_3_title">위치 허용</string>
+    <string name="onboard_3_body">주변의 상점을 찾으려면 위치 권한이 필요해요.</string>
+    <string name="onboard_next">다음</string>
+    <string name="onboard_allow">허용하기</string>
+    <string name="onboard_skip">나중에</string>
+    <string name="onboard_start">시작하기</string>
+    <string name="banner_protection_title">알림이 꺼질 수 있는 상태예요</string>
+    <string name="banner_protection_action">설정에서 확인</string>
 </resources>

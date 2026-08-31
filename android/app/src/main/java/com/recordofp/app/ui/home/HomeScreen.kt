@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -27,12 +28,17 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.recordofp.app.R
 import com.recordofp.app.domain.model.Reminder
@@ -40,6 +46,7 @@ import com.recordofp.app.domain.model.TriggerCatalog
 import com.recordofp.app.domain.model.TriggerSpec
 import com.recordofp.app.domain.model.TriggerType
 import com.recordofp.app.ui.common.catalogLabelRes
+import com.recordofp.app.ui.permissions.readPermissionSnapshot
 
 /**
  * 활성 항목 리스트(카테고리 칩 그룹핑), 완료 스와이프 (설계 §4.1)
@@ -69,20 +76,40 @@ fun HomeScreen(
             }
         },
     ) { padding ->
-        if (items.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text(
-                    stringResource(R.string.home_empty), textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        val context = LocalContext.current
+        var snapshot by remember { mutableStateOf(readPermissionSnapshot(context)) }
+        LifecycleResumeEffect(Unit) { // 설정에서 돌아오면 갱신
+            snapshot = readPermissionSnapshot(context)
+            onPauseOrDispose { }
+        }
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            if (!snapshot.fullyProtected) {
+                Card(
+                    onClick = onSettingsClick,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                ) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text(stringResource(R.string.banner_protection_title), style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(R.string.banner_protection_action), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
             }
-        } else {
-            LazyColumn(
-                Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(items, key = { it.id }) { item ->
-                    ReminderRow(item, onComplete = { viewModel.complete(item.id) })
+            if (items.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        stringResource(R.string.home_empty), textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                LazyColumn(
+                    Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(items, key = { it.id }) { item ->
+                        ReminderRow(item, onComplete = { viewModel.complete(item.id) })
+                    }
                 }
             }
         }

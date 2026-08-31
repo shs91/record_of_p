@@ -44,4 +44,17 @@
     <string name="editor_save">Save</string>
     <string name="home_empty">No notes yet.\nWrite it down the moment you think of it.</string>
     <string name="home_completed">Done</string>
+
+    <string name="onboard_1_title">A nudge when you pass by</string>
+    <string name="onboard_1_body">\"Grab batteries at the convenience store\" — save it, and we\'ll remind you when you\'re nearby.</string>
+    <string name="onboard_2_title">Allow notifications</string>
+    <string name="onboard_2_body">We need notification permission to alert you near a place.</string>
+    <string name="onboard_3_title">Allow location</string>
+    <string name="onboard_3_body">We need location permission to find nearby stores.</string>
+    <string name="onboard_next">Next</string>
+    <string name="onboard_allow">Allow</string>
+    <string name="onboard_skip">Later</string>
+    <string name="onboard_start">Get started</string>
+    <string name="banner_protection_title">Notifications may not go through</string>
+    <string name="banner_protection_action">Check in settings</string>
 </resources>
