@@ -19,8 +19,14 @@
     <string name="action_mute_today">오늘 그만</string>
     <string name="action_add_brand">브랜드 추가</string>
     <string name="action_remove">삭제</string>
+    <string name="action_refresh">새로고침</string>
 
     <string name="stub_screen_todo">구현 예정 화면입니다</string>
+
+    <string name="nearby_empty">주변에 처리할 일이 없어요.</string>
+    <string name="nearby_no_location">현재 위치를 확인할 수 없어요. 위치 권한과 GPS를 확인해주세요.</string>
+    <string name="nearby_distance_fmt">약 %1$dm</string>
+    <string name="nearby_open_map">카카오맵에서 보기</string>
 
     <string name="cat_convenience">편의점</string>
     <string name="cat_mart">대형마트</string>

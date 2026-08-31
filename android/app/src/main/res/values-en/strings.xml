@@ -19,8 +19,14 @@
     <string name="action_mute_today">Not today</string>
     <string name="action_add_brand">Add brand</string>
     <string name="action_remove">Remove</string>
+    <string name="action_refresh">Refresh</string>
 
     <string name="stub_screen_todo">Screen to be implemented</string>
+
+    <string name="nearby_empty">Nothing to do nearby.</string>
+    <string name="nearby_no_location">Can\'t get your current location. Check location permission and GPS.</string>
+    <string name="nearby_distance_fmt">~%1$dm</string>
+    <string name="nearby_open_map">Open in KakaoMap</string>
 
     <string name="cat_convenience">Convenience store</string>
     <string name="cat_mart">Supermarket</string>
