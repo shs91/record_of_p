@@ -8,7 +8,6 @@ import com.recordofp.app.data.db.RegTriggerEntity
 import com.recordofp.app.data.poi.PoiRepository
 import com.recordofp.app.data.repo.ReminderRepository
 import com.recordofp.app.domain.engine.DiffCalculator
-import com.recordofp.app.domain.engine.EngineParams
 import com.recordofp.app.domain.engine.FenceDiff
 import com.recordofp.app.domain.engine.PoiCandidate
 import com.recordofp.app.domain.engine.ReseedCause
@@ -27,7 +26,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -170,6 +168,53 @@ class ReseedServiceTest {
         assertEquals(ReseedResult.CLEARED_NO_TRIGGERS, service.reseed(ReseedCause.ITEM_CHANGE, here))
         assertTrue(regDao.regs.isEmpty())
         assertEquals(setOf("sentinel", "poi:1"), applier.applied.single().removeIds.toSet())
+    }
+
+    @Test
+    fun `BOOT은 미러와 계획이 동일해도 전량 재등록한다`() = runTest {
+        val regDao = FakeRegDao(); val applier = FakeApplier(); val state = FakeStateStore()
+        val service = build(
+            FakeReminders(listOf(convenience, place)),
+            FakePoi(byQuery = mapOf("CS2" to listOf(poi("1", 37.501), poi("2", 37.503)))),
+            regDao = regDao, applier = applier, stateStore = state,
+        )
+        service.reseed(ReseedCause.BOOT, here) // 1회차 — 미러를 계획과 비트일치하게 채운다
+        applier.applied.clear() // 재부팅 재현: OS 쪽 흔적만 지운다 (미러는 재부팅에도 살아남는다)
+
+        val result = service.reseed(ReseedCause.BOOT, here)
+
+        assertEquals(ReseedResult.APPLIED, result)
+        // 미러·diff가 완전히 일치해도(=diff.add가 비어도) OS 펜스는 죽어 있으니 전량 재등록해야 한다
+        // 센티널 1 + PLACE 1 + POI 2 = 4
+        assertEquals(4, applier.applied.single().add.size)
+    }
+
+    @Test
+    fun `standDown은 OS와 미러 등록을 전부 걷어낸다`() = runTest {
+        val regDao = FakeRegDao().apply {
+            regs["sentinel"] = GeofenceRegEntity("sentinel", "SENTINEL", 37.5, 127.0, 1000f, null, null, null, "b0", 0)
+            regs["poi:1"] = GeofenceRegEntity("poi:1", "POI", 37.501, 127.0, 120f, "CU", "1", "cat:convenience", "b0", 0)
+        }
+        val applier = FakeApplier()
+        val service = build(FakeReminders(listOf(convenience)), FakePoi(), regDao = regDao, applier = applier)
+
+        val result = service.standDown(ReseedCause.PERIODIC)
+
+        assertEquals(ReseedResult.STOOD_DOWN, result)
+        assertEquals(setOf("sentinel", "poi:1"), applier.applied.single().removeIds.toSet())
+        assertTrue(applier.applied.single().add.isEmpty())
+        assertTrue(regDao.regs.isEmpty())
+    }
+
+    @Test
+    fun `APP_OPEN 디바운스 스킵은 로그를 남기지 않는다`() = runTest {
+        val state = FakeStateStore().apply {
+            stamp = com.recordofp.app.domain.engine.ReseedStamp(1_000_000_000_000 - 60_000, here) // 1분 전 — 디바운스 구간
+        }
+        val runLog = FakeRunLog()
+        val service = build(FakeReminders(listOf(convenience)), FakePoi(), stateStore = state, runLog = runLog)
+        assertEquals(ReseedResult.SKIPPED_DEBOUNCE, service.reseed(ReseedCause.APP_OPEN, here))
+        assertTrue(runLog.entries.isEmpty()) // 매 앱 진입마다 남는 정상 소음 — 스팸 방지 (M3)
     }
 }
 

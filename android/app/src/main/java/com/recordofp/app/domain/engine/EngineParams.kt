@@ -18,12 +18,16 @@ object EngineParams {
     const val SENTINEL_RADIUS_M = 1000f
     const val QUERY_RADIUS_M = 2000
     const val MAX_QUERY_PAGES = 2
+    /** 트리거당 후보 풀 상한 — 최대 2페이지=30건 (설계 §6.3.2) */
+    const val QUERY_MAX_RESULTS = 30
     const val MERGE_DISTANCE_M = 50.0
     const val RESEED_MIN_INTERVAL_MS = 10 * 60_000L
     const val ITEM_CHANGE_COALESCE_MS = 30_000L
     const val APP_OPEN_RESEED_DISTANCE_M = 500.0
     const val APP_OPEN_RESEED_AGE_MS = 6 * 3_600_000L
     const val HEALTH_CHECK_INTERVAL_HOURS = 6L
+    /** 진단 로그(EngineRunLog) 보존 기간 — PERIODIC 워커와 진단 화면이 공유 (설계 §4.4) */
+    const val RUN_LOG_RETENTION_MS = 14L * 24 * 3600 * 1000
 
     // ── 지오펜스 반경·전이 (설계 §6.3.5)
     const val CATEGORY_FENCE_RADIUS_M = 120f
