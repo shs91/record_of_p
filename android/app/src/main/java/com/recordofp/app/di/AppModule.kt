@@ -20,6 +20,8 @@ import com.recordofp.app.domain.engine.ReseedGovernor
 import com.recordofp.app.domain.engine.ReseedPlanner
 import com.recordofp.app.domain.engine.TriggerResolver
 import com.recordofp.app.platform.geofence.GeofenceController
+import com.recordofp.app.data.location.LocationProvider
+import com.recordofp.app.platform.location.FusedLocationProvider
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -126,4 +128,7 @@ abstract class BindsModule {
 
     @Binds
     abstract fun reseedStateStore(impl: EngineStateStore): ReseedStateStore
+
+    @Binds
+    abstract fun locationProvider(impl: FusedLocationProvider): LocationProvider
 }
