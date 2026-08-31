@@ -80,4 +80,8 @@
     <string name="settings_diagnostics">문제 해결 (진단)</string>
     <string name="settings_hours_fmt">%d시간</string>
     <string name="settings_count_fmt">%d건</string>
+
+    <string name="diag_title">진단</string>
+    <string name="diag_empty">아직 엔진 실행 기록이 없어요.</string>
+    <string name="diag_export">로그 내보내기</string>
 </resources>

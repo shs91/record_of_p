@@ -15,6 +15,7 @@ import com.recordofp.app.ui.home.HomeScreen
 import com.recordofp.app.ui.nearby.NearbyScreen
 import com.recordofp.app.ui.onboarding.OnboardingScreen
 import com.recordofp.app.ui.onboarding.OnboardingViewModel
+import com.recordofp.app.ui.settings.DiagnosticsScreen
 import com.recordofp.app.ui.settings.SettingsScreen
 
 object Routes {
@@ -22,6 +23,7 @@ object Routes {
     const val EDITOR = "editor"
     const val NEARBY = "nearby"
     const val SETTINGS = "settings"
+    const val DIAGNOSTICS = "diagnostics"
 }
 
 /**
@@ -51,6 +53,9 @@ private fun MainGraph() {
         }
         composable(Routes.EDITOR) { EditorScreen(onDone = { navController.popBackStack() }) }
         composable(Routes.NEARBY) { NearbyScreen() }
-        composable(Routes.SETTINGS) { SettingsScreen() }
+        composable(Routes.SETTINGS) {
+            SettingsScreen(onDiagnosticsClick = { navController.navigate(Routes.DIAGNOSTICS) })
+        }
+        composable(Routes.DIAGNOSTICS) { DiagnosticsScreen() }
     }
 }

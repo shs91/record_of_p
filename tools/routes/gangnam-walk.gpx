@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="record-of-p" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk><name>gangnam-walk</name><trkseg>
+    <trkpt lat="37.4979" lon="127.0276"/>
+    <trkpt lat="37.4985" lon="127.0298"/>
+    <trkpt lat="37.4991" lon="127.0320"/>
+    <trkpt lat="37.4997" lon="127.0342"/>
+    <trkpt lat="37.5003" lon="127.0364"/>
+    <trkpt lat="37.5006" lon="127.0386"/>
+    <trkpt lat="37.5008" lon="127.0408"/>
+  </trkseg></trk>
+</gpx>

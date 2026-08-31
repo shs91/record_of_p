@@ -80,4 +80,8 @@
     <string name="settings_diagnostics">Troubleshooting (diagnostics)</string>
     <string name="settings_hours_fmt">%dh</string>
     <string name="settings_count_fmt">%d</string>
+
+    <string name="diag_title">Diagnostics</string>
+    <string name="diag_empty">No engine runs recorded yet.</string>
+    <string name="diag_export">Export log</string>
 </resources>
