@@ -24,6 +24,7 @@ import java.time.Instant
 import java.time.ZoneOffset
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -42,10 +43,13 @@ private class FakeReminders(var triggers: List<TriggerSpec>) : ReminderRepositor
 private class FakePoi(
     var byQuery: Map<String, List<PoiCandidate>> = emptyMap(),
     var throwOn: String? = null,
+    /** 0보다 크면 조회가 이만큼 suspend — 동시성(F5) 재현용 */
+    var delayMs: Long = 0,
 ) : PoiRepository {
     override suspend fun search(
         resolution: PoiResolution, query: String, center: GeoPoint, radiusM: Int, maxResults: Int,
     ): List<PoiCandidate> {
+        if (delayMs > 0) kotlinx.coroutines.delay(delayMs)
         if (query == throwOn) throw RuntimeException("poi down")
         return byQuery[query].orEmpty()
     }
@@ -204,6 +208,44 @@ class ReseedServiceTest {
         assertEquals(ReseedResult.STOOD_DOWN, result)
         assertEquals(setOf("sentinel", "poi:1"), applier.applied.single().removeIds.toSet())
         assertTrue(applier.applied.single().add.isEmpty())
+        assertTrue(regDao.regs.isEmpty())
+    }
+
+    @Test
+    fun `BOOT 재배치 중 APP_OPEN이 끼어들어도 이중 적용되지 않는다`() = runTest {
+        // F5 실기기 재현: BOOT(강한 큐)와 APP_OPEN(기회적 큐)이 동시 실행되면
+        // 카카오 호출·GMS 등록이 2배가 된다 — 직렬화 후엔 두 번째가 디바운스에 걸려야 한다
+        val regDao = FakeRegDao(); val applier = FakeApplier(); val state = FakeStateStore()
+        val service = build(
+            FakeReminders(listOf(convenience)),
+            FakePoi(byQuery = mapOf("CS2" to listOf(poi("1", 37.501))), delayMs = 100),
+            regDao = regDao, applier = applier, stateStore = state,
+        )
+        var first: ReseedResult? = null
+        var second: ReseedResult? = null
+        launch { first = service.reseed(ReseedCause.BOOT, here) }
+        launch { second = service.reseed(ReseedCause.APP_OPEN, here) }
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(ReseedResult.APPLIED, first)
+        assertEquals(ReseedResult.SKIPPED_DEBOUNCE, second)
+        assertEquals(1, applier.applied.size) // 이중 적용 금지
+    }
+
+    @Test
+    fun `재배치 중 스탠드다운이 끼어들어도 고아 등록이 남지 않는다`() = runTest {
+        // 락 없이는 standDown이 아직 비어 있는 미러만 보고 지나가고,
+        // 뒤늦게 끝난 재배치가 등록을 남긴다 → 권한 없는 채 고아 지오펜스 (§6.4 위반)
+        val regDao = FakeRegDao(); val applier = FakeApplier(); val state = FakeStateStore()
+        val service = build(
+            FakeReminders(listOf(convenience, place)),
+            FakePoi(byQuery = mapOf("CS2" to listOf(poi("1", 37.501))), delayMs = 100),
+            regDao = regDao, applier = applier, stateStore = state,
+        )
+        launch { service.reseed(ReseedCause.BOOT, here) }
+        launch { service.standDown(ReseedCause.PERIODIC) }
+        testScheduler.advanceUntilIdle()
+
         assertTrue(regDao.regs.isEmpty())
     }
 

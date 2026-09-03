@@ -26,6 +26,8 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** OS 지오펜스 반영 지점 — GMS 의존을 이 인터페이스 뒤로 격리한다 */
 interface FenceApplier {
@@ -56,7 +58,17 @@ class ReseedService @Inject constructor(
     private val clock: Clock,
 ) {
 
-    suspend fun reseed(cause: ReseedCause, current: GeoPoint): ReseedResult {
+    /**
+     * F5: 강한 큐(BOOT/ITEM_CHANGE/…)와 기회적 큐(APP_OPEN)는 WorkManager 유니크 큐가 서로
+     * 달라 동시에 돌 수 있다 — 실행을 직렬화하고 거버너 판정을 락 안에서 해, 뒤에 든 쪽이
+     * 앞선 실행의 스탬프를 보고 디바운스되게 한다 (실기기: 카카오 호출·GMS 등록 2배 관찰).
+     */
+    private val mutex = Mutex()
+
+    suspend fun reseed(cause: ReseedCause, current: GeoPoint): ReseedResult =
+        mutex.withLock { reseedLocked(cause, current) }
+
+    private suspend fun reseedLocked(cause: ReseedCause, current: GeoPoint): ReseedResult {
         val now = clock.millis()
         if (!governor.shouldReseed(cause, now, stateStore.lastReseed(), current)) {
             // APP_OPEN 디바운스 스킵은 매 앱 진입마다 일어나는 정상 소음 — 로그 생략 (스팸 방지)
@@ -129,7 +141,10 @@ class ReseedService @Inject constructor(
     }
 
     /** 권한 부재/회수 시: OS·미러의 등록을 전부 걷어낸다 (§6.4 고아 지오펜스 방지). 이미 비어 있으면 로그만. */
-    suspend fun standDown(cause: ReseedCause): ReseedResult {
+    suspend fun standDown(cause: ReseedCause): ReseedResult =
+        mutex.withLock { standDownLocked(cause) } // F5: 재배치와 교차하면 고아 등록이 남는다
+
+    private suspend fun standDownLocked(cause: ReseedCause): ReseedResult {
         val now = clock.millis()
         val existing = regDao.all()
         if (existing.isEmpty()) return log(cause, ReseedResult.STOOD_DOWN, 0, now, "no registrations")
