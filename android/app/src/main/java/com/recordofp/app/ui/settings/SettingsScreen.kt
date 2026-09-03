@@ -6,26 +6,36 @@ import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,9 +51,11 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.recordofp.app.R
 import com.recordofp.app.data.repo.NotificationPolicySettings
+import com.recordofp.app.ui.common.tabularNums
 import com.recordofp.app.ui.permissions.PermissionSnapshot
 import com.recordofp.app.ui.permissions.appDetailsSettingsIntent
 import com.recordofp.app.ui.permissions.readPermissionSnapshot
+import com.recordofp.app.ui.theme.PillShape
 
 private val COOLDOWN_HOUR_OPTIONS = listOf(1, 4, 12, 24)
 private val DAILY_CAP_OPTIONS = listOf(5, 10, 20, 0)
@@ -52,11 +64,14 @@ private val DAILY_CAP_OPTIONS = listOf(5, 10, 20, 0)
  * 보호 상태 대시보드 + 알림 정책 편집 (설계 §4.3, §4.5).
  * 배터리 최적화는 목록 화면(ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)으로 안내만 하고
  * 자동으로 예외를 요청하지 않는다 (§4.2).
+ * 클린 미니멀 개편 (개편안 §2 설정): TopAppBar + 그룹 카드 3개(보호 상태/알림 정책/문제 해결),
+ * 상태 pill. Scaffold 도입으로 상태바 겹침·다크 배경(F3)도 함께 해소.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onDiagnosticsClick: () -> Unit = {},
+    onBack: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -67,51 +82,100 @@ fun SettingsScreen(
         onPauseOrDispose { }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 8.dp),
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    }
+                },
+                title = { Text(stringResource(R.string.title_settings)) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            GroupCard {
+                SectionLabel(stringResource(R.string.settings_section_protection))
+                val rows = protectionRows(context, snapshot)
+                rows.forEachIndexed { index, row ->
+                    ProtectionPermissionRow(row, onClick = { context.startActivity(row.intent) })
+                    if (index != rows.lastIndex) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    }
+                }
+                Text(
+                    text = stringResource(R.string.settings_battery_guide),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 10.dp),
+                )
+            }
+
+            GroupCard {
+                SectionLabel(stringResource(R.string.settings_section_policy))
+                PolicySection(
+                    policy = policy,
+                    onCooldownChange = viewModel::setCooldownHours,
+                    onCapChange = viewModel::setDailyCap,
+                    onQuietEnabledChange = viewModel::setQuietEnabled,
+                    onQuietRangeChange = viewModel::setQuietRange,
+                )
+            }
+
+            Card(
+                onClick = onDiagnosticsClick,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(stringResource(R.string.settings_diagnostics), style = MaterialTheme.typography.bodyLarge)
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** 그룹 카드 — 20dp 라운드, 그림자 대신 톤 차이 (개편안 §1) */
+@Composable
+private fun GroupCard(content: @Composable () -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        item { SectionHeader(stringResource(R.string.settings_section_protection)) }
-        items(protectionRows(context, snapshot)) { row ->
-            ProtectionPermissionRow(row, onClick = { context.startActivity(row.intent) })
-        }
-        item {
-            Text(
-                text = stringResource(R.string.settings_battery_guide),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-        }
-        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
-
-        item { SectionHeader(stringResource(R.string.settings_section_policy)) }
-        item {
-            PolicySection(
-                policy = policy,
-                onCooldownChange = viewModel::setCooldownHours,
-                onCapChange = viewModel::setDailyCap,
-                onQuietEnabledChange = viewModel::setQuietEnabled,
-                onQuietRangeChange = viewModel::setQuietRange,
-            )
-        }
-        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
-
-        item {
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.settings_diagnostics)) },
-                modifier = Modifier.fillMaxWidth().clickable(onClick = onDiagnosticsClick),
-            )
+        Column(Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
+            content()
         }
     }
 }
 
 @Composable
-private fun SectionHeader(text: String) {
+private fun SectionLabel(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(bottom = 4.dp),
     )
 }
 
@@ -145,20 +209,42 @@ private fun protectionRows(context: Context, snapshot: PermissionSnapshot): List
 
 @Composable
 private fun ProtectionPermissionRow(row: ProtectionRow, onClick: () -> Unit) {
-    ListItem(
-        headlineContent = { Text(stringResource(row.labelRes)) },
-        trailingContent = {
-            Text(
-                text = stringResource(if (row.granted) R.string.settings_perm_ok else R.string.settings_perm_off),
-                color = if (row.granted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-            )
-        },
+    Row(
         modifier = if (row.granted) {
             Modifier.fillMaxWidth()
         } else {
             Modifier.fillMaxWidth().clickable(onClick = onClick)
+        }.padding(vertical = 12.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(stringResource(row.labelRes), style = MaterialTheme.typography.bodyLarge)
+        StatusPill(granted = row.granted)
+    }
+}
+
+/** 상태 pill — 켜짐 연블루 / 꺼짐 빨강: 스캔 가능한 상태 표시 (개편안 §2) */
+@Composable
+private fun StatusPill(granted: Boolean) {
+    Surface(
+        shape = PillShape,
+        color = if (granted) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.errorContainer
         },
-    )
+    ) {
+        Text(
+            text = stringResource(if (granted) R.string.settings_perm_ok else R.string.settings_perm_off),
+            style = MaterialTheme.typography.labelSmall,
+            color = if (granted) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onErrorContainer
+            },
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -170,40 +256,35 @@ private fun PolicySection(
     onQuietEnabledChange: (Boolean) -> Unit,
     onQuietRangeChange: (Int, Int) -> Unit,
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Column {
-            Text(stringResource(R.string.settings_cooldown), style = MaterialTheme.typography.titleSmall)
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+            Text(stringResource(R.string.settings_cooldown), style = MaterialTheme.typography.bodyLarge)
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(top = 8.dp)) {
                 COOLDOWN_HOUR_OPTIONS.forEachIndexed { index, hours ->
-                    SegmentedButton(
+                    PolicySegment(
                         selected = policy.cooldownHours == hours,
                         onClick = { onCooldownChange(hours) },
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = COOLDOWN_HOUR_OPTIONS.size),
-                        label = { Text(stringResource(R.string.settings_hours_fmt, hours)) },
+                        index = index,
+                        count = COOLDOWN_HOUR_OPTIONS.size,
+                        label = stringResource(R.string.settings_hours_fmt, hours),
                     )
                 }
             }
         }
 
         Column {
-            Text(stringResource(R.string.settings_daily_cap), style = MaterialTheme.typography.titleSmall)
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+            Text(stringResource(R.string.settings_daily_cap), style = MaterialTheme.typography.bodyLarge)
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(top = 8.dp)) {
                 DAILY_CAP_OPTIONS.forEachIndexed { index, cap ->
-                    SegmentedButton(
+                    PolicySegment(
                         selected = policy.dailyCapTotal == cap,
                         onClick = { onCapChange(cap) },
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = DAILY_CAP_OPTIONS.size),
-                        label = {
-                            Text(
-                                if (cap == 0) {
-                                    stringResource(R.string.settings_cap_unlimited)
-                                } else {
-                                    stringResource(R.string.settings_count_fmt, cap)
-                                },
-                            )
+                        index = index,
+                        count = DAILY_CAP_OPTIONS.size,
+                        label = if (cap == 0) {
+                            stringResource(R.string.settings_cap_unlimited)
+                        } else {
+                            stringResource(R.string.settings_count_fmt, cap)
                         },
                     )
                 }
@@ -212,6 +293,33 @@ private fun PolicySection(
 
         QuietHoursEditor(policy, onQuietEnabledChange, onQuietRangeChange)
     }
+}
+
+/** 세그먼트 — 선택 시 연블루+블루 텍스트로 팔레트 정합 */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun androidx.compose.material3.SingleChoiceSegmentedButtonRowScope.PolicySegment(
+    selected: Boolean,
+    onClick: () -> Unit,
+    index: Int,
+    count: Int,
+    label: String,
+) {
+    SegmentedButton(
+        selected = selected,
+        onClick = onClick,
+        shape = SegmentedButtonDefaults.itemShape(index = index, count = count),
+        colors = SegmentedButtonDefaults.colors(
+            activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            activeContentColor = MaterialTheme.colorScheme.primary,
+            activeBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            inactiveContainerColor = MaterialTheme.colorScheme.surface,
+            inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            inactiveBorderColor = MaterialTheme.colorScheme.outlineVariant,
+        ),
+        icon = {}, // 체크 아이콘 없이 색으로만 — 미니멀
+        label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+    )
 }
 
 private enum class QuietField { START, END }
@@ -228,22 +336,27 @@ private fun QuietHoursEditor(
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(stringResource(R.string.settings_quiet), style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.settings_quiet), style = MaterialTheme.typography.bodyLarge)
             Switch(checked = policy.quietEnabled, onCheckedChange = onEnabledChange)
         }
         if (policy.quietEnabled) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                OutlinedButton(onClick = { editingField = QuietField.START }, modifier = Modifier.weight(1f)) {
-                    Text(formatMinuteOfDay(policy.quietStartMinute))
-                }
-                OutlinedButton(onClick = { editingField = QuietField.END }, modifier = Modifier.weight(1f)) {
-                    Text(formatMinuteOfDay(policy.quietEndMinute))
-                }
+                QuietTimeButton(
+                    text = formatMinuteOfDay(policy.quietStartMinute),
+                    onClick = { editingField = QuietField.START },
+                    modifier = Modifier.weight(1f),
+                )
+                QuietTimeButton(
+                    text = formatMinuteOfDay(policy.quietEndMinute),
+                    onClick = { editingField = QuietField.END },
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }
@@ -272,6 +385,21 @@ private fun QuietHoursEditor(
                 TextButton(onClick = { editingField = null }) { Text(stringResource(android.R.string.cancel)) }
             },
             text = { TimePicker(state = timeState) },
+        )
+    }
+}
+
+@Composable
+private fun QuietTimeButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    OutlinedButton(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        modifier = modifier,
+    ) {
+        Text(
+            text,
+            style = tabularNums(MaterialTheme.typography.labelLarge),
+            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }
