@@ -44,11 +44,14 @@
     <string name="editor_title_hint">What do you need to do?</string>
     <string name="editor_memo_hint">Note (optional)</string>
     <string name="editor_section_category">Where should we remind you?</string>
-    <string name="editor_brand_hint">Add a brand (e.g. GS25)</string>
+    <string name="editor_section_brand">Add a brand</string>
+    <string name="editor_brand_example">e.g. GS25</string>
+    <string name="editor_section_place">Specific place</string>
     <string name="editor_place_hint">Search for a specific place</string>
     <string name="editor_place_search_failed">Couldn\'t search for places. Please check your location and network.</string>
     <string name="editor_place_distance">About %1$dm away</string>
     <string name="editor_save">Save</string>
+    <string name="editor_title_edit">Edit note</string>
     <string name="editor_delete">Delete</string>
     <string name="editor_delete_confirm">Delete this note?</string>
     <string name="home_empty">No notes yet.\nWrite it down the moment you think of it.</string>
@@ -61,6 +64,10 @@
     <string name="onboard_2_body">We need notification permission to alert you near a place.</string>
     <string name="onboard_3_title">Allow location</string>
     <string name="onboard_3_body">We need location permission to find nearby stores.</string>
+    <string name="onboard_why_title">Why do we need this?</string>
+    <string name="onboard_why_1">Used only to find stores near you</string>
+    <string name="onboard_why_2">Your movement history is never stored</string>
+    <string name="onboard_why_3">Notes stay on your phone only</string>
     <string name="onboard_next">Next</string>
     <string name="onboard_allow">Allow</string>
     <string name="onboard_skip">Later</string>

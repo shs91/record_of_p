@@ -44,11 +44,14 @@
     <string name="editor_title_hint">무엇을 해야 하나요?</string>
     <string name="editor_memo_hint">메모 (선택)</string>
     <string name="editor_section_category">어디서 알려드릴까요?</string>
-    <string name="editor_brand_hint">브랜드 추가 (예: GS25)</string>
+    <string name="editor_section_brand">브랜드 추가</string>
+    <string name="editor_brand_example">예: GS25</string>
+    <string name="editor_section_place">특정 장소</string>
     <string name="editor_place_hint">특정 장소 검색</string>
     <string name="editor_place_search_failed">장소를 검색하지 못했어요. 위치와 네트워크를 확인해주세요.</string>
     <string name="editor_place_distance">약 %1$dm</string>
     <string name="editor_save">저장</string>
+    <string name="editor_title_edit">기록 수정</string>
     <string name="editor_delete">삭제</string>
     <string name="editor_delete_confirm">이 기록을 삭제할까요?</string>
     <string name="home_empty">아직 기록이 없어요.\n생각난 순간, 여기에 적어두세요.</string>
@@ -61,6 +64,10 @@
     <string name="onboard_2_body">장소 근처에서 알려드리려면 알림 권한이 필요해요.</string>
     <string name="onboard_3_title">위치 허용</string>
     <string name="onboard_3_body">주변의 상점을 찾으려면 위치 권한이 필요해요.</string>
+    <string name="onboard_why_title">왜 필요한가요?</string>
+    <string name="onboard_why_1">주변 상점을 찾을 때만 사용해요</string>
+    <string name="onboard_why_2">이동 경로를 저장하지 않아요</string>
+    <string name="onboard_why_3">기록은 내 폰 안에만 저장돼요</string>
     <string name="onboard_next">다음</string>
     <string name="onboard_allow">허용하기</string>
     <string name="onboard_skip">나중에</string>
