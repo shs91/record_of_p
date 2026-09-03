@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -43,16 +44,23 @@ class EditorViewModelTest {
         override suspend fun byId(id: Long): Reminder? = byIdResult
     }
 
-    private class FakePoi : PoiRepository {
+    private class FakePoi(var error: Throwable? = null) : PoiRepository {
         override suspend fun search(
             resolution: PoiResolution, query: String, center: GeoPoint, radiusM: Int, maxResults: Int,
-        ) = listOf(PoiCandidate("k1", "$query 역삼점", GeoPoint(37.49, 127.03), 300.0))
+        ): List<PoiCandidate> {
+            error?.let { throw it }
+            return listOf(PoiCandidate("k1", "$query 역삼점", GeoPoint(37.49, 127.03), 300.0))
+        }
     }
 
     private val repo = FakeRepo()
 
-    private fun vm(location: GeoPoint? = GeoPoint(37.5, 127.0), reminderId: Long = -1L) = EditorViewModel(
-        repository = repo, poiRepository = FakePoi(),
+    private fun vm(
+        location: GeoPoint? = GeoPoint(37.5, 127.0),
+        reminderId: Long = -1L,
+        poi: FakePoi = FakePoi(),
+    ) = EditorViewModel(
+        repository = repo, poiRepository = poi,
         locationProvider = object : LocationProvider {
             override suspend fun currentOrLast() = location
         },
@@ -102,12 +110,44 @@ class EditorViewModelTest {
     }
 
     @Test
-    fun `위치를 못 얻으면 검색 실패 플래그가 선다`() = runTest {
+    fun `위치를 못 얻으면 원인이 NO_LOCATION으로 남는다`() = runTest {
         val vm = vm(location = null)
         vm.onPlaceQueryChange("CU")
         vm.searchPlace()
         dispatcher.scheduler.advanceUntilIdle()
-        assertTrue(vm.state.value.placeSearchFailed)
+        assertEquals(PlaceSearchError.NO_LOCATION, vm.state.value.placeSearchError)
+    }
+
+    @Test
+    fun `네트워크 예외는 NETWORK 원인으로 남는다`() = runTest {
+        val vm = vm(poi = FakePoi(error = java.io.IOException("timeout")))
+        vm.onPlaceQueryChange("CU")
+        vm.searchPlace()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(PlaceSearchError.NETWORK, vm.state.value.placeSearchError)
+    }
+
+    @Test
+    fun `HTTP 오류 응답은 SERVICE 원인으로 남는다`() = runTest {
+        // F0 재발 방지: 401(ip mismatched)이 "네트워크를 확인하라"로 오인되면 진단이 산으로 간다
+        val http401 = retrofit2.HttpException(
+            retrofit2.Response.error<Any>(401, "".toResponseBody(null)),
+        )
+        val vm = vm(poi = FakePoi(error = http401))
+        vm.onPlaceQueryChange("CU")
+        vm.searchPlace()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(PlaceSearchError.SERVICE, vm.state.value.placeSearchError)
+    }
+
+    @Test
+    fun `검색을 다시 시작하면 이전 오류가 지워진다`() = runTest {
+        val vm = vm(location = null)
+        vm.onPlaceQueryChange("CU")
+        vm.searchPlace()
+        dispatcher.scheduler.advanceUntilIdle()
+        vm.onPlaceQueryChange("GS")
+        assertEquals(null, vm.state.value.placeSearchError)
     }
 
     @Test

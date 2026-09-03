@@ -213,9 +213,16 @@ fun EditorScreen(
                     )
                 }
             }
-            if (state.placeSearchFailed) {
+            state.placeSearchError?.let { error ->
+                // F4: 원인별 안내 — 401(서비스)을 "네트워크 확인"으로 오인시키지 않는다
                 Text(
-                    stringResource(R.string.editor_place_search_failed),
+                    stringResource(
+                        when (error) {
+                            PlaceSearchError.NO_LOCATION -> R.string.nearby_no_location
+                            PlaceSearchError.NETWORK -> R.string.editor_place_error_network
+                            PlaceSearchError.SERVICE -> R.string.editor_place_error_service
+                        },
+                    ),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                 )

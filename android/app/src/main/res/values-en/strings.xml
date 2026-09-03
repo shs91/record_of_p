@@ -44,7 +44,8 @@
     <string name="editor_brand_example">e.g. GS25</string>
     <string name="editor_section_place">Specific place</string>
     <string name="editor_place_hint">Search for a specific place</string>
-    <string name="editor_place_search_failed">Couldn\'t search for places. Please check your location and network.</string>
+    <string name="editor_place_error_network">Check your network connection.</string>
+    <string name="editor_place_error_service">The place search service had a problem. Try again shortly.</string>
     <string name="editor_save">Save</string>
     <string name="editor_title_edit">Edit note</string>
     <string name="editor_delete">Delete</string>

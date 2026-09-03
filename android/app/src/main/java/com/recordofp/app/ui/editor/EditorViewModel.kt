@@ -1,5 +1,6 @@
 package com.recordofp.app.ui.editor
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -24,6 +25,9 @@ import kotlinx.coroutines.launch
 
 data class PickedPlace(val name: String, val kakaoId: String, val point: GeoPoint)
 
+/** 장소 검색 실패 원인 (F4) — UI가 원인별 안내 문구를 고른다 */
+enum class PlaceSearchError { NO_LOCATION, NETWORK, SERVICE }
+
 data class EditorUiState(
     val title: String = "",
     val memo: String = "",
@@ -32,7 +36,7 @@ data class EditorUiState(
     val place: PickedPlace? = null,
     val placeQuery: String = "",
     val placeResults: List<PoiCandidate> = emptyList(),
-    val placeSearchFailed: Boolean = false,
+    val placeSearchError: PlaceSearchError? = null,
     val saved: Boolean = false,
     /** null이면 새 기록, 값이 있으면 편집 중인 기존 기록의 id (§3.1 CRUD 갭) */
     val editingId: Long? = null,
@@ -103,7 +107,8 @@ class EditorViewModel @Inject constructor(
         _state.update { if (k in it.brandKeywords) it else it.copy(brandKeywords = it.brandKeywords + k) }
     }
     fun removeBrand(keyword: String) = _state.update { it.copy(brandKeywords = it.brandKeywords - keyword) }
-    fun onPlaceQueryChange(v: String) = _state.update { it.copy(placeQuery = v, placeSearchFailed = false) }
+    fun onPlaceQueryChange(v: String) =
+        _state.update { it.copy(placeQuery = v, placeSearchError = null) }
     fun pickPlace(place: PickedPlace) = _state.update { it.copy(place = place, placeResults = emptyList(), placeQuery = "") }
     fun clearPlace() = _state.update { it.copy(place = null) }
 
@@ -116,7 +121,9 @@ class EditorViewModel @Inject constructor(
         searchJob = viewModelScope.launch {
             val here = locationProvider.currentOrLast()
             if (here == null) {
-                _state.update { it.copy(placeSearchFailed = true) }
+                // F4: 원인 로깅 — F0(401을 네트워크로 오인) 같은 진단 지연 재발 방지
+                Log.w(TAG, "장소 검색 실패: 위치 미취득")
+                _state.update { it.copy(placeSearchError = PlaceSearchError.NO_LOCATION) }
                 return@launch
             }
             // runCatching은 Throwable을 전부 잡아 CancellationException까지 삼키므로 쓰지 않는다
@@ -129,11 +136,18 @@ class EditorViewModel @Inject constructor(
                     radiusM = EngineParams.PLACE_SEARCH_RADIUS_M,
                     maxResults = EngineParams.PLACE_SEARCH_MAX_RESULTS,
                 )
-                _state.update { it.copy(placeResults = results, placeSearchFailed = false) }
+                _state.update { it.copy(placeResults = results, placeSearchError = null) }
             } catch (c: CancellationException) {
                 throw c
             } catch (t: Exception) {
-                _state.update { it.copy(placeSearchFailed = true) }
+                // HTTP 오류 응답(401 쿼터/키 문제 등)은 서비스 문제 — 네트워크 안내로 오인시키지 않는다 (F4)
+                val error = when (t) {
+                    is retrofit2.HttpException -> PlaceSearchError.SERVICE
+                    is java.io.IOException -> PlaceSearchError.NETWORK
+                    else -> PlaceSearchError.SERVICE
+                }
+                Log.w(TAG, "장소 검색 실패: ${error.name}", t)
+                _state.update { it.copy(placeSearchError = error) }
             }
         }
     }
@@ -179,5 +193,6 @@ class EditorViewModel @Inject constructor(
 
     companion object {
         const val ARG_REMINDER_ID = "reminderId"
+        private const val TAG = "RecordOfP"
     }
 }

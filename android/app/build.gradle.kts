@@ -51,6 +51,11 @@ android {
         compose = true
         buildConfig = true
     }
+
+    testOptions {
+        // android.util.Log 등 프레임워크 호출을 JVM 테스트에서 no-op으로 (F4의 Log.w 등)
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 kotlin {

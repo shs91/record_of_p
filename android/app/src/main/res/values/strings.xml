@@ -44,7 +44,8 @@
     <string name="editor_brand_example">예: GS25</string>
     <string name="editor_section_place">특정 장소</string>
     <string name="editor_place_hint">특정 장소 검색</string>
-    <string name="editor_place_search_failed">장소를 검색하지 못했어요. 위치와 네트워크를 확인해주세요.</string>
+    <string name="editor_place_error_network">네트워크 연결을 확인해주세요.</string>
+    <string name="editor_place_error_service">장소 검색 서비스에 문제가 있어요. 잠시 후 다시 시도해주세요.</string>
     <string name="editor_save">저장</string>
     <string name="editor_title_edit">기록 수정</string>
     <string name="editor_delete">삭제</string>
