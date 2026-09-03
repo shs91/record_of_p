@@ -70,10 +70,13 @@ private fun MainGraph(deepLinkReminderId: Long? = null) {
             route = Routes.EDITOR,
             arguments = listOf(navArgument("reminderId") { type = NavType.LongType; defaultValue = -1L }),
         ) { EditorScreen(onDone = { navController.popBackStack() }) }
-        composable(Routes.NEARBY) { NearbyScreen() }
+        composable(Routes.NEARBY) { NearbyScreen(onBack = { navController.popBackStack() }) }
         composable(Routes.SETTINGS) {
-            SettingsScreen(onDiagnosticsClick = { navController.navigate(Routes.DIAGNOSTICS) })
+            SettingsScreen(
+                onDiagnosticsClick = { navController.navigate(Routes.DIAGNOSTICS) },
+                onBack = { navController.popBackStack() },
+            )
         }
-        composable(Routes.DIAGNOSTICS) { DiagnosticsScreen() }
+        composable(Routes.DIAGNOSTICS) { DiagnosticsScreen(onBack = { navController.popBackStack() }) }
     }
 }
