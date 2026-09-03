@@ -53,6 +53,7 @@
     <string name="editor_delete_confirm">이 기록을 삭제할까요?</string>
     <string name="home_empty">아직 기록이 없어요.\n생각난 순간, 여기에 적어두세요.</string>
     <string name="home_completed">완료했어요</string>
+    <string name="home_fab">기록</string>
 
     <string name="onboard_1_title">지나칠 때, 다시 떠오르게</string>
     <string name="onboard_1_body">\"편의점 가면 건전지 사야지\" — 기록해두면 근처를 지날 때 알려드려요.</string>
