@@ -2,6 +2,7 @@ package com.recordofp.app.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.recordofp.app.data.engine.ProtectionReseedTrigger
 import com.recordofp.app.data.repo.NotificationPolicySettings
 import com.recordofp.app.data.repo.SettingsStore
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,7 +15,11 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val store: SettingsStore,
+    private val protectionTrigger: ProtectionReseedTrigger,
 ) : ViewModel() {
+
+    /** 시스템 설정에서 돌아온 재개 시점 보고 — 미보호→보호 전이면 기회적 재배치 (F1) */
+    fun reportProtection(fullyProtected: Boolean) = protectionTrigger.onSnapshot(fullyProtected)
 
     val policy: StateFlow<NotificationPolicySettings> = store.policy
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NotificationPolicySettings())

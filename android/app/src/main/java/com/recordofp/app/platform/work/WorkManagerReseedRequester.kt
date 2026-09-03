@@ -15,4 +15,7 @@ class WorkManagerReseedRequester @Inject constructor(
 ) : ReseedRequester {
     override fun requestItemChange() =
         ReseedWorker.runNow(context, ReseedCause.ITEM_CHANGE, delayMs = EngineParams.ITEM_CHANGE_COALESCE_MS)
+
+    override fun requestOpportunistic() =
+        ReseedWorker.runNow(context, ReseedCause.APP_OPEN) // 기회적 큐(KEEP) — 거버너가 디바운스 판정 (F1)
 }

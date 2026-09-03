@@ -15,8 +15,14 @@ import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-/** 항목 변경 → 재배치 예약 포트. platform의 WorkManagerReseedRequester가 구현 (§6.2 ITEM_CHANGE) */
-interface ReseedRequester { fun requestItemChange() }
+/** 재배치 예약 포트. platform의 WorkManagerReseedRequester가 구현 (§6.2) */
+interface ReseedRequester {
+    /** 항목 변경 — 강한 큐, 30초 코얼레싱 (§6.2 ITEM_CHANGE) */
+    fun requestItemChange()
+
+    /** 기회적 재배치 — 권한 복구 등 (F1). 대기 중인 강한 작업을 대체하지 않는다 (APP_OPEN 큐) */
+    fun requestOpportunistic()
+}
 
 interface ReminderRepository {
     fun observeActive(): Flow<List<Reminder>>

@@ -46,6 +46,7 @@ private class FakeSpecDao : TriggerSpecDao {
 private class RecordingRequester : ReseedRequester {
     var count = 0
     override fun requestItemChange() { count++ }
+    override fun requestOpportunistic() {} // 이 테스트의 관심사 아님 (F1은 ProtectionReseedTriggerTest)
 }
 
 class RoomReminderRepositoryTest {

@@ -1,7 +1,9 @@
 package com.recordofp.app.ui.home
 
 import app.cash.turbine.test
+import com.recordofp.app.data.engine.ProtectionReseedTrigger
 import com.recordofp.app.data.repo.ReminderRepository
+import com.recordofp.app.data.repo.ReseedRequester
 import com.recordofp.app.domain.model.Reminder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -36,10 +38,18 @@ class HomeViewModelTest {
     @Before fun setUp() = Dispatchers.setMain(dispatcher)
     @After fun tearDown() = Dispatchers.resetMain()
 
+    /** 전이 로직 자체는 ProtectionReseedTriggerTest가 검증 — 여기선 no-op 의존성만 채운다 */
+    private fun noopTrigger() = ProtectionReseedTrigger(
+        object : ReseedRequester {
+            override fun requestItemChange() {}
+            override fun requestOpportunistic() {}
+        },
+    )
+
     @Test
     fun `목록을 구독하고 완료를 저장소에 위임한다`() = runTest {
         val repo = FakeRepo()
-        val vm = HomeViewModel(repo)
+        val vm = HomeViewModel(repo, noopTrigger())
         vm.items.test {
             assertEquals(0, awaitItem().size)
             repo.flow.value = listOf(Reminder(id = 1, title = "휴지", createdAt = 0, updatedAt = 0))

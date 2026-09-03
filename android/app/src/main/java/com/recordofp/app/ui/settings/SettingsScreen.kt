@@ -79,6 +79,7 @@ fun SettingsScreen(
     var snapshot by remember { mutableStateOf(readPermissionSnapshot(context)) }
     LifecycleResumeEffect(Unit) { // 시스템 설정에서 돌아오면 갱신
         snapshot = readPermissionSnapshot(context)
+        viewModel.reportProtection(snapshot.fullyProtected) // 보호 복구 전이 → 재배치 (F1)
         onPauseOrDispose { }
     }
 
