@@ -32,7 +32,7 @@ class NearbyNotifier @Inject constructor(
             if (group.reminders.size == 1) putExtra("reminder_id", first.id)
         }
         val builder = NotificationCompat.Builder(context, Notifier.CHANNEL_NEARBY)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_stat_pin)
             .setContentTitle(title)
             .setContentText(text)
             .setAutoCancel(true)
