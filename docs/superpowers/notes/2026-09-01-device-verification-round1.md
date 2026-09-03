@@ -22,14 +22,15 @@
 ## 발견 사항 (수정 대기)
 
 - **F0 (환경, 해결됨)**: 카카오 REST 키 "호출 허용 IP 주소" 활성화로 401 `ip mismatched`. 콘솔 [앱]>[플랫폼 키]>REST API 키>허용 IP 전부 삭제로 해제. **잔여 리스크**: APK 내장 REST 키는 추출 가능 → 쿼터 도용. v2에서 프록시 서버 검토(스펙 §13에 반영할 것).
-- **F1 (Important)**: 설정에서 '항상 허용' 부여 후 **복귀만으로는 재배치가 트리거되지 않음**(APP_OPEN은 onCreate에서만). 실증: 부여(16:56~57)~콜드스타트(16:58:29) 사이 엔진 기록 없음. 수정안: 홈/설정 LifecycleResumeEffect에서 권한 스냅샷이 fullyProtected로 전이하면 재배치 요청(data의 ReseedRequester에 requestOpportunistic 추가).
+- **F1 (Important)**: 설정에서 '항상 허용' 부여 후 **복귀만으로는 재배치가 트리거되지 않음**(APP_OPEN은 onCreate에서만). 실증: 부여(16:56~57)~콜드스타트(16:58:29) 사이 엔진 기록 없음. 수정안: 홈/설정 LifecycleResumeEffect에서 권한 스냅샷이 fullyProtected로 전이하면 재배치 요청(data의 ReseedRequester에 requestOpportunistic 추가). **→ 2026-09-03 해결(18847ae)**: ProtectionReseedTrigger 싱글턴이 홈·설정 재개 시 보고받아 미보호→보호 전이에서만 기회적 재배치. TDD 전이 4케이스.
 - **F2 (Minor)**: 권한 없음 시 시도마다 NO_PERMISSION + STOOD_DOWN("no registrations") 2행 → 진단 노이즈. standDown은 걷어낼 등록이 있을 때만 로그.
 - **F3 (Important/UX)**: Scaffold 없는 화면(설정·에디터, 온보딩 확인 필요)의 ①상단 상태바 겹침 ②다크 모드에서 창 배경(라이트) 노출 — 절전 안내문 비가시(밝은 배경+밝은 글자). 수정: 해당 화면에 Scaffold+TopAppBar(뒤로) 도입 + XML 테마 DayNight 정합. **→ 2026-09-03 디자인 개편안에 포함됨.**
-- **F4 (Important/진단성)**: 장소 검색 실패 시 원인 미로깅, 메시지가 항상 "위치와 네트워크 확인"(401도 네트워크로 오인 — F0 진단이 이것 때문에 지연). 수정: 원인 분기(위치 없음/네트워크/API 오류) + Log.w + 메시지 분리.
-- **F5 (Minor)**: BOOT(강한 큐)와 APP_OPEN(기회적 큐)이 동시 실행 → 카카오 호출·GMS 등록 2배(Geofencer "registration not active" 경고 66건, 무해). 수정: ReseedService.reseed를 Mutex 직렬화 + 거버너 판정을 락 안에서.
+- **F4 (Important/진단성)**: 장소 검색 실패 시 원인 미로깅, 메시지가 항상 "위치와 네트워크 확인"(401도 네트워크로 오인 — F0 진단이 이것 때문에 지연). 수정: 원인 분기(위치 없음/네트워크/API 오류) + Log.w + 메시지 분리. **→ 2026-09-03 해결(5992dc9)**: PlaceSearchError(NO_LOCATION/NETWORK/SERVICE) 분기 + Log.w(RecordOfP) + 문구 분리(ko/en). 실기기: 네트워크 차단 후 검색 → "네트워크 연결을 확인해주세요" 확인.
+- **F5 (Minor)**: BOOT(강한 큐)와 APP_OPEN(기회적 큐)이 동시 실행 → 카카오 호출·GMS 등록 2배(Geofencer "registration not active" 경고 66건, 무해). 수정: ReseedService.reseed를 Mutex 직렬화 + 거버너 판정을 락 안에서. **→ 2026-09-03 해결(4ad6b51)**: reseed·standDown 공용 Mutex, 뒤에 든 쪽이 갱신된 스탬프로 디바운스. 실기기: force-stop→재실행 시 BOOT APPLIED 1건만(15:23:09, 이중 실행 소멸). TDD 동시성 2케이스.
 
 ## 남은 검증 (후순위 확정, 2026-09-03)
 
+- **4·5 부분 실증(2026-09-03)**: notification_log에 09-03 14:57:09 rem=1, poi=CU 덕은아이에스점·이마트24 덕은지엘점 2행 — 백그라운드 FENCE_EVENT→DWELL→알림 표시 경로가 자연 발화로 실증됨(09-02 04:42 BLOCK_QUIET_HOURS 차단 기록도 게이트 동작 증거). 도보 프로토콜에서 남은 것: 알림 거리 표기 육안, [완료]/[오늘 그만] 액션, 소규모 diff 재배치.
 - **4·5·6. 알림·액션·백그라운드 전달** — 도보 프로토콜 (기기 위치 37.58071,126.85892 고양 덕은 기준):
   1. 앱은 홈 버튼으로 백그라운드(강제 종료 금지), 화면 꺼도 됨
   2. GS25 덕은지엘메트로점(서쪽 ~155m) 앞 1~3분 → 알림(거리 표기 확인) → **[완료]** → 홈에서 사라짐
