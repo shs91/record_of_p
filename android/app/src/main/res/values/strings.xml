@@ -6,7 +6,6 @@
     <string name="title_editor">새 기록</string>
     <string name="title_nearby">주변 보기</string>
     <string name="title_settings">설정</string>
-    <string name="action_add">기록 추가</string>
 
     <string name="channel_nearby_name">근처 알림</string>
     <string name="channel_nearby_desc">기록해둔 일을 처리할 수 있는 장소 근처에서 알려줍니다</string>
@@ -22,11 +21,8 @@
     <string name="action_remove">삭제</string>
     <string name="action_refresh">새로고침</string>
 
-    <string name="stub_screen_todo">구현 예정 화면입니다</string>
-
     <string name="nearby_empty">주변에 처리할 일이 없어요.</string>
     <string name="nearby_no_location">현재 위치를 확인할 수 없어요. 위치 권한과 GPS를 확인해주세요.</string>
-    <string name="nearby_distance_fmt">약 %1$dm</string>
     <string name="nearby_open_map">카카오맵에서 보기</string>
 
     <string name="cat_convenience">편의점</string>
@@ -49,7 +45,6 @@
     <string name="editor_section_place">특정 장소</string>
     <string name="editor_place_hint">특정 장소 검색</string>
     <string name="editor_place_search_failed">장소를 검색하지 못했어요. 위치와 네트워크를 확인해주세요.</string>
-    <string name="editor_place_distance">약 %1$dm</string>
     <string name="editor_save">저장</string>
     <string name="editor_title_edit">기록 수정</string>
     <string name="editor_delete">삭제</string>

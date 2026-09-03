@@ -6,7 +6,6 @@
     <string name="title_editor">New note</string>
     <string name="title_nearby">Nearby</string>
     <string name="title_settings">Settings</string>
-    <string name="action_add">Add note</string>
 
     <string name="channel_nearby_name">Nearby alerts</string>
     <string name="channel_nearby_desc">Reminds you near places where you can get things done</string>
@@ -22,11 +21,8 @@
     <string name="action_remove">Remove</string>
     <string name="action_refresh">Refresh</string>
 
-    <string name="stub_screen_todo">Screen to be implemented</string>
-
     <string name="nearby_empty">Nothing to do nearby.</string>
     <string name="nearby_no_location">Can\'t get your current location. Check location permission and GPS.</string>
-    <string name="nearby_distance_fmt">~%1$dm</string>
     <string name="nearby_open_map">Open in KakaoMap</string>
 
     <string name="cat_convenience">Convenience store</string>
@@ -49,7 +45,6 @@
     <string name="editor_section_place">Specific place</string>
     <string name="editor_place_hint">Search for a specific place</string>
     <string name="editor_place_search_failed">Couldn\'t search for places. Please check your location and network.</string>
-    <string name="editor_place_distance">About %1$dm away</string>
     <string name="editor_save">Save</string>
     <string name="editor_title_edit">Edit note</string>
     <string name="editor_delete">Delete</string>
