@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 다크 모드 창 테마 — 라이트 창 배경이 새어 나오던 F3 버그의 근본 수정 -->
+    <style name="Theme.RecordOfP" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
+</resources>

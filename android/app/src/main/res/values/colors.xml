@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#1E6FE0</color>
+    <color name="ic_launcher_background">#1B6EF3</color>
+    <!-- 콜드스타트 창 배경 = 종이색 (다크는 values-night) -->
+    <color name="window_background">#F7F8FA</color>
 </resources>

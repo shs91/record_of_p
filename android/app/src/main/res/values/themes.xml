@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Compose 진입 전 시스템 창 테마. 실제 테마는 ui/theme/Theme.kt -->
-    <style name="Theme.RecordOfP" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Compose 진입 전 시스템 창 테마. 실제 테마는 ui/theme/Theme.kt.
+         windowBackground를 브랜드 종이색으로 두어 콜드스타트 프레임부터 정합시킨다.
+         다크는 values-night에서 오버라이드 (F3 다크 창 배경 버그 근절). -->
+    <style name="Theme.RecordOfP" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
 </resources>
