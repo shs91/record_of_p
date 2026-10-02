@@ -11,6 +11,7 @@ P의기록(Record of P) — 카테고리/브랜드("아무 편의점이나") 단
 - **실기기 검증 기록**: `docs/superpowers/notes/2026-09-01-device-verification-round1.md` — 통과 항목, 발견 사항(F0~F5)과 해결 커밋, 남은 검증 목록.
 - **디자인 개편안(클린 미니멀)**: `docs/superpowers/specs/2026-09-03-design-refresh-clean-minimal.md` — 현재 UI의 기준.
 - **계획 검토 결과**: `docs/superpowers/reviews/2026-09-29-v1-plan-review.md` — 원래 계획의 결함 목록이다. 검토가 구현보다 늦게 나와서 **현재 `feat/v1` 코드에는 반영되지 않았다**. 이 검토를 반영한 별도 구현이 `archive/v1-local` 브랜치에 있다(푸시하지 않음, 참고 구현). 현재 코드에 없는 수정은 이식 계획으로 옮긴다. C4~C7은 출시 전 체크리스트로 보류했다.
+- **보강 이식 계획(15 태스크, TDD)**: `docs/superpowers/plans/2026-10-03-v1-hardening-port.md` — 검토와 `archive/v1-local`의 수정 중 원격에 없는 것을 옮긴다(엔진 신뢰성 → 프라이버시·권한 → 알림 정확도 → UI). 코드 주석의 `최종 리뷰 C1`·`I2` 같은 번호는 로컬 최종 리뷰 번호다.
 
 ## 명령 (macOS — 항상 `android/`에서 실행)
 
