@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew testDebugUnitTest*)",
+      "Bash(./gradlew :app:testDebugUnitTest*)",
+      "Bash(./gradlew lintDebug*)",
+      "Bash(./gradlew assembleDebug*)",
+      "Bash(./gradlew installDebug*)",
+      "Bash(./gradlew :app:dependencies*)",
+      "Bash(./gradlew --version)",
+      "Bash(adb devices*)",
+      "Bash(adb logcat*)",
+      "Bash(adb emu geo fix *)",
+      "Bash(adb shell dumpsys *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git branch*)"
+    ],
+    "deny": [
+      "Read(**/local.properties)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-domain-purity.sh",
+            "timeout": 10,
+            "statusMessage": "domain 순수성 검사"
+          }
+        ]
+      }
+    ]
+  }
+}
