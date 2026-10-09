@@ -94,6 +94,7 @@ cd android
 - 라이브러리는 계획에 명시된 것(coroutines-test, mockwebserver, turbine)만 추가한다.
 - 위치 데이터를 기기 밖으로 보내는 코드는 금지한다. 외부 통신은 `KakaoLocalApi` 하나뿐이고 분석·광고 SDK는 넣지 않는다(§9).
 - 배터리 최적화 예외는 자동으로 요청하지 않는다(Play 정책). 설정 화면으로 안내만 한다.
+- 새 저장 위치(SharedPreferences, `files/` 아래 파일 등)를 만들면 `res/xml/data_extraction_rules.xml`의 cloud-backup·device-transfer 제외에 더한다. 빠뜨리면 기기 간 이전으로 기기 밖에 복사된다(설계 §9).
 - 스켈레톤의 `TODO(v1): §…` 마커는 해당 기능을 구현할 때 제거한다.
 - 커밋 메시지는 `feat:`/`fix:`/`test:`/`refactor:`/`docs:`/`build:`/`chore:` 접두어 + 한글 요약, 본문에 스펙 §번호를 적는다. 계획 태스크 하나가 끝날 때마다 커밋한다.
 - 취소 예외 관례: `catch (e: Exception)` 앞에서 `CancellationException`을 다시 던진다(`catch (c: CancellationException) { throw c }`). 취소를 실패(FAILED)로 기록하지 않기 위해서다.

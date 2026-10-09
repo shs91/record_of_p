@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| 상태 | 진행 중 — 묶음 A 완료(PR #3 병합), 묶음 B(T5~T6) 실행 중(`feat/hardening-privacy`, 2026-10-09), 묶음 C·D 남음 |
+| 상태 | 진행 중 — 묶음 A 완료(PR #3 병합), 묶음 B(T5~T6) 구현·리뷰 완료(`feat/hardening-privacy`, 2026-10-09), 묶음 C·D 남음 |
 | 최종 수정 | 2026-10-09 |
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -1766,6 +1766,13 @@ git add docs/superpowers/specs/2026-08-31-record-of-p-design.md
 git commit -m "docs: 설계 문서 1.2 — 묶음 B 프라이버시·권한 반영" -m "FINE+COARSE 요청, 보호 상태 항목(채널·기기 위치), 채널 꺼짐 시 미발행, 백업 제외. (§4.2, §4.3, §6.5, §9)"
 ```
 
+### 묶음 B 인계 (2026-10-09 최종 리뷰)
+
+묶음 B(`feat/hardening-privacy`) 최종 리뷰에서 나왔지만 이 묶음에서 고치지 않은 것이다.
+
+- **Task 13**: 빠른 설정(알림창)에서 기기 위치를 켜면 액티비티가 멈추지 않아 `LifecycleResumeEffect`가 돌지 않는다. 그래서 배너·대시보드와 보호 복구 재배치(F1)가 다음 화면 이동까지 늦어진다. 재개된 동안 `LocationManager.MODE_CHANGED_ACTION`도 받아 스냅샷을 다시 읽는다(Home·Settings).
+- **Task 9**: `show()`가 false일 때(앱 알림·근처 알림 채널 꺼짐) `BLOCK_NOTIFICATIONS_OFF`를 진단에 남기는 일은 Task 9 몫이다. 기기 확인 5번의 진단 절반은 Task 9 이후에 확인할 수 있다.
+
 ---
 
 ## 묶음 C — 알림 정확도
@@ -3033,6 +3040,8 @@ git commit -m "fix: 에디터 저장 가드 - 입력 중 브랜드 보존·연�
 ---
 
 ### Task 13: 홈 보호 배너 — 꺼진 것을 이름으로 알리고 고칠 곳으로
+
+> 묶음 B 인계: 빠른 설정으로 기기 위치를 켜는 경우도 스냅샷을 다시 읽는다 — "묶음 B 인계" 절 참고.
 
 원격 배너는 "알림이 꺼질 수 있는 상태예요 / 설정에서 확인" 한 줄이고, 누르면 앱 안 설정으로 간다. 무엇이 꺼졌는지, '항상 허용'이 왜 필요한지, 어떻게 켜는지 알려 주지 않는다(§4.2 4단계 업셀, §4.3 "왜 알림이 안 오지?"). 이 태스크는 꺼진 것 하나를 우선순위대로 골라 이름으로 알린다(알림 → 정확한 위치 → 항상 허용 → 기기 위치). 버튼은 그것을 고칠 시스템 화면을 바로 연다. '항상 허용'에는 단계 안내를 덧붙인다. 원격의 앰버 톤과 F1 보고(`reportProtection`)는 그대로 둔다.
 
