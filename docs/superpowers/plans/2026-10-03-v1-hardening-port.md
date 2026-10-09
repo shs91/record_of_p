@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| 상태 | 진행 중 — 묶음 A 실행(2026-10-09 사용자 승인, F2를 T2에 추가) |
+| 상태 | 진행 중 — 묶음 A(T1~T4) 구현·리뷰 완료(`feat/hardening-engine`, 2026-10-09), 묶음 B~D 남음 |
 | 최종 수정 | 2026-10-09 |
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
