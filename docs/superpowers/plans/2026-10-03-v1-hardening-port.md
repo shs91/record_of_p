@@ -1349,6 +1349,15 @@ git add docs/superpowers/specs/2026-08-31-record-of-p-design.md
 git commit -m "docs: 설계 문서 1.1 — 묶음 A 엔진 보강 반영" -m "FENCE_LOST, 디바운스 예외, 펜스 소실 표시·전체 재등록, 센티널 즉시 이탈, 미러 복구, 권한 회수 정리. (§6.2, §6.3, §6.4)"
 ```
 
+### 묶음 A 인계 (2026-10-09 최종 리뷰)
+
+묶음 A(`feat/hardening-engine`) 최종 리뷰에서 나왔지만 이 묶음에서 고치지 않은 것이다. 해당 태스크를 실행할 때 반영한다.
+
+- **Task 10**: 센티널 이탈은 미러에 `sentinel` 행이 있는지와 상관없이 펜스 키로 판정한다. 첫 재배치 직후 `INITIAL_TRIGGER_EXIT` 이탈이 미러 커밋보다 먼저 도착하면, 지금은 stale로 버려져 센티널이 소모된다. 잘못된 센티널 이탈의 대가는 디바운스되는 재배치 1회뿐이다.
+- **Task 9 또는 10**: `DiagnosticsScreen`의 `NO_PERMISSION` 색 분기를 정리한다. 워커는 더 이상 이 행을 쓰지 않는다(F2). 다만 진단 로그 보존 기간 안의 옛 행이 남아 있을 수 있다.
+- **후속(태스크 미정)**: `ReseedService`의 NonCancellable 안 GMS 호출에 타임아웃(`EngineParams` 상수)을 둔다. GMS Task가 멈추면 mutex를 프로세스가 죽을 때까지 잡는다. `TimeoutCancellationException`을 실패로 처리하도록 세 곳(reseed·restoreFromMirror·standDown)의 catch 순서를 바꿔야 하므로 별도 TDD로 한다.
+- **다음 설계 문서 개정**: §5.3의 `geofenceId(PK, uuid)`는 실제로는 안정 키(`sentinel`·`poi:<id>`·`place:<id>`)다. §6.2 RETRY의 "15분→1h→6h"는 WorkManager 지수 백오프(15분 시작, 상한 5시간)와 다르다.
+
 ---
 
 ## 묶음 B — 프라이버시·권한
@@ -2223,6 +2232,8 @@ git commit -m "feat: 알림 발화·stale·표시 실패를 진단 로그에 기
 ---
 
 ### Task 10: 리시버 무중단 — 센티널 우선·묶음별 격리·오류 기록
+
+> 묶음 A 인계: 센티널 이탈은 미러 유무와 상관없이 키로 판정한다 — "묶음 A 인계" 절 참고.
 
 원격 리시버는 프로세스가 죽지 않게 예외를 잡고는 있다. 하지만 센티널 재배치를 알림 루프 **뒤에** 예약하고, 묶음별 예외 격리가 없다. 그래서 알림 하나가 예외를 내면(예: 방금 알림 권한 회수) 나머지 알림과 SENTINEL_EXIT가 함께 사라져 이동 감지 사슬이 끊긴다. 오류도 시스템 로그로만 남아 진단 화면에 보이지 않는다. 이 태스크는 처리 순서를 순수 함수(`runFenceEvent`)로 빼서 JVM에서 테스트한다. 센티널을 먼저 예약하고, 묶음마다 따로 처리하고, 오류는 EngineRunLog에 남긴다. 센티널 예약 자체가 실패해도 알림은 계속 발행한다(로컬 N2).
 
@@ -3602,7 +3613,7 @@ git commit -m "fix: 뒤로 버튼 설명·키보드 가림·뒤로 연타 가드
 각 묶음 PR 본문에는 아래 목록 중 그 묶음과 관련된 항목 번호를 적는다. 네 묶음이 모두 병합되면 사용자가 실기기에서 한꺼번에 확인한다. `tools/device/e2e.sh`(macOS는 `ADB=~/Library/Android/sdk/platform-tools/adb`)와 진단 화면(설정 → 문제 해결)을 쓴다. 확인한 결과는 `docs/superpowers/notes/`에 2차 검증 노트로 남긴다.
 
 1. **재부팅**: `adb reboot` → 잠금 해제 → 진단에 `BOOT → APPLIED`가 남고 note가 `full-resync`인지 확인한다.
-2. **위치 껐다 켜기**: 기기 위치를 끄면 진단에 `FENCE_LOST`가 생기고, 홈 배너는 "기기 위치가 꺼져 있어요"가 된다. 다시 켜면 `FENCE_LOST → APPLIED`(full-resync)가 남는다.
+2. **위치 껐다 켜기**: 기기 위치를 끄면 진단에 `FENCE_LOST`가 생기고, 홈 배너는 "기기 위치가 꺼져 있어요"가 된다. 위치를 켜는 것만으로는 재배치가 바로 돌지 않는다. 다시 켠 뒤 앱을 열면 `APP_OPEN → APPLIED`(full-resync)가, 열지 않으면 백오프 재시도(15분·30분·1시간…) 때 `FENCE_LOST → APPLIED`(full-resync)가 남는다.
 3. **부팅 직후 오프라인**: 비행기 모드로 재부팅 → `BOOT → FAILED`, note가 `restored-from-mirror`로 시작하는지 확인한다. 네트워크를 켜면 재시도 후 APPLIED가 된다.
 4. **'항상 허용' 해제와 재허용**: 해제하면 진단에 `STOOD_DOWN · ACCESS_BACKGROUND_LOCATION`이 남고, 홈 배너가 단계 안내를 담은 업셀 카드가 된다. [설정 열기]로 다시 허용하고 돌아오면 곧바로 `APP_OPEN → APPLIED`가 남는다.
 5. **근처 알림 채널만 끄기**: 알림을 길게 눌러 채널을 끄면 대시보드의 알림 행이 꺼짐이 된다. 이벤트가 오면 `BLOCK_NOTIFICATIONS_OFF`가 남고, 하루 상한은 줄지 않는다.
@@ -3614,3 +3625,5 @@ git commit -m "fix: 뒤로 버튼 설명·키보드 가림·뒤로 연타 가드
 11. **다크 모드 + 키보드**: 에디터에서 장소 검색란을 누르면 키보드가 입력란과 결과를 가리지 않는다.
 12. **뒤로 연타**: 설정·주변 보기·에디터에서 뒤로를 빠르게 여러 번 눌러도 홈에서 멈춘다.
 13. **백업 차단**: `adb shell dumpsys package com.recordofp.app | grep -i backup`에서 `ALLOW_BACKUP` 플래그가 없는지 확인한다.
+14. **권한 없이 재부팅**: 위치 권한을 끈 채 `adb reboot` → 진단에 `BOOT → STOOD_DOWN`이 한 줄 남고 `FAILED`가 반복되지 않는다(권한 없이 PendingIntent 단위 해제가 되는지 확인).
+15. **센티널 즉시 이탈**(에뮬레이터): 재배치 직후 `adb emu geo fix`로 2km 이상 떨어진 곳으로 옮긴다 → `SENTINEL_EXIT → SKIPPED_DEBOUNCE` → 10분 뒤 `SENTINEL_EXIT → APPLIED`가 남는다.
