@@ -2,6 +2,7 @@ package com.recordofp.app.data.engine
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -33,5 +34,13 @@ class EngineStateStore @Inject constructor(
             it[latKey] = stamp.point.lat
             it[lngKey] = stamp.point.lng
         }
+    }
+
+    private val fencesLostKey = booleanPreferencesKey("fences_lost")
+
+    override suspend fun fencesLost(): Boolean = dataStore.data.first()[fencesLostKey] ?: false
+
+    override suspend fun setFencesLost(lost: Boolean) {
+        dataStore.edit { it[fencesLostKey] = lost }
     }
 }

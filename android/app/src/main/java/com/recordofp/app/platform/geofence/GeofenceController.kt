@@ -25,13 +25,23 @@ class GeofenceController @Inject constructor(
 ) : FenceApplier {
     private val client: GeofencingClient = LocationServices.getGeofencingClient(context)
 
-    @SuppressLint("MissingPermission") // 호출부(Worker)가 권한 확인 후 진입 (§4.3)
     override suspend fun apply(diff: FenceDiff) {
         if (diff.removeIds.isNotEmpty()) client.removeGeofences(diff.removeIds).await()
-        if (diff.add.isEmpty()) return
+        add(diff.add)
+    }
+
+    override suspend fun replaceAll(fences: List<PlannedFence>) {
+        // 이 PendingIntent로 등록된 펜스 전부 — 미러에 없는 고아 펜스까지 지운다 (검토 B1)
+        client.removeGeofences(geofencePendingIntent()).await()
+        add(fences)
+    }
+
+    @SuppressLint("MissingPermission") // 호출부(Worker)가 권한 확인 후 진입 (§4.3)
+    private suspend fun add(fences: List<PlannedFence>) {
+        if (fences.isEmpty()) return
         val request = GeofencingRequest.Builder()
             .setInitialTrigger(0) // 재배치 순간 이미 영역 안이어도 즉발 금지 — 자연 전이만 (§6.5 스팸 방지)
-            .addGeofences(diff.add.map { it.toGeofence() })
+            .addGeofences(fences.map { it.toGeofence() })
             .build()
         client.addGeofences(request, geofencePendingIntent()).await()
     }

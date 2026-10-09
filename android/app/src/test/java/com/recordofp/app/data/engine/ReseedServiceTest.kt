@@ -9,10 +9,12 @@ import com.recordofp.app.data.poi.PoiRepository
 import com.recordofp.app.data.repo.ReminderRepository
 import com.recordofp.app.domain.engine.DiffCalculator
 import com.recordofp.app.domain.engine.FenceDiff
+import com.recordofp.app.domain.engine.PlannedFence
 import com.recordofp.app.domain.engine.PoiCandidate
 import com.recordofp.app.domain.engine.ReseedCause
 import com.recordofp.app.domain.engine.ReseedGovernor
 import com.recordofp.app.domain.engine.ReseedPlanner
+import com.recordofp.app.domain.engine.ReseedStamp
 import com.recordofp.app.domain.engine.TriggerResolver
 import com.recordofp.app.domain.model.GeoPoint
 import com.recordofp.app.domain.model.PoiResolution
@@ -27,6 +29,8 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -58,6 +62,8 @@ private class FakePoi(
 private class FakeRegDao : GeofenceRegDao {
     val regs = mutableMapOf<String, GeofenceRegEntity>()
     val links = mutableListOf<RegTriggerEntity>()
+    /** true면 미러 기록이 실패한다 (디스크 오류 재현) */
+    var failApplyReseed = false
     override suspend fun all() = regs.values.toList()
     override suspend fun byId(geofenceId: String) = regs[geofenceId]
     override suspend fun triggerIdsFor(geofenceId: String) =
@@ -73,6 +79,7 @@ private class FakeRegDao : GeofenceRegDao {
         removeIds: List<String>, addRegs: List<GeofenceRegEntity>,
         linkFenceIds: List<String>, links: List<RegTriggerEntity>,
     ) { // Room @Transaction 기본 구현과 동일 순서
+        if (failApplyReseed) throw IllegalStateException("disk I/O")
         deleteRegTriggers(removeIds + linkFenceIds); deleteRegs(removeIds)
         insertRegs(addRegs); insertRegTriggers(links)
     }
@@ -87,7 +94,21 @@ private class FakeRunLog : EngineRunLogDao {
 
 private class FakeApplier : FenceApplier {
     val applied = mutableListOf<FenceDiff>()
-    override suspend fun apply(diff: FenceDiff) { applied += diff }
+    val replaced = mutableListOf<List<PlannedFence>>()
+    /** true면 OS 호출이 실패한다 */
+    var fail = false
+    /** 0보다 크면 OS 호출이 이만큼 suspend — 실행 중 취소 재현용 */
+    var delayMs = 0L
+    override suspend fun apply(diff: FenceDiff) {
+        if (delayMs > 0) kotlinx.coroutines.delay(delayMs)
+        if (fail) throw IllegalStateException("GEOFENCE_NOT_AVAILABLE")
+        applied += diff
+    }
+    override suspend fun replaceAll(fences: List<PlannedFence>) {
+        if (delayMs > 0) kotlinx.coroutines.delay(delayMs)
+        if (fail) throw IllegalStateException("GEOFENCE_NOT_AVAILABLE")
+        replaced += fences
+    }
 }
 
 class ReseedServiceTest {
@@ -132,7 +153,7 @@ class ReseedServiceTest {
         // 링크: POI 펜스 2개는 트리거 10에, PLACE 펜스는 트리거 20에
         assertEquals(setOf(10L), regDao.links.filter { it.geofenceId == "poi:1" }.map { it.triggerId }.toSet())
         assertEquals(setOf(20L), regDao.links.filter { it.geofenceId == "place:20" }.map { it.triggerId }.toSet())
-        assertEquals(1, applier.applied.size)
+        assertEquals(1, applier.replaced.size)
         assertEquals(1_000_000_000_000, state.stamp?.atMs)
     }
 
@@ -184,14 +205,14 @@ class ReseedServiceTest {
             regDao = regDao, applier = applier, stateStore = state,
         )
         service.reseed(ReseedCause.BOOT, here) // 1회차 — 미러를 계획과 비트일치하게 채운다
-        applier.applied.clear() // 재부팅 재현: OS 쪽 흔적만 지운다 (미러는 재부팅에도 살아남는다)
+        applier.replaced.clear() // 재부팅 재현: OS 쪽 흔적만 지운다 (미러는 재부팅에도 살아남는다)
 
         val result = service.reseed(ReseedCause.BOOT, here)
 
         assertEquals(ReseedResult.APPLIED, result)
         // 미러·diff가 완전히 일치해도(=diff.add가 비어도) OS 펜스는 죽어 있으니 전량 재등록해야 한다
         // 센티널 1 + PLACE 1 + POI 2 = 4
-        assertEquals(4, applier.applied.single().add.size)
+        assertEquals(4, applier.replaced.single().size)
     }
 
     @Test
@@ -229,7 +250,7 @@ class ReseedServiceTest {
 
         assertEquals(ReseedResult.APPLIED, first)
         assertEquals(ReseedResult.SKIPPED_DEBOUNCE, second)
-        assertEquals(1, applier.applied.size) // 이중 적용 금지
+        assertEquals(1, applier.replaced.size + applier.applied.size) // 이중 적용 금지
     }
 
     @Test
@@ -259,10 +280,106 @@ class ReseedServiceTest {
         assertEquals(ReseedResult.SKIPPED_DEBOUNCE, service.reseed(ReseedCause.APP_OPEN, here))
         assertTrue(runLog.entries.isEmpty()) // 매 앱 진입마다 남는 정상 소음 — 스팸 방지 (M3)
     }
+
+    @Test
+    fun `펜스 소실 표시가 있으면 디바운스와 무관하게 전체 재등록하고 고아 펜스까지 정리한다`() = runTest {
+        val regDao = FakeRegDao().apply {
+            regs["poi:old"] = GeofenceRegEntity("poi:old", "POI", 37.6, 127.0, 120f, "CU", "old", "cat:convenience", "b0", 0)
+        }
+        val applier = FakeApplier()
+        val state = FakeStateStore().apply {
+            stamp = ReseedStamp(1_000_000_000_000 - 60_000, here) // 1분 전 — 평소라면 디바운스
+            lost = true
+        }
+        val service = build(
+            FakeReminders(listOf(convenience)), FakePoi(byQuery = mapOf("CS2" to listOf(poi("1", 37.501)))),
+            regDao = regDao, applier = applier, stateStore = state,
+        )
+
+        assertEquals(ReseedResult.APPLIED, service.reseed(ReseedCause.SENTINEL_EXIT, here))
+
+        assertEquals(setOf("sentinel", "poi:1"), applier.replaced.single().map { it.key }.toSet())
+        assertTrue(applier.applied.isEmpty())
+        assertEquals(setOf("sentinel", "poi:1"), regDao.regs.keys) // 미러도 통째로 바뀐다
+        assertFalse(state.lost) // OS와 미러가 다시 일치한다
+    }
+
+    @Test
+    fun `markFencesLost 뒤에는 차분 원인도 전체 재등록한다 - 대기 중이던 BOOT가 큐에서 대체돼도 의도가 남는다`() = runTest {
+        // reseed_now 큐는 REPLACE다 — 대기 중인 BOOT가 ITEM_CHANGE로 바뀌어도 재부팅으로 사라진 OS 펜스는 되살아나야 한다
+        val applier = FakeApplier(); val state = FakeStateStore()
+        val service = build(
+            FakeReminders(listOf(convenience)), FakePoi(byQuery = mapOf("CS2" to listOf(poi("1", 37.501)))),
+            applier = applier, stateStore = state,
+        )
+
+        service.markFencesLost()
+        assertEquals(ReseedResult.APPLIED, service.reseed(ReseedCause.ITEM_CHANGE, here))
+
+        assertEquals(1, applier.replaced.size)
+        assertTrue(applier.applied.isEmpty())
+        assertFalse(state.lost)
+    }
+
+    @Test
+    fun `OS 적용이 실패하면 소실 표시가 남고 FAILED를 반환한다`() = runTest {
+        val regDao = FakeRegDao(); val state = FakeStateStore()
+        val applier = FakeApplier().apply { fail = true }
+        val service = build(
+            FakeReminders(listOf(convenience)), FakePoi(byQuery = mapOf("CS2" to listOf(poi("1", 37.501)))),
+            regDao = regDao, applier = applier, stateStore = state,
+        )
+
+        assertEquals(ReseedResult.FAILED, service.reseed(ReseedCause.ITEM_CHANGE, here))
+
+        assertTrue(state.lost)            // 다음 재배치가 전체 재등록한다
+        assertTrue(regDao.regs.isEmpty()) // 미러는 건드리지 않았다
+        assertNull(state.stamp)
+    }
+
+    @Test
+    fun `미러 기록이 실패해도 소실 표시가 남아 다음 재배치가 전체 재등록한다`() = runTest {
+        val regDao = FakeRegDao().apply { failApplyReseed = true }
+        val state = FakeStateStore(); val applier = FakeApplier()
+        val service = build(
+            FakeReminders(listOf(convenience)), FakePoi(byQuery = mapOf("CS2" to listOf(poi("1", 37.501)))),
+            regDao = regDao, applier = applier, stateStore = state,
+        )
+
+        assertEquals(ReseedResult.FAILED, service.reseed(ReseedCause.ITEM_CHANGE, here))
+
+        assertEquals(1, applier.applied.size) // OS에는 반영됐지만
+        assertTrue(state.lost)                // 미러와의 일치를 보장할 수 없다
+    }
+
+    @Test
+    fun `OS 적용 중에 작업이 취소돼도 미러 기록까지 마친다`() = runTest {
+        // reseed_now 큐의 REPLACE는 실행 중인 재배치도 취소한다. OS에는 반영됐는데 미러가 옛 상태로 남으면
+        // 다음 차분이 틀어진다 (검토 B4)
+        val regDao = FakeRegDao(); val state = FakeStateStore()
+        val applier = FakeApplier().apply { delayMs = 100 }
+        val service = build(
+            FakeReminders(listOf(convenience, place)),
+            FakePoi(byQuery = mapOf("CS2" to listOf(poi("1", 37.501), poi("2", 37.503)))),
+            regDao = regDao, applier = applier, stateStore = state,
+        )
+
+        val job = launch { service.reseed(ReseedCause.BOOT, here) }
+        testScheduler.advanceTimeBy(50) // OS 호출이 끝나기 전
+        job.cancel()
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, applier.replaced.size) // OS 호출은 끝까지 갔고
+        assertEquals(4, regDao.regs.size)      // 미러도 그에 맞게 기록됐다
+        assertFalse(state.lost)
+    }
 }
 
 class FakeStateStore : ReseedStateStore {
-    var stamp: com.recordofp.app.domain.engine.ReseedStamp? = null
+    var stamp: ReseedStamp? = null
+    var lost = false
     override suspend fun lastReseed() = stamp
-    override suspend fun recordReseed(stamp: com.recordofp.app.domain.engine.ReseedStamp) { this.stamp = stamp }
+    override suspend fun recordReseed(stamp: ReseedStamp) { this.stamp = stamp }
+    override suspend fun fencesLost() = lost
+    override suspend fun setFencesLost(lost: Boolean) { this.lost = lost }
 }
