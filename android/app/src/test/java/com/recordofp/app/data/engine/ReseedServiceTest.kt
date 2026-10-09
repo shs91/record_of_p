@@ -26,6 +26,7 @@ import com.recordofp.app.domain.model.TriggerType
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
@@ -382,7 +383,7 @@ class ReseedServiceTest {
         )
 
         val job = launch { service.reseed(ReseedCause.BOOT, here) }
-        testScheduler.advanceTimeBy(50) // OS 호출이 끝나기 전
+        delay(50) // OS 호출이 끝나기 전
         job.cancel()
         testScheduler.advanceUntilIdle()
 
