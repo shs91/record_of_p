@@ -3,29 +3,33 @@ package com.recordofp.app.platform.geofence
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import com.google.android.gms.location.GeofenceStatusCodes
 import com.google.android.gms.location.GeofencingEvent
+import com.recordofp.app.data.db.EngineRunLogDao
+import com.recordofp.app.data.engine.AlertGroup
 import com.recordofp.app.data.engine.GeofenceEventHandler
 import com.recordofp.app.data.engine.ReseedService
 import com.recordofp.app.domain.engine.ReseedCause
 import com.recordofp.app.domain.model.GeoPoint
+import com.recordofp.app.platform.logReceiverError
 import com.recordofp.app.platform.notify.NearbyNotifier
 import com.recordofp.app.platform.work.ReseedWorker
 import dagger.hilt.android.AndroidEntryPoint
+import java.time.Clock
 import javax.inject.Inject
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-/** 지오펜스 전이 이벤트 진입점 (스펙 §6.5) */
+/** 지오펜스 전이 이벤트 진입점 (스펙 §6.5). 처리 순서·예외 규칙은 runFenceEvent (최종 리뷰 I1) */
 @AndroidEntryPoint
 class GeofenceBroadcastReceiver : BroadcastReceiver() {
 
     @Inject lateinit var handler: GeofenceEventHandler
     @Inject lateinit var notifier: NearbyNotifier
     @Inject lateinit var reseedService: ReseedService
+    @Inject lateinit var runLogDao: EngineRunLogDao
+    @Inject lateinit var clock: Clock
 
     override fun onReceive(context: Context, intent: Intent) {
         val event = GeofencingEvent.fromIntent(intent) ?: return
@@ -43,17 +47,19 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val outcome = handler.onFenceEvent(ids, triggeringPoint)
-                outcome.groups.forEach { group ->
-                    // 표시가 실제로 성공했을 때만 쿨다운을 소모한다 (M1, 검토 C2)
-                    if (notifier.show(group)) handler.recordShown(group) else handler.recordNotShown(group)
-                }
-                if (outcome.sentinelExited) ReseedWorker.runNow(context, ReseedCause.SENTINEL_EXIT)
-            } catch (c: CancellationException) {
-                throw c
-            } catch (e: Exception) {
-                // EngineRunLog에 남길 방법이 없는 지점(리시버 자체 예외) — 시스템 로그로만 남긴다 (M2)
-                Log.w("RecordOfP", "지오펜스 이벤트 처리 실패", e)
+                // 처리 순서·예외 규칙은 runFenceEvent(JVM 테스트) — 여기는 Android 접착만 (최종 리뷰 I1)
+                runFenceEvent(
+                    ids,
+                    object : FenceEventSteps {
+                        override suspend fun evaluate(ids: List<String>) = handler.onFenceEvent(ids, triggeringPoint)
+                        override fun scheduleSentinelReseed() = ReseedWorker.runNow(context, ReseedCause.SENTINEL_EXIT)
+                        override fun show(group: AlertGroup) = notifier.show(group)
+                        override suspend fun recordShown(group: AlertGroup) = handler.recordShown(group)
+                        override suspend fun recordNotShown(group: AlertGroup) = handler.recordNotShown(group)
+                        override suspend fun logError(error: Exception) =
+                            runLogDao.logReceiverError(clock, GeofenceEventHandler.LOG_CAUSE, error)
+                    },
+                )
             } finally {
                 pending.finish()
             }

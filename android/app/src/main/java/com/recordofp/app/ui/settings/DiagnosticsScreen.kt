@@ -151,11 +151,11 @@ private fun DiagnosticsRow(entry: EngineRunLogEntity) {
     }
 }
 
-/** 결과별 컬러 도트 — APPLIED·PASS 초록 · BLOCK/FAILED 빨강 · 그 밖(STOOD_DOWN·STALE 등) 회색 (개편안 §2) */
+/** 결과별 컬러 도트 — APPLIED·PASS 초록 · BLOCK/FAILED/ERROR 빨강 · 그 밖(STOOD_DOWN·STALE 등) 회색 (개편안 §2) */
 @Composable
 private fun resultDotColor(result: String): Color = when {
     result.contains("APPLIED") || result == "PASS" -> successColor()
-    result.startsWith("BLOCK") || result.contains("FAILED") ->
+    result.startsWith("BLOCK") || result.contains("FAILED") || result == "ERROR" ->
         MaterialTheme.colorScheme.error
     else -> MaterialTheme.colorScheme.outline
 }

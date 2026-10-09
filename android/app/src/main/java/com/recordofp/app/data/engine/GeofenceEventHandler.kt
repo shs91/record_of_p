@@ -7,8 +7,8 @@ import com.recordofp.app.data.db.NotificationLogDao
 import com.recordofp.app.data.db.NotificationLogEntity
 import com.recordofp.app.data.db.ReminderDao
 import com.recordofp.app.data.db.TriggerSpecDao
-import com.recordofp.app.domain.engine.FenceKind
 import com.recordofp.app.domain.engine.NotificationGate
+import com.recordofp.app.domain.engine.SENTINEL_FENCE_KEY
 import com.recordofp.app.domain.model.GeoPoint
 import com.recordofp.app.domain.model.Reminder
 import com.recordofp.app.domain.model.ReminderStatus
@@ -59,12 +59,14 @@ class GeofenceEventHandler @Inject constructor(
         val passedInThisEvent = mutableSetOf<Long>()
 
         for (fenceId in fenceIds) {
+            // 센티널은 미러와 상관없이 키로 판정한다 — 첫 재배치 직후 즉시 이탈(INITIAL_TRIGGER_EXIT)이 미러 기록보다
+            // 먼저 도착해도 이동 감지 사슬이 끊기지 않는다. 잘못 판정한 대가는 디바운스되는 재배치 1회다 (묶음 A 인계)
+            if (fenceId == SENTINEL_FENCE_KEY) { sentinelExited = true; continue }
             val reg = regDao.byId(fenceId)
             if (reg == null) { // stale 이벤트 폐기 (§6.5.1) — 진단에는 남긴다 (검토 B7)
                 logEvent(now, "STALE", "fence=$fenceId")
                 continue
             }
-            if (reg.kind == FenceKind.SENTINEL.name) { sentinelExited = true; continue }
 
             val reminderIds = triggerSpecDao.byIds(regDao.triggerIdsFor(fenceId))
                 .map { it.reminderId }.distinct()

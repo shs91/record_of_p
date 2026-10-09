@@ -13,6 +13,7 @@ import com.recordofp.app.data.db.ReminderWithTriggers
 import com.recordofp.app.data.db.TriggerSpecDao
 import com.recordofp.app.data.db.TriggerSpecEntity
 import com.recordofp.app.domain.engine.NotificationGate
+import com.recordofp.app.domain.engine.SENTINEL_FENCE_KEY
 import com.recordofp.app.domain.model.GeoPoint
 import com.recordofp.app.domain.model.distanceMeters
 import java.time.Clock
@@ -268,5 +269,15 @@ class GeofenceEventHandlerTest {
         val expected = distanceMeters(triggeringPoint, GeoPoint(37.5, 127.0)).roundToInt()
         val withPoint = handler.onFenceEvent(listOf("poi:100"), triggeringPoint)
         assertEquals(expected, withPoint.groups.single().distanceM)
+    }
+
+    @Test
+    fun `미러에 센티널 행이 없어도 센티널 키 이벤트는 이탈로 보고하고 stale로 남기지 않는다`() = runTest {
+        // 첫 재배치 직후 즉시 이탈(INITIAL_TRIGGER_EXIT)이 미러 기록보다 먼저 도착하는 경우 (묶음 A 인계)
+        val runs = FakeRuns()
+        val out = build(FakeRegs(), FakeSpecs(emptyMap()), FakeReminderDao(emptyMap()), runs = runs)
+            .onFenceEvent(listOf(SENTINEL_FENCE_KEY), null)
+        assertTrue(out.sentinelExited)
+        assertTrue(runs.entries.isEmpty())
     }
 }
