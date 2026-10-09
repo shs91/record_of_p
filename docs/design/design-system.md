@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | 상태 | 승인 — 현재 UI의 기준 |
-| 버전 | 1.0 |
+| 버전 | 1.1 |
 | 최종 수정 | 2026-10-09 |
 | 구현 | Android `ui/theme/{Color,Type,Shape,Theme}.kt` · iOS 미착수 |
 | 근거 | 디자인 개편안 `docs/superpowers/specs/2026-09-03-design-refresh-clean-minimal.md`(결정 기록)과 현재 코드 값 |
@@ -122,7 +122,7 @@ Android와 iOS 테마는 이 문서의 표를 따른다. 토큰을 바꾸면 이
 | 섹션 레이블 `SectionLabel` | editor, settings | labelMedium. **두 화면에 각각 있다 — 공통화 후보** |
 | 입력 필드 `EditorField` · 제거 가능 칩 `RemovableChip` · 장소 결과 카드 `PlaceResultCard` | editor | 기록 편집 |
 | 그룹 카드 `GroupCard` · 상태 pill `StatusPill` | settings | 보호 상태, 알림 정책, 문제 해결 묶음. pill은 "켜짐"/"꺼짐" |
-| 진단 행 `DiagnosticsRow` | diagnostics | 결과별 8dp 컬러 도트: APPLIED 성공색, BLOCK·FAILED·NO_PERMISSION 오류색, 나머지(STOOD_DOWN 등) 테두리 회색 |
+| 진단 행 `DiagnosticsRow` | diagnostics | 결과별 8dp 컬러 도트: APPLIED·PASS 성공색, BLOCK·FAILED·ERROR 오류색, 나머지(STOOD_DOWN·STALE 등) 테두리 회색 |
 | 핀 그래픽 `PinMarkGraphic` · 왜 카드 `WhyCard` · 페이지 도트 `PageDots` · 하단 버튼 `PrimaryButton` | onboarding | 단계별 권한 안내 |
 
 ## 4. 작업 절차
@@ -142,4 +142,5 @@ Android와 iOS 테마는 이 문서의 표를 따른다. 토큰을 바꾸면 이
 
 | 버전 | 날짜 | 바뀐 § | 무엇·왜 | 근거 |
 |---|---|---|---|---|
+| 1.1 | 2026-10-09 | §3 | 진단 행 도트에 PASS(발화, 성공색)·ERROR(리시버 오류, 오류색)를 더하고 더는 기록되지 않는 NO_PERMISSION을 뺐다 | 보강 계획 T9·T10, 묶음 C 최종 리뷰 |
 | 1.0 | 2026-10-09 | 전체 | 최초 작성. 개편안(2026-09-03)의 결정과 현재 코드 값을 옮기고, 레퍼런스(토스·당근·헤이딜러)와 방향을 더했다. | 프로젝트 규칙 확정(2026-10-09) |
