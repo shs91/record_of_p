@@ -32,6 +32,9 @@
             android:name=".platform.geofence.GeofenceBroadcastReceiver"
             android:exported="false" />
 
+        <!-- 알림 액션 [완료][오늘 그만]: 앱 자신의 PendingIntent로만 호출되므로 비공개 -->
+        <receiver android:name=".platform.notify.NotificationActionReceiver" android:exported="false" />
+
         <!-- 재부팅·앱 업데이트 후 지오펜스 재등록 (§6.2) -->
         <receiver
             android:name=".platform.geofence.BootReceiver"

@@ -6,12 +6,89 @@
     <string name="title_editor">새 기록</string>
     <string name="title_nearby">주변 보기</string>
     <string name="title_settings">설정</string>
-    <string name="action_add">기록 추가</string>
 
     <string name="channel_nearby_name">근처 알림</string>
     <string name="channel_nearby_desc">기록해둔 일을 처리할 수 있는 장소 근처에서 알려줍니다</string>
     <string name="channel_status_name">서비스 상태</string>
     <string name="channel_status_desc">권한·동작 상태 관련 안내</string>
 
-    <string name="stub_screen_todo">구현 예정 화면입니다</string>
+    <string name="notif_nearby_title">📍 %1$s 근처예요</string>
+    <string name="notif_nearby_title_dist">📍 %1$s 근처예요 (약 %2$dm)</string>
+    <string name="notif_more_items">\'%1$s\' 외 %2$d건</string>
+    <string name="action_complete">완료</string>
+    <string name="action_mute_today">오늘 그만</string>
+    <string name="action_add_brand">브랜드 추가</string>
+    <string name="action_remove">삭제</string>
+    <string name="action_refresh">새로고침</string>
+
+    <string name="nearby_empty">주변에 처리할 일이 없어요.</string>
+    <string name="nearby_no_location">현재 위치를 확인할 수 없어요. 위치 권한과 GPS를 확인해주세요.</string>
+    <string name="nearby_open_map">카카오맵에서 보기</string>
+
+    <string name="cat_convenience">편의점</string>
+    <string name="cat_mart">대형마트</string>
+    <string name="cat_pharmacy">약국</string>
+    <string name="cat_bank">은행</string>
+    <string name="cat_post">우체국</string>
+    <string name="cat_fuel">주유소</string>
+    <string name="cat_laundry">세탁소</string>
+    <string name="cat_cafe">카페</string>
+    <string name="cat_hospital">병원</string>
+    <string name="cat_subway">지하철역</string>
+    <string name="cat_daiso">다이소</string>
+    <string name="cat_oliveyoung">올리브영</string>
+    <string name="editor_title_hint">무엇을 해야 하나요?</string>
+    <string name="editor_memo_hint">메모 (선택)</string>
+    <string name="editor_section_category">어디서 알려드릴까요?</string>
+    <string name="editor_section_brand">브랜드 추가</string>
+    <string name="editor_brand_example">예: GS25</string>
+    <string name="editor_section_place">특정 장소</string>
+    <string name="editor_place_hint">특정 장소 검색</string>
+    <string name="editor_place_error_network">네트워크 연결을 확인해주세요.</string>
+    <string name="editor_place_error_service">장소 검색 서비스에 문제가 있어요. 잠시 후 다시 시도해주세요.</string>
+    <string name="editor_save">저장</string>
+    <string name="editor_title_edit">기록 수정</string>
+    <string name="editor_delete">삭제</string>
+    <string name="editor_delete_confirm">이 기록을 삭제할까요?</string>
+    <string name="home_empty">아직 기록이 없어요.\n생각난 순간, 여기에 적어두세요.</string>
+    <string name="home_completed">완료했어요</string>
+    <string name="home_fab">기록</string>
+
+    <string name="onboard_1_title">지나칠 때, 다시 떠오르게</string>
+    <string name="onboard_1_body">\"편의점 가면 건전지 사야지\" — 기록해두면 근처를 지날 때 알려드려요.</string>
+    <string name="onboard_2_title">알림 허용</string>
+    <string name="onboard_2_body">장소 근처에서 알려드리려면 알림 권한이 필요해요.</string>
+    <string name="onboard_3_title">위치 허용</string>
+    <string name="onboard_3_body">주변의 상점을 찾으려면 위치 권한이 필요해요.</string>
+    <string name="onboard_why_title">왜 필요한가요?</string>
+    <string name="onboard_why_1">주변 상점을 찾을 때만 사용해요</string>
+    <string name="onboard_why_2">이동 경로를 저장하지 않아요</string>
+    <string name="onboard_why_3">기록은 내 폰 안에만 저장돼요</string>
+    <string name="onboard_next">다음</string>
+    <string name="onboard_allow">허용하기</string>
+    <string name="onboard_skip">나중에</string>
+    <string name="onboard_start">시작하기</string>
+    <string name="banner_protection_title">알림이 꺼질 수 있는 상태예요</string>
+    <string name="banner_protection_action">설정에서 확인</string>
+
+    <string name="settings_section_protection">보호 상태</string>
+    <string name="settings_perm_notifications">알림 권한</string>
+    <string name="settings_perm_location">위치 권한</string>
+    <string name="settings_perm_background">항상 허용 (백그라운드)</string>
+    <string name="settings_perm_battery">배터리 최적화 예외</string>
+    <string name="settings_perm_ok">켜짐</string>
+    <string name="settings_perm_off">꺼짐 — 탭해서 설정</string>
+    <string name="settings_battery_guide">삼성 기기는 [설정 &gt; 배터리 &gt; 절전 모드/앱 절전]에서 P의기록을 예외로 두어야 알림이 안정적으로 옵니다.</string>
+    <string name="settings_section_policy">알림 정책</string>
+    <string name="settings_cooldown">같은 항목 재알림 간격</string>
+    <string name="settings_daily_cap">하루 알림 상한</string>
+    <string name="settings_cap_unlimited">무제한</string>
+    <string name="settings_quiet">방해금지 시간대</string>
+    <string name="settings_diagnostics">문제 해결 (진단)</string>
+    <string name="settings_hours_fmt">%d시간</string>
+    <string name="settings_count_fmt">%d건</string>
+
+    <string name="diag_title">진단</string>
+    <string name="diag_empty">아직 엔진 실행 기록이 없어요.</string>
+    <string name="diag_export">로그 내보내기</string>
 </resources>

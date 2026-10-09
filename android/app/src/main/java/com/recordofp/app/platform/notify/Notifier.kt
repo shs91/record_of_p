@@ -27,7 +27,4 @@ object Notifier {
             ).apply { description = context.getString(R.string.channel_status_desc) },
         )
     }
-
-    // TODO(v1): §6.5 — POI 단위 그룹 알림 발행 ("📍 CU 역삼점 근처예요 (약 80m) · '건전지 사기' 외 1건")
-    //  액션: [완료] [오늘 그만], 탭 시 항목 딥링크. NotificationLog 기록 포함.
 }

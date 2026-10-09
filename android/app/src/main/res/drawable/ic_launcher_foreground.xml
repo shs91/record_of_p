@@ -1,17 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- "P가 곧 핀" 브랜드 마크 (디자인 개편안 §1): 원형 링 헤드(P의 볼) + 아래로
+     뾰족한 스템(핀의 바늘). 블루 바탕(@color/ic_launcher_background) 위 흰 마크. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <!-- 위치 핀 (임시 아이콘 — 출시 전 브랜드 아이콘으로 교체) -->
+    android:viewportWidth="120"
+    android:viewportHeight="120">
     <group
-        android:scaleX="0.5"
-        android:scaleY="0.5"
-        android:pivotX="12"
-        android:pivotY="12">
+        android:scaleX="0.62"
+        android:scaleY="0.62"
+        android:pivotX="62"
+        android:pivotY="59"
+        android:translateX="-2"
+        android:translateY="1">
+        <!-- 링 헤드: 바깥 r26 / 구멍 r10 (evenOdd) -->
         <path
             android:fillColor="#FFFFFF"
-            android:pathData="M12,2C8.13,2 5,5.13 5,9c0,5.25 7,13 7,13s7,-7.75 7,-13C19,5.13 15.87,2 12,2zM12,11.5c-1.38,0 -2.5,-1.12 -2.5,-2.5s1.12,-2.5 2.5,-2.5 2.5,1.12 2.5,2.5 -1.12,2.5 -2.5,2.5z" />
+            android:fillType="evenOdd"
+            android:pathData="M66,18 a26,26 0 1,1 0,52 a26,26 0 1,1 0,-52 Z M66,34 a10,10 0 1,1 0,20 a10,10 0 1,1 0,-20 Z" />
+        <!-- 스템: 위 8r 라운드 캡, 아래로 테이퍼 -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M32,26 a8,8 0 0 1 16,0 v52 l-8,22 l-8,-22 z" />
     </group>
 </vector>

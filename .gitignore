@@ -15,3 +15,9 @@ android/captures/
 
 # Logs
 *.log
+
+# SDD scratch workspace (ledger, briefs, review packages)
+.superpowers/
+
+# 실기기 검증 산출물 (스크린샷, DB 사본)
+tools/device/out/

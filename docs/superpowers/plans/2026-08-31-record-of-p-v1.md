@@ -2866,6 +2866,7 @@ git commit -m "feat: 점진적 권한 온보딩과 홈 보호 배너 (§4.2-4.3)
 - Modify: `android/app/src/main/java/com/recordofp/app/data/repo/SettingsStore.kt` (정책 확장)
 - Create: `android/app/src/main/java/com/recordofp/app/data/engine/StoreGatePolicyProvider.kt`
 - Modify: `data/engine/GeofenceEventHandler.kt`(DefaultGatePolicyProvider 삭제), `di/AppModule.kt`(재바인딩)
+- Modify: `android/app/src/test/java/com/recordofp/app/ui/onboarding/OnboardingViewModelTest.kt` (인터페이스 확장에 따른 페이크 보강 — Step 2 참조)
 - Create: `android/app/src/main/java/com/recordofp/app/ui/settings/SettingsViewModel.kt`
 - Modify: `ui/settings/SettingsScreen.kt`, strings.xml(ko/en)
 - Test: `android/app/src/test/java/com/recordofp/app/data/engine/StoreGatePolicyProviderTest.kt`
@@ -3010,6 +3011,13 @@ class StoreGatePolicyProvider @Inject constructor(
 ```
 
 `GeofenceEventHandler.kt`에서 `DefaultGatePolicyProvider` 클래스 삭제, `BindsModule`의 바인딩을 `@Binds abstract fun gatePolicyProvider(impl: StoreGatePolicyProvider): GatePolicyProvider`로 교체.
+
+인터페이스 확장으로 T10의 `OnboardingViewModelTest` 내 `FakeStore`가 컴파일되지 않게 된다 — 해당 페이크에 다음 두 멤버를 추가한다 (import `com.recordofp.app.data.repo.NotificationPolicySettings` 포함):
+
+```kotlin
+override val policy: Flow<NotificationPolicySettings> = MutableStateFlow(NotificationPolicySettings())
+override suspend fun updatePolicy(transform: (NotificationPolicySettings) -> NotificationPolicySettings) {}
+```
 
 - [ ] **Step 3: 통과 확인** — Run: `.\gradlew.bat testDebugUnitTest` → 전부 PASS (T7 핸들러 테스트는 익명 프로바이더라 영향 없음).
 

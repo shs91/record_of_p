@@ -1,9 +1,11 @@
 package com.recordofp.app.data.db
 
+import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import androidx.room.Relation
 
 @Entity(tableName = "reminder")
 data class ReminderEntity(
@@ -51,6 +53,8 @@ data class GeofenceRegEntity(
     val radiusM: Float,
     val poiName: String?,
     val poiKakaoId: String?,
+    /** 카테고리 id 또는 브랜드 키워드 (여러 트리거가 매칭되면 콤마로 합침) */
+    val matchKey: String?,
     val reseedBatchId: String,
     val registeredAt: Long,
 )
@@ -80,4 +84,10 @@ data class EngineRunLogEntity(
     val result: String,
     val registeredCount: Int,
     val note: String?,
+)
+
+data class ReminderWithTriggers(
+    @Embedded val reminder: ReminderEntity,
+    @Relation(parentColumn = "id", entityColumn = "reminderId")
+    val triggers: List<TriggerSpecEntity>,
 )

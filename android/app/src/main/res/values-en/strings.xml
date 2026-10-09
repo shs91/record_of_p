@@ -6,12 +6,89 @@
     <string name="title_editor">New note</string>
     <string name="title_nearby">Nearby</string>
     <string name="title_settings">Settings</string>
-    <string name="action_add">Add note</string>
 
     <string name="channel_nearby_name">Nearby alerts</string>
     <string name="channel_nearby_desc">Reminds you near places where you can get things done</string>
     <string name="channel_status_name">Service status</string>
     <string name="channel_status_desc">Permission and health notices</string>
 
-    <string name="stub_screen_todo">Screen to be implemented</string>
+    <string name="notif_nearby_title">📍 Near %1$s</string>
+    <string name="notif_nearby_title_dist">📍 Near %1$s (~%2$dm)</string>
+    <string name="notif_more_items">\'%1$s\' and %2$d more</string>
+    <string name="action_complete">Done</string>
+    <string name="action_mute_today">Not today</string>
+    <string name="action_add_brand">Add brand</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_refresh">Refresh</string>
+
+    <string name="nearby_empty">Nothing to do nearby.</string>
+    <string name="nearby_no_location">Can\'t get your current location. Check location permission and GPS.</string>
+    <string name="nearby_open_map">Open in KakaoMap</string>
+
+    <string name="cat_convenience">Convenience store</string>
+    <string name="cat_mart">Supermarket</string>
+    <string name="cat_pharmacy">Pharmacy</string>
+    <string name="cat_bank">Bank</string>
+    <string name="cat_post">Post office</string>
+    <string name="cat_fuel">Gas station</string>
+    <string name="cat_laundry">Laundry</string>
+    <string name="cat_cafe">Cafe</string>
+    <string name="cat_hospital">Hospital</string>
+    <string name="cat_subway">Subway</string>
+    <string name="cat_daiso">Daiso</string>
+    <string name="cat_oliveyoung">Olive Young</string>
+    <string name="editor_title_hint">What do you need to do?</string>
+    <string name="editor_memo_hint">Note (optional)</string>
+    <string name="editor_section_category">Where should we remind you?</string>
+    <string name="editor_section_brand">Add a brand</string>
+    <string name="editor_brand_example">e.g. GS25</string>
+    <string name="editor_section_place">Specific place</string>
+    <string name="editor_place_hint">Search for a specific place</string>
+    <string name="editor_place_error_network">Check your network connection.</string>
+    <string name="editor_place_error_service">The place search service had a problem. Try again shortly.</string>
+    <string name="editor_save">Save</string>
+    <string name="editor_title_edit">Edit note</string>
+    <string name="editor_delete">Delete</string>
+    <string name="editor_delete_confirm">Delete this note?</string>
+    <string name="home_empty">No notes yet.\nWrite it down the moment you think of it.</string>
+    <string name="home_completed">Done</string>
+    <string name="home_fab">Note</string>
+
+    <string name="onboard_1_title">A nudge when you pass by</string>
+    <string name="onboard_1_body">\"Grab batteries at the convenience store\" — save it, and we\'ll remind you when you\'re nearby.</string>
+    <string name="onboard_2_title">Allow notifications</string>
+    <string name="onboard_2_body">We need notification permission to alert you near a place.</string>
+    <string name="onboard_3_title">Allow location</string>
+    <string name="onboard_3_body">We need location permission to find nearby stores.</string>
+    <string name="onboard_why_title">Why do we need this?</string>
+    <string name="onboard_why_1">Used only to find stores near you</string>
+    <string name="onboard_why_2">Your movement history is never stored</string>
+    <string name="onboard_why_3">Notes stay on your phone only</string>
+    <string name="onboard_next">Next</string>
+    <string name="onboard_allow">Allow</string>
+    <string name="onboard_skip">Later</string>
+    <string name="onboard_start">Get started</string>
+    <string name="banner_protection_title">Notifications may not go through</string>
+    <string name="banner_protection_action">Check in settings</string>
+
+    <string name="settings_section_protection">Protection status</string>
+    <string name="settings_perm_notifications">Notification permission</string>
+    <string name="settings_perm_location">Location permission</string>
+    <string name="settings_perm_background">Allow all the time (background)</string>
+    <string name="settings_perm_battery">Battery optimization exemption</string>
+    <string name="settings_perm_ok">On</string>
+    <string name="settings_perm_off">Off — tap to fix in settings</string>
+    <string name="settings_battery_guide">On Samsung devices, add Record of P as an exception under [Settings &gt; Battery &gt; Power saving mode/App power management] so notifications keep arriving reliably.</string>
+    <string name="settings_section_policy">Notification policy</string>
+    <string name="settings_cooldown">Repeat interval for the same item</string>
+    <string name="settings_daily_cap">Daily notification limit</string>
+    <string name="settings_cap_unlimited">Unlimited</string>
+    <string name="settings_quiet">Quiet hours</string>
+    <string name="settings_diagnostics">Troubleshooting (diagnostics)</string>
+    <string name="settings_hours_fmt">%dh</string>
+    <string name="settings_count_fmt">%d</string>
+
+    <string name="diag_title">Diagnostics</string>
+    <string name="diag_empty">No engine runs recorded yet.</string>
+    <string name="diag_export">Export log</string>
 </resources>

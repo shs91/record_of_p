@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 인앱용 P-핀 마크 — Icon(tint=...)으로 색을 입혀 쓴다 (온보딩 그래픽 등, 개편안 §2) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <group
+        android:translateX="-2"
+        android:translateY="1">
+        <path
+            android:fillColor="#FF191F28"
+            android:fillType="evenOdd"
+            android:pathData="M66,18 a26,26 0 1,1 0,52 a26,26 0 1,1 0,-52 Z M66,34 a10,10 0 1,1 0,20 a10,10 0 1,1 0,-20 Z" />
+        <path
+            android:fillColor="#FF191F28"
+            android:pathData="M32,26 a8,8 0 0 1 16,0 v52 l-8,22 l-8,-22 z" />
+    </group>
+</vector>

@@ -12,6 +12,10 @@ interface ReminderDao {
     @Query("SELECT * FROM reminder WHERE status = 'ACTIVE' ORDER BY createdAt DESC")
     fun observeActive(): Flow<List<ReminderEntity>>
 
+    @Transaction
+    @Query("SELECT * FROM reminder WHERE status = 'ACTIVE' ORDER BY createdAt DESC")
+    fun observeActiveWithTriggers(): Flow<List<ReminderWithTriggers>>
+
     @Query("SELECT * FROM reminder WHERE id = :id")
     suspend fun byId(id: Long): ReminderEntity?
 
@@ -38,6 +42,9 @@ interface TriggerSpecDao {
             "WHERE r.status = 'ACTIVE'",
     )
     suspend fun allActive(): List<TriggerSpecEntity>
+
+    @Query("SELECT * FROM trigger_spec WHERE id IN (:ids) ORDER BY id")
+    suspend fun byIds(ids: List<Long>): List<TriggerSpecEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(entities: List<TriggerSpecEntity>)
@@ -69,19 +76,22 @@ interface GeofenceRegDao {
     @Query("DELETE FROM reg_trigger WHERE geofenceId IN (:ids)")
     suspend fun deleteRegTriggers(ids: List<String>)
 
-    /** 재배치 차분 적용 (설계 §6.3.6) */
+    /**
+     * 재배치 차분 적용 (설계 §6.3.6). 링크는 계획된 모든 펜스에 대해 매 재배치마다 재계산한다 —
+     * 펜스는 안 변해도 그 펜스를 쓰는 리마인더 집합은 변할 수 있다.
+     */
     @Transaction
-    suspend fun applyDiff(
+    suspend fun applyReseed(
         removeIds: List<String>,
         addRegs: List<GeofenceRegEntity>,
-        addLinks: List<RegTriggerEntity>,
+        linkFenceIds: List<String>,
+        links: List<RegTriggerEntity>,
     ) {
-        if (removeIds.isNotEmpty()) {
-            deleteRegTriggers(removeIds)
-            deleteRegs(removeIds)
-        }
+        val unlinkIds = removeIds + linkFenceIds
+        if (unlinkIds.isNotEmpty()) deleteRegTriggers(unlinkIds)
+        if (removeIds.isNotEmpty()) deleteRegs(removeIds)
         if (addRegs.isNotEmpty()) insertRegs(addRegs)
-        if (addLinks.isNotEmpty()) insertRegTriggers(addLinks)
+        if (links.isNotEmpty()) insertRegTriggers(links)
     }
 }
 
