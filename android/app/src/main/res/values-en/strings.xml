@@ -75,6 +75,7 @@
     <string name="settings_perm_notifications">Notification permission</string>
     <string name="settings_perm_location">Precise location</string>
     <string name="settings_perm_background">Allow all the time (background)</string>
+    <string name="settings_perm_location_services">Device location</string>
     <string name="settings_perm_battery">Battery optimization exemption</string>
     <string name="settings_perm_ok">On</string>
     <string name="settings_perm_off">Off — tap to fix in settings</string>
