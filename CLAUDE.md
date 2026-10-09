@@ -54,7 +54,7 @@ cd android
 
 - **matchKey**: 트리거의 안정 키 — `cat:<catalogId>`, `brand:<trim+lowercase 키워드>`, `place:<triggerSpecId>`. 리마인더 여러 개가 같은 카테고리를 쓰면 조회는 1번만 한다(카카오 쿼터 방어). 한 POI 펜스가 여러 matchKey를 대변할 수 있다(N:M, `reg_trigger`).
 - **펜스 키 = OS requestId = `geofence_reg.geofenceId`**: `sentinel`, `poi:<kakaoId>`, `place:<id>`. 키가 안정적이어야 차분 적용이 성립한다(uuid 발급 금지).
-- **`geofence_reg`는 OS 등록 상태의 미러**다. OS 쪽 등록은 재부팅, 앱/Play 서비스 데이터 삭제, `GEOFENCE_NOT_AVAILABLE` 수신 시 사라지지만 미러는 남는다. 미러를 기준으로 차분하는 코드는 이 불일치를 반드시 고려해야 한다(검토 문서 참고). 어긋남은 DataStore의 **펜스 소실 표시(`fences_lost`)**로 다룬다. BOOT·FENCE_LOST(`GEOFENCE_NOT_AVAILABLE`) 워커 첫 시도와 OS 호출 직전에 표시를 켜고, 미러 기록까지 성공하면 끈다. 표시가 켜져 있으면 다음 재배치는 원인과 상관없이 `replaceAll`로 전체 재등록하고, 조회가 실패하면 미러대로 OS를 되살린다.
+- **`geofence_reg`는 OS 등록 상태의 미러**다. OS 쪽 등록은 재부팅, 앱/Play 서비스 데이터 삭제, `GEOFENCE_NOT_AVAILABLE` 수신 시 사라지지만 미러는 남는다. 미러를 기준으로 차분하는 코드는 이 불일치를 반드시 고려해야 한다(검토 문서 참고). 어긋남은 DataStore의 **펜스 소실 표시(`fences_lost`)**로 다룬다. BOOT·FENCE_LOST(`GEOFENCE_NOT_AVAILABLE`) 신호를 받은 리시버가 재배치를 예약하기 전, 워커 첫 시도, OS 호출 직전에 표시를 켜고, 미러 기록까지 성공하면 끈다. 표시가 켜져 있으면 다음 재배치는 원인과 상관없이 `replaceAll`로 전체 재등록하고, 조회가 실패하면 미러대로 OS를 되살린다.
 - **트리거 카탈로그**(`TriggerCatalog`)는 코드에 내장한다(DB에 두지 않음). 카카오 코드(`CS2` 등)로 해석하거나, 코드가 없는 업종·브랜드는 키워드 검색으로 해석한다. 표시명은 strings.xml에서 `cat_<id>`로 매핑한다.
 - **카카오 로컬 API**: `x`=경도, `y`=위도이고 좌표·거리가 **문자열**로 온다. radius ≤ 20,000m, size ≤ 15, `sort=distance`. 재배치 1회당 최대 2페이지.
 - 알림 채널은 `nearby`(높음)와 `status`(낮음) 두 개다(`Notifier`).

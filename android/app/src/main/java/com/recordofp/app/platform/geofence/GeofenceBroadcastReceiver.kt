@@ -7,6 +7,7 @@ import android.util.Log
 import com.google.android.gms.location.GeofenceStatusCodes
 import com.google.android.gms.location.GeofencingEvent
 import com.recordofp.app.data.engine.GeofenceEventHandler
+import com.recordofp.app.data.engine.ReseedService
 import com.recordofp.app.domain.engine.ReseedCause
 import com.recordofp.app.domain.model.GeoPoint
 import com.recordofp.app.platform.notify.NearbyNotifier
@@ -24,14 +25,15 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
 
     @Inject lateinit var handler: GeofenceEventHandler
     @Inject lateinit var notifier: NearbyNotifier
+    @Inject lateinit var reseedService: ReseedService
 
     override fun onReceive(context: Context, intent: Intent) {
         val event = GeofencingEvent.fromIntent(intent) ?: return
         if (event.hasError()) {
             // 위치가 꺼지면 OS가 이 앱의 펜스를 전부 지우고 이 오류를 보낸다. 전체 재등록을 예약한다 —
-            // 위치가 다시 켜질 때까지 워커는 NO_LOCATION/FAILED로 백오프 재시도한다 (검토 B1)
+            // 펜스 소실 표시를 먼저 남긴다. 위치가 다시 켜질 때까지 워커는 NO_LOCATION/FAILED로 백오프 재시도한다 (검토 B1)
             if (event.errorCode == GeofenceStatusCodes.GEOFENCE_NOT_AVAILABLE) {
-                ReseedWorker.runNow(context, ReseedCause.FENCE_LOST)
+                markFencesLostThenReseed(context, reseedService, ReseedCause.FENCE_LOST)
             }
             return
         }
