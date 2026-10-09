@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| 상태 | 진행 중 — 묶음 A(T1~T4) 구현·리뷰 완료(`feat/hardening-engine`, 2026-10-09), 묶음 B~D 남음 |
+| 상태 | 진행 중 — 묶음 A 완료(PR #3 병합), 묶음 B(T5~T6) 실행 중(`feat/hardening-privacy`, 2026-10-09), 묶음 C·D 남음 |
 | 최종 수정 | 2026-10-09 |
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -1743,6 +1743,27 @@ git add CLAUDE.md android/app/src/main/java/com/recordofp/app/domain/model/Notif
   android/app/src/test/java/com/recordofp/app/ui/permissions/PermissionSnapshotTest.kt
 git commit -m "fix: 근처 알림 채널·기기 위치를 보호 상태와 발행에 반영" -m "채널만 꺼도 대시보드가 꺼짐으로 보이고 알림이 상한을 소모하지 않는다. 기기 위치 행을 추가하고,
 시스템 설정 이동은 ActivityNotFoundException 가드로 연다. (§4.3, §6.5, 검토 C2, 최종 리뷰 I4·M8)"
+```
+
+- [ ] **Step 11: 설계 문서를 1.2로 갱신하고 커밋한다 (묶음 B 전체 반영)**
+
+설계 문서는 살아있는 문서다(CLAUDE.md 문서 규칙). 묶음 B(Task 5~6)가 바꾼 동작을 `docs/superpowers/specs/2026-08-31-record-of-p-design.md`에 반영한다. §번호는 바꾸지 않는다.
+
+1. §4.2 표의 3단계 행 `| 3. 위치(사용 중) | `ACCESS_FINE_LOCATION` | 주변 보기·지오펜스 불가, 목록 앱으로 동작 |`을 바꾼다.
+   `| 3. 위치(사용 중) | `ACCESS_FINE_LOCATION` + `ACCESS_COARSE_LOCATION`(함께 요청 — Android 12+는 FINE 단독 요청을 무시한다) | 주변 보기·지오펜스 불가, 목록 앱으로 동작. "대략적 위치"만 허용하면 보호 상태가 "정확한 위치 꺼짐"으로 안내한다 |`
+2. §4.3 첫 문장 `알림 권한 / 위치 권한 / 항상 허용 / 배터리 최적화 예외 / 최근 엔진 동작 시각을 신호등으로 표시. 하나라도 꺼지면 홈 상단에 배너로 노출한다.`를 바꾼다.
+   `알림(앱 알림과 "근처 알림" 채널) / 정확한 위치 / 항상 허용 / 기기 위치 서비스 / 배터리 최적화 예외 / 최근 엔진 동작 시각을 신호등으로 표시. 배터리 최적화 예외를 뺀 항목 중 하나라도 꺼지면 홈 상단에 배너로 노출한다(배터리 예외는 권장 사항이라 배너에 넣지 않는다). 꺼진 항목을 누르면 해당 시스템 설정 화면을 열고, 그 화면이 없는 제조사 빌드에서는 앱 상세 설정으로 대신 연다.`
+3. §6.5 5번 `5. NotificationLog 기록`을 바꾼다.
+   `5. 알림이 실제로 표시된 뒤에만 NotificationLog 기록. 앱 알림이나 "근처 알림" 채널이 꺼져 있으면 발행하지 않고 기록하지 않는다 — 보이지 않은 알림이 쿨다운·하루 상한을 소모하지 않게 한다.`
+4. §9 첫 항목 `- 위치·항목 데이터는 기기 밖으로 나가지 않는다. 유일한 외부 통신은 카카오 POI 조회(좌표 전송, 무저장).` 끝에 이어 쓴다.
+   ` 클라우드 백업과 기기 간 이전에서도 DB·DataStore를 뺀다(`allowBackup=false`, 데이터 추출 규칙). 미러만 새 기기로 옮겨지면 OS에 없는 펜스를 "등록됨"으로 믿게 되는 문제도 함께 막는다.`
+5. 머리말 표: `| 버전 | 1.1 |` → `| 버전 | 1.2 |`, `최종 수정`을 커밋하는 날짜로 바꾼다.
+6. 끝의 변경 이력 표에 한 행을 더한다(날짜는 커밋하는 날짜).
+   `| 1.2 | <날짜> | §4.2, §4.3, §6.5, §9 | 위치 권한 FINE+COARSE 동시 요청, 보호 상태에 "근처 알림" 채널·기기 위치 서비스 추가와 배너 기준, 채널 꺼짐 시 미발행·미기록, 백업·기기 이전 제외 | 보강 계획 묶음 B(T5~T6), 검토 B2·B8·C2, 최종 리뷰 I4·M8 |`
+
+```bash
+git add docs/superpowers/specs/2026-08-31-record-of-p-design.md
+git commit -m "docs: 설계 문서 1.2 — 묶음 B 프라이버시·권한 반영" -m "FINE+COARSE 요청, 보호 상태 항목(채널·기기 위치), 채널 꺼짐 시 미발행, 백업 제외. (§4.2, §4.3, §6.5, §9)"
 ```
 
 ---
