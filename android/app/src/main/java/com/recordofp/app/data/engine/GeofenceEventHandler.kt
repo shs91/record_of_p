@@ -20,7 +20,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
 
-data class AlertGroup(val poiId: String?, val poiName: String?, val reminders: List<Reminder>, val distanceM: Int? = null)
+/** fenceId: 알림 ID의 기준 — 같은 POI를 대변하는 서로 다른 펜스(PLACE·CATEGORY)의 알림이 서로 덮어쓰지 않게 한다 */
+data class AlertGroup(
+    val fenceId: String,
+    val poiId: String?,
+    val poiName: String?,
+    val reminders: List<Reminder>,
+    val distanceM: Int? = null,
+)
 
 data class EventOutcome(val sentinelExited: Boolean, val groups: List<AlertGroup>)
 
@@ -47,6 +54,9 @@ class GeofenceEventHandler @Inject constructor(
         val policy = policyProvider.policy()
         var sentinelExited = false
         val groups = mutableListOf<AlertGroup>()
+        // 한 이벤트에서 같은 항목이 여러 펜스로 통과해도 알림은 한 번만 — 항목 쿨다운은 표시 뒤(recordShown)에야
+        // 기록되므로 같은 이벤트 안에서는 걸리지 않는다 (실기기 09-03 14:57:09)
+        val passedInThisEvent = mutableSetOf<Long>()
 
         for (fenceId in fenceIds) {
             val reg = regDao.byId(fenceId) ?: continue // stale 이벤트 폐기 (§6.5.1)
@@ -57,6 +67,10 @@ class GeofenceEventHandler @Inject constructor(
             val passed = mutableListOf<Reminder>()
 
             for (reminderId in reminderIds) {
+                if (reminderId in passedInThisEvent) {
+                    logEvent(now, BLOCK_SAME_EVENT, "reminder=$reminderId poi=${reg.poiName}")
+                    continue
+                }
                 val row = reminderDao.byId(reminderId) ?: continue
                 val history = NotificationGate.History(
                     lastShownForItem = notificationLogDao.lastShownForItem(reminderId)?.let(Instant::ofEpochMilli),
@@ -79,25 +93,25 @@ class GeofenceEventHandler @Inject constructor(
                         status = ReminderStatus.valueOf(row.status), snoozeUntil = row.snoozeUntil,
                         createdAt = row.createdAt, updatedAt = row.updatedAt, completedAt = row.completedAt,
                     )
+                    passedInThisEvent += reminderId
                     // NotificationLog 기록은 실제 표시 후(recordShown) — 여기서 기록하면 표시 전 카운트가 된다 (M1)
                 } else {
-                    runLogDao.insert(
-                        EngineRunLogEntity(
-                            at = now.toEpochMilli(), cause = "FENCE_EVENT", result = decision.name,
-                            registeredCount = 0, note = "reminder=$reminderId poi=${reg.poiName}",
-                        ),
-                    )
+                    logEvent(now, decision.name, "reminder=$reminderId poi=${reg.poiName}")
                 }
             }
             if (passed.isNotEmpty()) {
                 val distanceM = triggeringPoint?.let {
                     distanceMeters(it, GeoPoint(reg.lat, reg.lng)).roundToInt()
                 }
-                groups += AlertGroup(reg.poiKakaoId, reg.poiName, passed, distanceM)
+                groups += AlertGroup(reg.geofenceId, reg.poiKakaoId, reg.poiName, passed, distanceM)
             }
         }
         return EventOutcome(sentinelExited, groups)
     }
+
+    private suspend fun logEvent(at: Instant, result: String, note: String) = runLogDao.insert(
+        EngineRunLogEntity(at = at.toEpochMilli(), cause = LOG_CAUSE, result = result, registeredCount = 0, note = note),
+    )
 
     /** 알림이 실제로 화면에 뜬 뒤에만 쿨다운 계산의 원본을 남긴다 (표시 전 기록 금지, §6.5 5단계) */
     suspend fun recordShown(reminderIds: List<Long>, poiId: String?) {
@@ -105,5 +119,13 @@ class GeofenceEventHandler @Inject constructor(
         reminderIds.forEach { id ->
             notificationLogDao.insert(NotificationLogEntity(reminderId = id, poiKakaoId = poiId, shownAt = shownAt))
         }
+    }
+
+    companion object {
+        /** EngineRunLog.cause — 리시버의 오류 기록도 같은 원인으로 남긴다 */
+        const val LOG_CAUSE = "FENCE_EVENT"
+
+        /** 같은 이벤트에서 이미 다른 펜스로 통과한 항목 (진단 화면에서 차단으로 보인다) */
+        const val BLOCK_SAME_EVENT = "BLOCK_SAME_EVENT"
     }
 }

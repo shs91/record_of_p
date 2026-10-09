@@ -26,7 +26,8 @@ class NearbyNotifier @Inject constructor(
     @SuppressLint("MissingPermission") // nearbyAlertsEnabled()가 areNotificationsEnabled()로 POST_NOTIFICATIONS 부여 여부를 확인한다
     fun show(group: AlertGroup): Boolean {
         if (!nearbyAlertsEnabled(context)) return false
-        val notificationId = (group.poiId ?: group.poiName ?: "poi").hashCode()
+        // 펜스 단위로 알림 1건 — POI가 같아도 펜스(PLACE·CATEGORY)가 다르면 별개 알림이라 서로 덮어쓰지 않는다
+        val notificationId = group.fenceId.hashCode()
         val first = group.reminders.first()
         val text = if (group.reminders.size == 1) first.title
         else context.getString(R.string.notif_more_items, first.title, group.reminders.size - 1)
