@@ -10,6 +10,7 @@ import com.recordofp.app.data.repo.ReminderRepository
 import com.recordofp.app.domain.engine.DiffCalculator
 import com.recordofp.app.domain.engine.EngineParams
 import com.recordofp.app.domain.engine.ExistingFence
+import com.recordofp.app.domain.engine.FenceKind
 import com.recordofp.app.domain.engine.FenceDiff
 import com.recordofp.app.domain.engine.PlaceRequest
 import com.recordofp.app.domain.engine.PlannedFence
@@ -20,6 +21,8 @@ import com.recordofp.app.domain.engine.ReseedPlanner
 import com.recordofp.app.domain.engine.ReseedStamp
 import com.recordofp.app.domain.engine.TriggerCandidates
 import com.recordofp.app.domain.engine.TriggerResolver
+import com.recordofp.app.domain.engine.loiteringDelayMs
+import com.recordofp.app.domain.engine.transition
 import com.recordofp.app.domain.model.GeoPoint
 import java.time.Clock
 import java.util.UUID
@@ -44,6 +47,9 @@ interface FenceApplier {
 interface ReseedStateStore {
     suspend fun lastReseed(): ReseedStamp?
     suspend fun recordReseed(stamp: ReseedStamp)
+
+    /** 재배치 스탬프를 지운다 — 다음 재배치가 디바운스에 걸리지 않게 한다 (권한 회수 정리, 검토 B3) */
+    suspend fun clearReseedStamp()
 
     /** OS 펜스가 사라졌거나 어디까지 반영됐는지 몰라 미러를 믿을 수 없는 상태인가 (검토 B1) */
     suspend fun fencesLost(): Boolean
@@ -127,7 +133,8 @@ class ReseedService @Inject constructor(
                 throw c
             } catch (e: Exception) {
                 // §6.4: 기존 등록 유지, 아무것도 바꾸지 않는다. 재시도는 호출부(Worker) 몫.
-                return log(cause, ReseedResult.FAILED, 0, now, e.message)
+                // 단 OS 펜스가 사라진 상태(소실 표시·BOOT)라면 "유지할 기존 등록"이 OS에 없다 — 미러대로 되살린다 (최종 리뷰 I2)
+                return if (osUntrusted) restoreFromMirror(cause, now, e) else log(cause, ReseedResult.FAILED, 0, now, e.message)
             }
             planned = planner.plan(current, candidates)
         }
@@ -177,30 +184,72 @@ class ReseedService @Inject constructor(
         }
     }
 
-    /** 권한 부재/회수 시: OS·미러의 등록을 전부 걷어낸다 (§6.4 고아 지오펜스 방지). 이미 비어 있으면 로그만. */
-    suspend fun standDown(cause: ReseedCause): ReseedResult =
-        mutex.withLock { standDownLocked(cause) } // F5: 재배치와 교차하면 고아 등록이 남는다
+    /**
+     * 위치 권한이 없어 지오펜스를 유지할 수 없을 때 (§6.4 권한 회수, 검토 B3).
+     * OS의 이 앱 펜스 전부(미러에 없는 고아 포함)와 미러를 비우고 재배치 스탬프를 지운다 —
+     * 권한이 돌아오면 다음 재배치(F1의 APP_OPEN 포함)가 디바운스 없이 바로 돈다.
+     * @param note 진단 화면에 남길 사유 (예: 없는 권한 이름)
+     */
+    suspend fun standDown(cause: ReseedCause, note: String? = null): ReseedResult =
+        mutex.withLock { standDownLocked(cause, note) } // F5: 재배치와 교차하면 고아 등록이 남는다
 
-    private suspend fun standDownLocked(cause: ReseedCause): ReseedResult {
+    private suspend fun standDownLocked(cause: ReseedCause, note: String?): ReseedResult = withContext(NonCancellable) {
         val now = clock.millis()
+        stateStore.clearReseedStamp()
         val existing = regDao.all()
-        if (existing.isEmpty()) return log(cause, ReseedResult.STOOD_DOWN, 0, now, "no registrations")
+        if (existing.isEmpty() && !stateStore.fencesLost()) {
+            // 걷어낼 것이 없다. 권한이 없는 동안 워커가 시도할 때마다 같은 행이 쌓이므로 기록하지 않는다 (F2)
+            return@withContext ReseedResult.STOOD_DOWN
+        }
+        stateStore.setFencesLost(true) // 선기록 (검토 B1)
         try {
-            applier.apply(FenceDiff(removeIds = existing.map { it.geofenceId }, add = emptyList()))
+            applier.replaceAll(emptyList())
+            regDao.applyReseed(existing.map { it.geofenceId }, emptyList(), emptyList(), emptyList())
         } catch (c: CancellationException) {
             throw c
         } catch (e: Exception) {
-            return log(cause, ReseedResult.FAILED, 0, now, e.message)
+            return@withContext log(cause, ReseedResult.FAILED, 0, now, e.message)
         }
-        regDao.applyReseed(existing.map { it.geofenceId }, emptyList(), emptyList(), emptyList())
-        return log(cause, ReseedResult.STOOD_DOWN, 0, now, null)
+        stateStore.setFencesLost(false)
+        log(cause, ReseedResult.STOOD_DOWN, 0, now, note)
     }
+
+    /**
+     * OS를 믿을 수 없는 상태에서 POI 조회가 실패했을 때 OS를 미러대로 되돌린다 (§6.4 "구 데이터가 무등록보다 낫다", 최종 리뷰 I2).
+     * 부팅 직후 네트워크가 없으면, 이것이 없을 때 OS에 펜스가 하나도 없다(PLACE·센티널 포함).
+     * 미러·링크·스탬프는 그대로 두고, 조회는 다시 해야 하므로 결과는 FAILED다.
+     */
+    private suspend fun restoreFromMirror(cause: ReseedCause, now: Long, lookupError: Exception): ReseedResult =
+        withContext(NonCancellable) {
+            try {
+                val fences = regDao.all().map { it.toPlannedFence() }
+                if (fences.isEmpty()) return@withContext log(cause, ReseedResult.FAILED, 0, now, lookupError.message)
+                stateStore.setFencesLost(true) // 선기록 — 복구가 끝나야 지운다 (검토 B1)
+                applier.replaceAll(fences)
+                stateStore.setFencesLost(false) // OS가 다시 미러와 같다
+                log(cause, ReseedResult.FAILED, fences.size, now, "restored-from-mirror: ${lookupError.message}")
+            } catch (c: CancellationException) {
+                throw c
+            } catch (e: Exception) {
+                log(cause, ReseedResult.FAILED, 0, now, "restore-failed: ${e.message}")
+            }
+        }
 
     private suspend fun log(
         cause: ReseedCause, result: ReseedResult, count: Int, at: Long, note: String?,
     ): ReseedResult {
         runLogDao.insert(EngineRunLogEntity(at = at, cause = cause.name, result = result.name, registeredCount = count, note = note))
         return result
+    }
+
+    private fun GeofenceRegEntity.toPlannedFence(): PlannedFence {
+        val fenceKind = FenceKind.valueOf(kind)
+        return PlannedFence(
+            key = geofenceId, kind = fenceKind, center = GeoPoint(lat, lng), radiusM = radiusM,
+            transition = fenceKind.transition(), loiteringDelayMs = fenceKind.loiteringDelayMs(),
+            matchKeys = matchKey?.split(",")?.filter { it.isNotEmpty() }?.toSet().orEmpty(),
+            poiName = poiName, poiId = poiKakaoId,
+        )
     }
 
     private fun PlannedFence.toEntity(batchId: String, at: Long) = GeofenceRegEntity(

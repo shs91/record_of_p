@@ -19,6 +19,7 @@ class EngineStateStore @Inject constructor(
     private val atKey = longPreferencesKey("last_reseed_at")
     private val latKey = doublePreferencesKey("last_reseed_lat")
     private val lngKey = doublePreferencesKey("last_reseed_lng")
+    private val fencesLostKey = booleanPreferencesKey("fences_lost")
 
     override suspend fun lastReseed(): ReseedStamp? {
         val p = dataStore.data.first()
@@ -36,7 +37,13 @@ class EngineStateStore @Inject constructor(
         }
     }
 
-    private val fencesLostKey = booleanPreferencesKey("fences_lost")
+    override suspend fun clearReseedStamp() {
+        dataStore.edit {
+            it.remove(atKey)
+            it.remove(latKey)
+            it.remove(lngKey)
+        }
+    }
 
     override suspend fun fencesLost(): Boolean = dataStore.data.first()[fencesLostKey] ?: false
 

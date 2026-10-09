@@ -24,7 +24,7 @@ class ReseedPlanner(
             kind = FenceKind.SENTINEL,
             center = current,
             radiusM = EngineParams.SENTINEL_RADIUS_M,
-            transition = FenceTransition.EXIT,
+            transition = FenceKind.SENTINEL.transition(),
         )
 
         var budget = poiBudget
@@ -40,7 +40,7 @@ class ReseedPlanner(
                 kind = FenceKind.PLACE,
                 center = p.placePoint!!,
                 radiusM = EngineParams.PLACE_FENCE_RADIUS_M,
-                transition = FenceTransition.ENTER,
+                transition = FenceKind.PLACE.transition(),
                 matchKeys = setOf(p.matchKey),
                 poiName = p.placeName,
             )
@@ -99,8 +99,8 @@ class ReseedPlanner(
                 kind = FenceKind.POI,
                 center = poi.point,
                 radiusM = EngineParams.CATEGORY_FENCE_RADIUS_M,
-                transition = FenceTransition.DWELL,
-                loiteringDelayMs = EngineParams.LOITERING_DELAY_MS,
+                transition = FenceKind.POI.transition(),
+                loiteringDelayMs = FenceKind.POI.loiteringDelayMs(),
                 matchKeys = group.map { it.first }.toSet(),
                 poiName = poi.name,
                 poiId = poiId,

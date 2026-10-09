@@ -8,6 +8,8 @@ import com.recordofp.app.data.db.RegTriggerEntity
 import com.recordofp.app.data.poi.PoiRepository
 import com.recordofp.app.data.repo.ReminderRepository
 import com.recordofp.app.domain.engine.DiffCalculator
+import com.recordofp.app.domain.engine.EngineParams
+import com.recordofp.app.domain.engine.FenceTransition
 import com.recordofp.app.domain.engine.FenceDiff
 import com.recordofp.app.domain.engine.PlannedFence
 import com.recordofp.app.domain.engine.PoiCandidate
@@ -169,6 +171,7 @@ class ReseedServiceTest {
         )
         assertEquals(ReseedResult.FAILED, service.reseed(ReseedCause.SENTINEL_EXIT, here))
         assertTrue(applier.applied.isEmpty())          // OS 호출 없음
+        assertTrue(applier.replaced.isEmpty()) // 소실 상태가 아니면 OS를 건드리지 않는다
         assertTrue(regDao.regs.containsKey("poi:old")) // 미러 보존 (§6.4)
     }
 
@@ -221,15 +224,16 @@ class ReseedServiceTest {
             regs["sentinel"] = GeofenceRegEntity("sentinel", "SENTINEL", 37.5, 127.0, 1000f, null, null, null, "b0", 0)
             regs["poi:1"] = GeofenceRegEntity("poi:1", "POI", 37.501, 127.0, 120f, "CU", "1", "cat:convenience", "b0", 0)
         }
-        val applier = FakeApplier()
-        val service = build(FakeReminders(listOf(convenience)), FakePoi(), regDao = regDao, applier = applier)
+        val applier = FakeApplier(); val state = FakeStateStore()
+        val service = build(FakeReminders(listOf(convenience)), FakePoi(), regDao = regDao, applier = applier, stateStore = state)
 
         val result = service.standDown(ReseedCause.PERIODIC)
 
         assertEquals(ReseedResult.STOOD_DOWN, result)
-        assertEquals(setOf("sentinel", "poi:1"), applier.applied.single().removeIds.toSet())
-        assertTrue(applier.applied.single().add.isEmpty())
+        assertTrue(applier.replaced.single().isEmpty()) // PendingIntent 단위 해제 — 미러에 없는 고아 펜스까지
+        assertTrue(applier.applied.isEmpty())
         assertTrue(regDao.regs.isEmpty())
+        assertFalse(state.lost)
     }
 
     @Test
@@ -373,6 +377,125 @@ class ReseedServiceTest {
         assertEquals(4, regDao.regs.size)      // 미러도 그에 맞게 기록됐다
         assertFalse(state.lost)
     }
+
+    @Test
+    fun `소실 상태에서 POI 조회가 실패하면 미러대로 OS를 되살리고 FAILED로 재시도를 남긴다`() = runTest {
+        val regDao = FakeRegDao().apply {
+            regs["sentinel"] = GeofenceRegEntity("sentinel", "SENTINEL", 37.5, 127.0, 1000f, null, null, "", "b0", 0)
+            regs["poi:1"] = GeofenceRegEntity("poi:1", "POI", 37.501, 127.0, 120f, "CU 1", "1", "cat:convenience", "b0", 0)
+            regs["place:20"] = GeofenceRegEntity("place:20", "PLACE", 37.51, 127.0, 150f, "회사 우체국", null, "place:20", "b0", 0)
+        }
+        val applier = FakeApplier(); val runLog = FakeRunLog()
+        val state = FakeStateStore().apply { lost = true }
+        val service = build(
+            FakeReminders(listOf(convenience, place)), FakePoi(throwOn = "CS2"),
+            regDao = regDao, runLog = runLog, applier = applier, stateStore = state,
+        )
+
+        assertEquals(ReseedResult.FAILED, service.reseed(ReseedCause.ITEM_CHANGE, here))
+
+        val restored = applier.replaced.single().associateBy { it.key }
+        assertEquals(setOf("sentinel", "poi:1", "place:20"), restored.keys)
+        // 미러에는 전이 칼럼이 없다 — 종류별 규칙(설계 §6.3.5)으로 되살린다
+        assertEquals(FenceTransition.EXIT, restored.getValue("sentinel").transition)
+        assertEquals(FenceTransition.DWELL, restored.getValue("poi:1").transition)
+        assertEquals(EngineParams.LOITERING_DELAY_MS, restored.getValue("poi:1").loiteringDelayMs)
+        assertEquals(FenceTransition.ENTER, restored.getValue("place:20").transition)
+        assertEquals(setOf("cat:convenience"), restored.getValue("poi:1").matchKeys)
+        assertTrue(restored.getValue("sentinel").matchKeys.isEmpty()) // 센티널 matchKey는 ""로 저장돼 있다
+        assertFalse(state.lost)           // OS가 다시 미러와 같다
+        assertEquals(3, regDao.regs.size) // 미러는 그대로
+        assertTrue(runLog.entries.last().note!!.startsWith("restored-from-mirror"))
+    }
+
+    @Test
+    fun `BOOT에서 POI 조회가 실패해도 미러대로 OS를 되살린다 - 부팅 직후 네트워크가 없는 경우`() = runTest {
+        val regDao = FakeRegDao().apply {
+            regs["poi:1"] = GeofenceRegEntity("poi:1", "POI", 37.501, 127.0, 120f, "CU 1", "1", "cat:convenience", "b0", 0)
+        }
+        val applier = FakeApplier(); val state = FakeStateStore()
+        val service = build(
+            FakeReminders(listOf(convenience)), FakePoi(throwOn = "CS2"),
+            regDao = regDao, applier = applier, stateStore = state,
+        )
+
+        assertEquals(ReseedResult.FAILED, service.reseed(ReseedCause.BOOT, here))
+
+        assertEquals(listOf("poi:1"), applier.replaced.single().map { it.key })
+        assertFalse(state.lost)
+    }
+
+    @Test
+    fun `미러 복구마저 실패하면 소실 표시를 남긴다`() = runTest {
+        val regDao = FakeRegDao().apply {
+            regs["poi:1"] = GeofenceRegEntity("poi:1", "POI", 37.501, 127.0, 120f, "CU 1", "1", "cat:convenience", "b0", 0)
+        }
+        val applier = FakeApplier().apply { fail = true }
+        val state = FakeStateStore().apply { lost = true }
+        val service = build(
+            FakeReminders(listOf(convenience)), FakePoi(throwOn = "CS2"),
+            regDao = regDao, applier = applier, stateStore = state,
+        )
+
+        assertEquals(ReseedResult.FAILED, service.reseed(ReseedCause.ITEM_CHANGE, here))
+        assertTrue(state.lost)
+    }
+
+    @Test
+    fun `standDown은 재배치 스탬프를 지워 권한이 돌아오면 APP_OPEN이 바로 재배치한다`() = runTest {
+        // F1: 권한을 다시 켜고 돌아오면 ProtectionReseedTrigger가 APP_OPEN을 건다. 스탬프가 남아 있으면
+        // 같은 자리·6시간 안에서는 디바운스에 걸려 PERIODIC까지 펜스가 없다 (검토 B3)
+        val state = FakeStateStore().apply { stamp = ReseedStamp(1_000_000_000_000 - 60_000, here) }
+        val service = build(
+            FakeReminders(listOf(convenience)), FakePoi(byQuery = mapOf("CS2" to listOf(poi("1", 37.501)))),
+            stateStore = state,
+        )
+
+        service.standDown(ReseedCause.PERIODIC, note = "ACCESS_BACKGROUND_LOCATION")
+
+        assertEquals(ReseedResult.APPLIED, service.reseed(ReseedCause.APP_OPEN, here))
+    }
+
+    @Test
+    fun `standDown은 사유를 진단 메모로 남긴다`() = runTest {
+        val regDao = FakeRegDao().apply {
+            regs["poi:1"] = GeofenceRegEntity("poi:1", "POI", 37.501, 127.0, 120f, "CU", "1", "cat:convenience", "b0", 0)
+        }
+        val runLog = FakeRunLog()
+        val service = build(FakeReminders(listOf(convenience)), FakePoi(), regDao = regDao, runLog = runLog)
+
+        service.standDown(ReseedCause.PERIODIC, note = "ACCESS_BACKGROUND_LOCATION")
+
+        val row = runLog.entries.single()
+        assertEquals("STOOD_DOWN", row.result)
+        assertEquals("ACCESS_BACKGROUND_LOCATION", row.note)
+    }
+
+    @Test
+    fun `걷어낼 등록이 없으면 standDown은 진단 기록을 남기지 않는다 - 권한 없는 동안 시도마다 쌓이던 소음(F2)`() = runTest {
+        val runLog = FakeRunLog(); val applier = FakeApplier()
+        val service = build(FakeReminders(listOf(convenience)), FakePoi(), runLog = runLog, applier = applier)
+
+        assertEquals(ReseedResult.STOOD_DOWN, service.standDown(ReseedCause.PERIODIC, note = "ACCESS_BACKGROUND_LOCATION"))
+
+        assertTrue(runLog.entries.isEmpty())
+        assertTrue(applier.replaced.isEmpty()) // OS도 건드리지 않는다
+        assertTrue(applier.applied.isEmpty())
+    }
+
+    @Test
+    fun `소실 표시가 있으면 미러가 비어 있어도 standDown이 OS를 비우고 기록한다`() = runTest {
+        // 재부팅 직후 권한이 없으면 미러는 비었어도 OS에 고아 펜스가 있을 수 있다 — 소음이 아니다
+        val runLog = FakeRunLog(); val applier = FakeApplier()
+        val state = FakeStateStore().apply { lost = true }
+        val service = build(FakeReminders(listOf(convenience)), FakePoi(), runLog = runLog, applier = applier, stateStore = state)
+
+        service.standDown(ReseedCause.BOOT, note = "ACCESS_FINE_LOCATION")
+
+        assertTrue(applier.replaced.single().isEmpty())
+        assertFalse(state.lost)
+        assertEquals("STOOD_DOWN", runLog.entries.single().result)
+    }
 }
 
 class FakeStateStore : ReseedStateStore {
@@ -382,4 +505,5 @@ class FakeStateStore : ReseedStateStore {
     override suspend fun recordReseed(stamp: ReseedStamp) { this.stamp = stamp }
     override suspend fun fencesLost() = lost
     override suspend fun setFencesLost(lost: Boolean) { this.lost = lost }
+    override suspend fun clearReseedStamp() { stamp = null }
 }
