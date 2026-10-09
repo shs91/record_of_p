@@ -17,10 +17,10 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.recordofp.app.data.db.EngineRunLogDao
 import com.recordofp.app.data.db.EngineRunLogEntity
-import com.recordofp.app.data.engine.ReseedResult
 import com.recordofp.app.data.engine.ReseedService
 import com.recordofp.app.domain.engine.EngineParams
 import com.recordofp.app.domain.engine.ReseedCause
+import com.recordofp.app.domain.model.GeoPoint
 import com.recordofp.app.data.location.LocationProvider
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -43,55 +43,39 @@ class ReseedWorker @AssistedInject constructor(
             ?.let { runCatching { ReseedCause.valueOf(it) }.getOrNull() }
             ?: ReseedCause.PERIODIC
 
-        if (cause == ReseedCause.PERIODIC) {
-            // §4.4: 진단 로그가 무한정 쌓이지 않게 주기 작업이 돌 때마다 정리
-            runLogDao.pruneOlderThan(clock.millis() - EngineParams.RUN_LOG_RETENTION_MS)
-        }
-
-        val fineGranted = ContextCompat.checkSelfPermission(
-            applicationContext, Manifest.permission.ACCESS_FINE_LOCATION,
-        ) == PackageManager.PERMISSION_GRANTED
-        if (!fineGranted) {
-            // 재시도 무의미 — 권한은 대시보드(§4.3)가 사용자에게 알린다
-            runLogDao.insert(
-                EngineRunLogEntity(at = clock.millis(), cause = cause.name, result = "NO_PERMISSION", registeredCount = 0, note = null),
-            )
-            reseedService.standDown(cause) // §6.4 권한 회수 → 고아 지오펜스 정리
-            return Result.success()
-        }
-
-        // API 29+에서 addGeofences는 백그라운드 위치가 필요하다. 포그라운드-온리 사용자는
-        // 재시도해도 절대 성공하지 않으므로 무한 루프 대신 스탠드다운한다 (§6.4).
-        val bgGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
-            ContextCompat.checkSelfPermission(
-                applicationContext, Manifest.permission.ACCESS_BACKGROUND_LOCATION,
-            ) == PackageManager.PERMISSION_GRANTED
-        if (!bgGranted) {
-            reseedService.standDown(cause) // 로그 포함
-            return Result.success() // 재시도 무의미 — 대시보드(§4.3)가 안내
-        }
-
-        val here = locationProvider.currentOrLast()
-        if (here == null) {
-            runLogDao.insert(
+        // 분기 판단은 runReseedWork(JVM 테스트) — 여기는 Android 접착만
+        val steps = object : ReseedWorkSteps {
+            override suspend fun markFencesLost() = reseedService.markFencesLost()
+            override suspend fun pruneLogs() =
+                runLogDao.pruneOlderThan(clock.millis() - EngineParams.RUN_LOG_RETENTION_MS)
+            override fun missingPermissions() = missingLocationPermissions()
+            override suspend fun standDown(cause: ReseedCause, missing: List<String>) {
+                reseedService.standDown(cause, note = missing.joinToString { it.substringAfterLast('.') })
+            }
+            override suspend fun currentLocation() = locationProvider.currentOrLast()
+            override suspend fun logNoLocation(cause: ReseedCause) = runLogDao.insert(
                 EngineRunLogEntity(at = clock.millis(), cause = cause.name, result = "NO_LOCATION", registeredCount = 0, note = null),
             )
-            return Result.retry() // §6.4 위치 미취득 → 백오프 재시도
+            override suspend fun reseed(cause: ReseedCause, here: GeoPoint) = reseedService.reseed(cause, here)
+            override fun scheduleSentinelRetry(delayMs: Long) =
+                runNow(applicationContext, ReseedCause.SENTINEL_EXIT, delayMs = delayMs)
         }
-
-        val result = reseedService.reseed(cause, here)
-        if (result == ReseedResult.SKIPPED_DEBOUNCE && cause == ReseedCause.SENTINEL_EXIT) {
-            // EXIT는 재신호가 없다 — 디바운스 창 이후로 스스로 재예약 (§6.2)
-            runNow(applicationContext, ReseedCause.SENTINEL_EXIT, delayMs = EngineParams.RESEED_MIN_INTERVAL_MS)
-        }
-        return when (result) {
-            ReseedResult.FAILED -> Result.retry()
-            else -> Result.success()
+        return when (runReseedWork(cause, runAttemptCount, steps)) {
+            ReseedWorkResult.SUCCESS -> Result.success()
+            ReseedWorkResult.RETRY -> Result.retry()
         }
     }
 
+    /** 지오펜싱에 필요한 위치 권한 중 없는 것. API 29+는 백그라운드 위치가 필수다 (검토 B3) */
+    private fun missingLocationPermissions(): List<String> = buildList {
+        add(Manifest.permission.ACCESS_FINE_LOCATION)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) add(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+    }.filter {
+        ContextCompat.checkSelfPermission(applicationContext, it) != PackageManager.PERMISSION_GRANTED
+    }
+
     companion object {
-        private const val UNIQUE_ONESHOT = "reseed_now" // 강한 원인: ITEM_CHANGE/BOOT/SENTINEL_EXIT/RETRY
+        private const val UNIQUE_ONESHOT = "reseed_now" // 강한 원인: ITEM_CHANGE/BOOT/FENCE_LOST/SENTINEL_EXIT/RETRY
         private const val UNIQUE_OPPORTUNISTIC = "reseed_opportunistic" // APP_OPEN 전용
         private const val UNIQUE_PERIODIC = "reseed_health_check"
         const val KEY_CAUSE = "cause"
@@ -119,7 +103,8 @@ class ReseedWorker @AssistedInject constructor(
         fun schedulePeriodic(context: Context) {
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 UNIQUE_PERIODIC,
-                ExistingPeriodicWorkPolicy.KEEP,
+                // UPDATE: 주기를 튜닝하면(EngineParams) 앱 업데이트 뒤 다음 실행부터 반영된다. KEEP은 옛 주기를 영원히 유지한다 (최종 리뷰 M2)
+                ExistingPeriodicWorkPolicy.UPDATE,
                 PeriodicWorkRequestBuilder<ReseedWorker>(EngineParams.HEALTH_CHECK_INTERVAL_HOURS, TimeUnit.HOURS)
                     .setInputData(workDataOf(KEY_CAUSE to ReseedCause.PERIODIC.name))
                     .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)

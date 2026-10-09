@@ -22,18 +22,31 @@ class ReseedGovernorTest {
     }
 
     @Test
-    fun `BOOT와 ITEM_CHANGE는 디바운스를 무시한다`() {
+    fun `BOOT·FENCE_LOST·ITEM_CHANGE는 디바운스를 무시한다`() {
         val fresh = stamp(ageMs = 1 * min) // 1분 전 — 10분 미만
-        assertTrue(governor.shouldReseed(ReseedCause.BOOT, now, fresh, origin))
-        assertTrue(governor.shouldReseed(ReseedCause.ITEM_CHANGE, now, fresh, origin))
+        listOf(ReseedCause.BOOT, ReseedCause.FENCE_LOST, ReseedCause.ITEM_CHANGE).forEach { c ->
+            assertTrue("$c", governor.shouldReseed(c, now, fresh, origin))
+        }
     }
 
     @Test
-    fun `SENTINEL_EXIT·PERIODIC·RETRY는 10분 디바운스를 따른다`() {
-        listOf(ReseedCause.SENTINEL_EXIT, ReseedCause.PERIODIC, ReseedCause.RETRY).forEach { c ->
+    fun `SENTINEL_EXIT·RETRY는 10분 디바운스를 따른다`() {
+        listOf(ReseedCause.SENTINEL_EXIT, ReseedCause.RETRY).forEach { c ->
             assertFalse("$c 9분", governor.shouldReseed(c, now, stamp(9 * min), origin))
             assertTrue("$c 10분", governor.shouldReseed(c, now, stamp(10 * min), origin))
         }
+    }
+
+    @Test
+    fun `PERIODIC은 디바운스를 받지 않는다 - 다른 신호가 다 죽었을 때의 최후 방어선`() {
+        assertTrue(governor.shouldReseed(ReseedCause.PERIODIC, now, stamp(1 * min), origin))
+    }
+
+    @Test
+    fun `시계가 거꾸로 가 스탬프가 미래에 있으면 간격이 지난 것으로 본다`() {
+        val future = stamp(ageMs = -5 * min) // 스탬프가 5분 뒤에 있다
+        assertTrue(governor.shouldReseed(ReseedCause.SENTINEL_EXIT, now, future, origin))
+        assertTrue(governor.shouldReseed(ReseedCause.APP_OPEN, now, future, origin))
     }
 
     @Test

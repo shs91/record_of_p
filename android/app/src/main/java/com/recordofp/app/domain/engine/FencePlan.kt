@@ -37,3 +37,13 @@ data class PoiCandidate(
     val point: GeoPoint,
     val distanceM: Double,
 )
+
+/** 펜스 종류별 전이 (설계 §6.3.5). 미러에는 전이 칼럼이 없어 OS를 되살릴 때도 이 규칙을 쓴다 */
+fun FenceKind.transition(): FenceTransition = when (this) {
+    FenceKind.SENTINEL -> FenceTransition.EXIT
+    FenceKind.POI -> FenceTransition.DWELL
+    FenceKind.PLACE -> FenceTransition.ENTER
+}
+
+/** DWELL(POI)만 체류 시간을 갖는다 */
+fun FenceKind.loiteringDelayMs(): Int? = if (this == FenceKind.POI) EngineParams.LOITERING_DELAY_MS else null

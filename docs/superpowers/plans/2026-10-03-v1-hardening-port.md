@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| 상태 | 초안 — 사용자 검토 전 |
+| 상태 | 진행 중 — 묶음 A(T1~T4) 구현·리뷰 완료(`feat/hardening-engine`, 2026-10-09), 묶음 B~D 남음 |
 | 최종 수정 | 2026-10-09 |
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -515,7 +515,7 @@ FenceApplier.replaceAll로 고아 펜스까지 정리한다. (§6.1, §6.2, §6.
 
 ### Task 2: 조회 실패 시 미러로 OS 복구, 권한 정리 보강
 
-부팅 직후에는 네트워크가 없는 경우가 많다. 이때 카카오 조회가 실패하면 원격은 FAILED만 남기고 OS에는 펜스가 하나도 없는 상태로 백오프한다(§6.4 "구 데이터가 무등록보다 낫다" 위반). 이 태스크는 OS를 믿을 수 없는 상태(`osUntrusted`)에서 조회가 실패하면 미러대로 OS를 되살린다. 원격 미러에는 전이 칼럼이 없으므로, 전이는 펜스 종류에서 다시 계산한다. 또 권한을 회수해 정리(`standDown`)할 때 재배치 스탬프를 지워서, 권한을 다시 켜면 F1의 APP_OPEN이 디바운스에 걸리지 않게 한다. 정리 자체도 `replaceAll(emptyList())`로 바꿔 고아 펜스까지 지운다.
+부팅 직후에는 네트워크가 없는 경우가 많다. 이때 카카오 조회가 실패하면 원격은 FAILED만 남기고 OS에는 펜스가 하나도 없는 상태로 백오프한다(§6.4 "구 데이터가 무등록보다 낫다" 위반). 이 태스크는 OS를 믿을 수 없는 상태(`osUntrusted`)에서 조회가 실패하면 미러대로 OS를 되살린다. 원격 미러에는 전이 칼럼이 없으므로, 전이는 펜스 종류에서 다시 계산한다. 또 권한을 회수해 정리(`standDown`)할 때 재배치 스탬프를 지워서, 권한을 다시 켜면 F1의 APP_OPEN이 디바운스에 걸리지 않게 한다. 정리 자체도 `replaceAll(emptyList())`로 바꿔 고아 펜스까지 지운다. 마지막으로 권한이 없는 동안 시도마다 쌓이던 진단 행을 없앤다(실기기 1차 F2). 걷어낼 등록이 없고 소실 표시도 없으면 `standDown`은 기록하지 않는다. 워커가 따로 남기던 `NO_PERMISSION` 행은 Task 3에서 `STOOD_DOWN`·사유 한 행으로 합쳐진다.
 
 **Files:**
 - Modify: `android/app/src/main/java/com/recordofp/app/domain/engine/FencePlan.kt`
@@ -648,14 +648,43 @@ import에 `com.recordofp.app.domain.engine.EngineParams`, `com.recordofp.app.dom
 
     @Test
     fun `standDown은 사유를 진단 메모로 남긴다`() = runTest {
+        val regDao = FakeRegDao().apply {
+            regs["poi:1"] = GeofenceRegEntity("poi:1", "POI", 37.501, 127.0, 120f, "CU", "1", "cat:convenience", "b0", 0)
+        }
         val runLog = FakeRunLog()
-        val service = build(FakeReminders(listOf(convenience)), FakePoi(), runLog = runLog)
+        val service = build(FakeReminders(listOf(convenience)), FakePoi(), regDao = regDao, runLog = runLog)
 
         service.standDown(ReseedCause.PERIODIC, note = "ACCESS_BACKGROUND_LOCATION")
 
-        val row = runLog.entries.last()
+        val row = runLog.entries.single()
         assertEquals("STOOD_DOWN", row.result)
         assertEquals("ACCESS_BACKGROUND_LOCATION", row.note)
+    }
+
+    @Test
+    fun `걷어낼 등록이 없으면 standDown은 진단 기록을 남기지 않는다 - 권한 없는 동안 시도마다 쌓이던 소음(F2)`() = runTest {
+        val runLog = FakeRunLog(); val applier = FakeApplier()
+        val service = build(FakeReminders(listOf(convenience)), FakePoi(), runLog = runLog, applier = applier)
+
+        assertEquals(ReseedResult.STOOD_DOWN, service.standDown(ReseedCause.PERIODIC, note = "ACCESS_BACKGROUND_LOCATION"))
+
+        assertTrue(runLog.entries.isEmpty())
+        assertTrue(applier.replaced.isEmpty()) // OS도 건드리지 않는다
+        assertTrue(applier.applied.isEmpty())
+    }
+
+    @Test
+    fun `소실 표시가 있으면 미러가 비어 있어도 standDown이 OS를 비우고 기록한다`() = runTest {
+        // 재부팅 직후 권한이 없으면 미러는 비었어도 OS에 고아 펜스가 있을 수 있다 — 소음이 아니다
+        val runLog = FakeRunLog(); val applier = FakeApplier()
+        val state = FakeStateStore().apply { lost = true }
+        val service = build(FakeReminders(listOf(convenience)), FakePoi(), runLog = runLog, applier = applier, stateStore = state)
+
+        service.standDown(ReseedCause.BOOT, note = "ACCESS_FINE_LOCATION")
+
+        assertTrue(applier.replaced.single().isEmpty())
+        assertFalse(state.lost)
+        assertEquals("STOOD_DOWN", runLog.entries.single().result)
     }
 ```
 
@@ -769,7 +798,8 @@ fun FenceKind.loiteringDelayMs(): Int? = if (this == FenceKind.POI) EngineParams
         stateStore.clearReseedStamp()
         val existing = regDao.all()
         if (existing.isEmpty() && !stateStore.fencesLost()) {
-            return@withContext log(cause, ReseedResult.STOOD_DOWN, 0, now, note ?: "no registrations")
+            // 걷어낼 것이 없다. 권한이 없는 동안 워커가 시도할 때마다 같은 행이 쌓이므로 기록하지 않는다 (F2)
+            return@withContext ReseedResult.STOOD_DOWN
         }
         stateStore.setFencesLost(true) // 선기록 (검토 B1)
         try {
@@ -802,14 +832,15 @@ git add android/app/src/main/java/com/recordofp/app/domain/engine/FencePlan.kt \
   android/app/src/main/java/com/recordofp/app/data/engine/EngineStateStore.kt \
   android/app/src/test/java/com/recordofp/app/data/engine/ReseedServiceTest.kt
 git commit -m "fix: 조회 실패 시 미러로 OS 복구와 권한 정리 시 스탬프 삭제" -m "부팅 직후 오프라인에서도 펜스가 0개가 되지 않는다. 권한을 다시 켜면 바로 재배치된다.
-전이는 펜스 종류 규칙(FenceKind.transition)으로 되살린다. (§6.3.5, §6.4, 검토 B3, 최종 리뷰 I2)"
+전이는 펜스 종류 규칙(FenceKind.transition)으로 되살린다. 걷어낼 등록이 없으면 standDown은 기록하지 않는다.
+(§6.3.5, §6.4, 검토 B3, 최종 리뷰 I2, 실기기 F2)"
 ```
 
 ---
 
 ### Task 3: 워커 분기 추출과 FENCE_LOST 배선
 
-위치가 꺼지면 OS가 이 앱의 펜스를 전부 지우고 `GEOFENCE_NOT_AVAILABLE`을 보낸다. 원격 리시버는 이 오류를 무시하므로 PERIODIC(최대 6시간)까지 알림이 없다. 이 태스크는 그 오류를 `FENCE_LOST` 원인으로 재배치에 연결한다. 워커는 BOOT·FENCE_LOST 첫 시도에서 권한·위치 확인보다 먼저 펜스 소실을 표시한다. 워커의 분기 판단은 Android 타입이 없는 순수 함수로 빼서 JVM에서 테스트한다. 주기 작업 정책도 `UPDATE`로 바꾼다(KEEP이면 주기를 튜닝해도 반영되지 않는다).
+위치가 꺼지면 OS가 이 앱의 펜스를 전부 지우고 `GEOFENCE_NOT_AVAILABLE`을 보낸다. 원격 리시버는 이 오류를 무시하므로 PERIODIC(최대 6시간)까지 알림이 없다. 이 태스크는 그 오류를 `FENCE_LOST` 원인으로 재배치에 연결한다. 워커는 BOOT·FENCE_LOST 첫 시도에서 권한·위치 확인보다 먼저 펜스 소실을 표시한다. 워커의 분기 판단은 Android 타입이 없는 순수 함수로 빼서 JVM에서 테스트한다. 주기 작업 정책도 `UPDATE`로 바꾼다(KEEP이면 주기를 튜닝해도 반영되지 않는다). 권한이 없을 때 워커가 따로 남기던 `NO_PERMISSION` 행은 없어지고, `standDown`의 `STOOD_DOWN`·사유 한 행이 그 역할을 한다(F2, Task 2).
 
 **Files:**
 - Modify: `android/app/src/main/java/com/recordofp/app/domain/engine/ReseedGovernor.kt`
@@ -1134,6 +1165,10 @@ internal suspend fun runReseedWork(
  어긋남은 DataStore의 **펜스 소실 표시(`fences_lost`)**로 다룬다. BOOT·FENCE_LOST(`GEOFENCE_NOT_AVAILABLE`) 워커 첫 시도와 OS 호출 직전에 표시를 켜고, 미러 기록까지 성공하면 끈다. 표시가 켜져 있으면 다음 재배치는 원인과 상관없이 `replaceAll`로 전체 재등록하고, 조회가 실패하면 미러대로 OS를 되살린다.
 ```
 
+같은 파일의 "재배치(Reseed)" 항목 두 곳도 고친다.
+- 원인 목록 `` 원인(`BOOT`/`SENTINEL_EXIT`/`PERIODIC`/`APP_OPEN`/`ITEM_CHANGE`/`RETRY`) `` → `` 원인(`BOOT`/`FENCE_LOST`/`SENTINEL_EXIT`/`PERIODIC`/`APP_OPEN`/`ITEM_CHANGE`/`RETRY`) ``
+- `BOOT·PERIODIC은 미러와 상관없이 계획된 펜스를 전부 다시 등록한다.` → `BOOT·FENCE_LOST·PERIODIC과 펜스 소실 표시가 켜진 재배치는 미러와 상관없이 이 앱의 OS 펜스를 전부 지우고(`replaceAll`) 계획된 펜스를 전부 다시 등록한다.`
+
 - [ ] **Step 9: 테스트 통과를 확인한다**
 
 Run: `./gradlew testDebugUnitTest --tests "*.ReseedWorkFlowTest" --tests "*.ReseedGovernorTest" --tests "*.ReseedServiceTest"`
@@ -1288,6 +1323,40 @@ git add android/app/src/main/java/com/recordofp/app/domain/engine/ReseedGovernor
 git commit -m "fix: 센티널 즉시 이탈 감지와 거버너 시계 역행·PERIODIC 면제" -m "등록 순간 이미 원 밖이면 센티널이 곧바로 EXIT를 낸다. 시계가 거꾸로 가도 재배치가 막히지 않고,
 PERIODIC 헬스체크는 디바운스 없이 돈다. (§6.2, 최종 리뷰 C1)"
 ```
+
+- [ ] **Step 7: 설계 문서를 1.1로 갱신하고 커밋한다 (묶음 A 전체 반영)**
+
+설계 문서는 살아있는 문서다(CLAUDE.md 문서 규칙). 묶음 A가 바꾼 엔진 동작을 `docs/superpowers/specs/2026-08-31-record-of-p-design.md`에 반영한다. §번호는 바꾸지 않는다.
+
+1. §6.2 표에서 `| BOOT / PACKAGE_REPLACED | 재부팅·앱 업데이트 후 복구 |` 바로 아래에 한 행을 넣는다.
+   `| FENCE_LOST | 위치가 꺼지는 등으로 OS가 이 앱의 지오펜스를 전부 지웠을 때(`GEOFENCE_NOT_AVAILABLE`) 복구 |`
+2. §6.2의 `디바운스: 재배치 최소 간격 10분(ITEM_CHANGE는 예외 — 즉시 반영하되 30초 코얼레싱).`을 바꾼다.
+   `디바운스: 재배치 최소 간격 10분. 예외는 ITEM_CHANGE(즉시 반영하되 30초 코얼레싱), BOOT·FENCE_LOST(펜스가 사라졌다), PERIODIC(최후 방어선이고 6시간에 한 번이라 쿼터 부담이 없다)다. 시계가 거꾸로 가 마지막 재배치 시각이 미래에 있으면 간격이 지난 것으로 본다.`
+3. §6.3 5번의 `   - SENTINEL: 반경 1.0km, `EXIT`.`을 바꾼다.
+   `   - SENTINEL: 반경 1.0km, `EXIT`. 등록하는 순간 이미 원 밖이면(차량 이동, 오래된 위치) 곧바로 EXIT를 낸다. POI·PLACE는 등록하는 순간 이미 안에 있어도 알리지 않는다.`
+4. §6.3 6번(`6. **적용**: …차분 적용으로 이벤트 유실 창을 줄인다.`) 끝에 이어 쓴다.
+   ` 단, OS 등록을 믿을 수 없을 때(BOOT·FENCE_LOST, 또는 OS 반영과 미러 기록이 함께 끝나지 못해 남은 **펜스 소실 표시**)와 PERIODIC 헬스체크는 이 앱의 OS 지오펜스를 전부 지우고(고아 포함) 계획 전체를 다시 등록한다. OS 반영을 시작하면 작업이 취소돼도 미러 기록까지 마친다.`
+5. §6.4 첫 항목(`- 카카오 API 실패/오프라인: …RETRY 백오프 예약.`) 끝에 이어 쓴다.
+   ` 단, OS 등록을 믿을 수 없는 상태라면 OS에 "유지할 기존 등록"이 없으므로 미러(`geofence_reg`)대로 OS를 되살린 뒤 RETRY한다(부팅 직후 오프라인).`
+6. §6.4 `- 권한 회수 감지: …(고아 지오펜스 방지).` 끝에 이어 쓴다.
+   ` 이때 마지막 재배치 기록도 지워, 권한이 돌아오면 다음 재배치가 디바운스 없이 바로 돈다. 걷어낼 등록이 없으면 진단 기록을 남기지 않는다(권한이 없는 동안 시도마다 쌓이는 소음 방지).`
+7. 머리말 표: `| 버전 | 1.0 |` → `| 버전 | 1.1 |`, `최종 수정`을 커밋하는 날짜로 바꾼다.
+8. 끝의 변경 이력 표에 한 행을 더한다(날짜는 커밋하는 날짜).
+   `| 1.1 | <날짜> | §6.2, §6.3, §6.4 | FENCE_LOST 원인, 디바운스 예외(BOOT·FENCE_LOST·PERIODIC)와 시계 역행, 펜스 소실 표시와 전체 재등록, 센티널 즉시 이탈, 조회 실패 시 미러 복구, 권한 회수 시 스탬프 삭제와 무소음 | 보강 계획 묶음 A(T1~T4), 검토 B1·B3·B4, 최종 리뷰 C1·I2, 실기기 F2 |`
+
+```bash
+git add docs/superpowers/specs/2026-08-31-record-of-p-design.md
+git commit -m "docs: 설계 문서 1.1 — 묶음 A 엔진 보강 반영" -m "FENCE_LOST, 디바운스 예외, 펜스 소실 표시·전체 재등록, 센티널 즉시 이탈, 미러 복구, 권한 회수 정리. (§6.2, §6.3, §6.4)"
+```
+
+### 묶음 A 인계 (2026-10-09 최종 리뷰)
+
+묶음 A(`feat/hardening-engine`) 최종 리뷰에서 나왔지만 이 묶음에서 고치지 않은 것이다. 해당 태스크를 실행할 때 반영한다.
+
+- **Task 10**: 센티널 이탈은 미러에 `sentinel` 행이 있는지와 상관없이 펜스 키로 판정한다. 첫 재배치 직후 `INITIAL_TRIGGER_EXIT` 이탈이 미러 커밋보다 먼저 도착하면, 지금은 stale로 버려져 센티널이 소모된다. 잘못된 센티널 이탈의 대가는 디바운스되는 재배치 1회뿐이다.
+- **Task 9 또는 10**: `DiagnosticsScreen`의 `NO_PERMISSION` 색 분기를 정리한다. 워커는 더 이상 이 행을 쓰지 않는다(F2). 다만 진단 로그 보존 기간 안의 옛 행이 남아 있을 수 있다.
+- **후속(태스크 미정)**: `ReseedService`의 NonCancellable 안 GMS 호출에 타임아웃(`EngineParams` 상수)을 둔다. GMS Task가 멈추면 mutex를 프로세스가 죽을 때까지 잡는다. `TimeoutCancellationException`을 실패로 처리하도록 세 곳(reseed·restoreFromMirror·standDown)의 catch 순서를 바꿔야 하므로 별도 TDD로 한다.
+- **다음 설계 문서 개정**: §5.3의 `geofenceId(PK, uuid)`는 실제로는 안정 키(`sentinel`·`poi:<id>`·`place:<id>`)다. §6.2 RETRY의 "15분→1h→6h"는 WorkManager 지수 백오프(15분 시작, 상한 5시간)와 다르다.
 
 ---
 
@@ -2163,6 +2232,8 @@ git commit -m "feat: 알림 발화·stale·표시 실패를 진단 로그에 기
 ---
 
 ### Task 10: 리시버 무중단 — 센티널 우선·묶음별 격리·오류 기록
+
+> 묶음 A 인계: 센티널 이탈은 미러 유무와 상관없이 키로 판정한다 — "묶음 A 인계" 절 참고.
 
 원격 리시버는 프로세스가 죽지 않게 예외를 잡고는 있다. 하지만 센티널 재배치를 알림 루프 **뒤에** 예약하고, 묶음별 예외 격리가 없다. 그래서 알림 하나가 예외를 내면(예: 방금 알림 권한 회수) 나머지 알림과 SENTINEL_EXIT가 함께 사라져 이동 감지 사슬이 끊긴다. 오류도 시스템 로그로만 남아 진단 화면에 보이지 않는다. 이 태스크는 처리 순서를 순수 함수(`runFenceEvent`)로 빼서 JVM에서 테스트한다. 센티널을 먼저 예약하고, 묶음마다 따로 처리하고, 오류는 EngineRunLog에 남긴다. 센티널 예약 자체가 실패해도 알림은 계속 발행한다(로컬 N2).
 
@@ -3542,7 +3613,7 @@ git commit -m "fix: 뒤로 버튼 설명·키보드 가림·뒤로 연타 가드
 각 묶음 PR 본문에는 아래 목록 중 그 묶음과 관련된 항목 번호를 적는다. 네 묶음이 모두 병합되면 사용자가 실기기에서 한꺼번에 확인한다. `tools/device/e2e.sh`(macOS는 `ADB=~/Library/Android/sdk/platform-tools/adb`)와 진단 화면(설정 → 문제 해결)을 쓴다. 확인한 결과는 `docs/superpowers/notes/`에 2차 검증 노트로 남긴다.
 
 1. **재부팅**: `adb reboot` → 잠금 해제 → 진단에 `BOOT → APPLIED`가 남고 note가 `full-resync`인지 확인한다.
-2. **위치 껐다 켜기**: 기기 위치를 끄면 진단에 `FENCE_LOST`가 생기고, 홈 배너는 "기기 위치가 꺼져 있어요"가 된다. 다시 켜면 `FENCE_LOST → APPLIED`(full-resync)가 남는다.
+2. **위치 껐다 켜기**: 기기 위치를 끄면 진단에 `FENCE_LOST`가 생기고, 홈 배너는 "기기 위치가 꺼져 있어요"가 된다. 위치를 켜는 것만으로는 재배치가 바로 돌지 않는다. 다시 켠 뒤 앱을 열면 `APP_OPEN → APPLIED`(full-resync)가, 열지 않으면 백오프 재시도(15분·30분·1시간…) 때 `FENCE_LOST → APPLIED`(full-resync)가 남는다.
 3. **부팅 직후 오프라인**: 비행기 모드로 재부팅 → `BOOT → FAILED`, note가 `restored-from-mirror`로 시작하는지 확인한다. 네트워크를 켜면 재시도 후 APPLIED가 된다.
 4. **'항상 허용' 해제와 재허용**: 해제하면 진단에 `STOOD_DOWN · ACCESS_BACKGROUND_LOCATION`이 남고, 홈 배너가 단계 안내를 담은 업셀 카드가 된다. [설정 열기]로 다시 허용하고 돌아오면 곧바로 `APP_OPEN → APPLIED`가 남는다.
 5. **근처 알림 채널만 끄기**: 알림을 길게 눌러 채널을 끄면 대시보드의 알림 행이 꺼짐이 된다. 이벤트가 오면 `BLOCK_NOTIFICATIONS_OFF`가 남고, 하루 상한은 줄지 않는다.
@@ -3554,3 +3625,5 @@ git commit -m "fix: 뒤로 버튼 설명·키보드 가림·뒤로 연타 가드
 11. **다크 모드 + 키보드**: 에디터에서 장소 검색란을 누르면 키보드가 입력란과 결과를 가리지 않는다.
 12. **뒤로 연타**: 설정·주변 보기·에디터에서 뒤로를 빠르게 여러 번 눌러도 홈에서 멈춘다.
 13. **백업 차단**: `adb shell dumpsys package com.recordofp.app | grep -i backup`에서 `ALLOW_BACKUP` 플래그가 없는지 확인한다.
+14. **권한 없이 재부팅**: 위치 권한을 끈 채 `adb reboot` → 진단에 `BOOT → STOOD_DOWN`이 한 줄 남고 `FAILED`가 반복되지 않는다(권한 없이 PendingIntent 단위 해제가 되는지 확인).
+15. **센티널 즉시 이탈**(에뮬레이터): 재배치 직후 `adb emu geo fix`로 2km 이상 떨어진 곳으로 옮긴다 → `SENTINEL_EXIT → SKIPPED_DEBOUNCE` → 10분 뒤 `SENTINEL_EXIT → APPLIED`가 남는다.
