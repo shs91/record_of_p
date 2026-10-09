@@ -28,6 +28,7 @@ data class TriggerCandidates(
     val isPlace: Boolean = false,
     val placePoint: GeoPoint? = null,
     val placeName: String? = null,
+    val placeKakaoId: String? = null,
     val candidates: List<PoiCandidate> = emptyList(),
 )
 

@@ -197,6 +197,26 @@ class GeofenceEventHandlerTest {
     }
 
     @Test
+    fun `PLACE 펜스도 같은 항목·같은 지점 24시간 쿨다운이 걸린다 (검토 C1)`() = runTest {
+        val regs = FakeRegs().apply {
+            regs["place:20"] = placeReg("place:20", kakaoId = "k9", name = "집 앞 CU")
+            links += RegTriggerEntity("place:20", 20)
+        }
+        val notifLog = FakeNotifLog().apply { // 5시간 전 같은 지점 알림 — 항목 쿨다운(4h)은 지났지만 24h 안
+            rows += NotificationLogEntity(reminderId = 1, poiKakaoId = "k9", shownAt = noon.toEpochMilli() - 5 * 3_600_000)
+        }
+        val runs = FakeRuns()
+        val handler = build(
+            regs, FakeSpecs(mapOf(20L to placeSpec(20, 1, "k9"))), FakeReminderDao(mapOf(1L to reminder(1))), notifLog, runs,
+        )
+
+        val out = handler.onFenceEvent(listOf("place:20"), null)
+
+        assertTrue(out.groups.isEmpty())
+        assertTrue(runs.entries.any { it.result == "BLOCK_PLACE_COOLDOWN" })
+    }
+
+    @Test
     fun `등록에 없는 stale 이벤트는 무시된다`() = runTest {
         val handler = build(FakeRegs(), FakeSpecs(emptyMap()), FakeReminderDao(emptyMap()))
         val out = handler.onFenceEvent(listOf("poi:ghost"), null)

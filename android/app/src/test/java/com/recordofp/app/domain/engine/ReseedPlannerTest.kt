@@ -146,4 +146,15 @@ class ReseedPlannerTest {
         assertEquals(6, plan.countFor("cat:b"))
         assertEquals(6, plan.countFor("cat:c"))
     }
+
+    @Test
+    fun `PLACE 펜스는 카카오 지점 id를 poiId로 싣는다 (검토 C1)`() {
+        val place = TriggerCandidates(
+            matchKey = "place:1", isPlace = true,
+            placePoint = GeoPoint(37.5100, 127.0000), placeName = "우리집 앞 GS25", placeKakaoId = "k9",
+        )
+        val fence = ReseedPlanner().plan(here, listOf(place)).single { it.kind == FenceKind.PLACE }
+        assertEquals("k9", fence.poiId)
+    }
+
 }

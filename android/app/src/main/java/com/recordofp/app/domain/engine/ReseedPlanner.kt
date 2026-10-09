@@ -43,6 +43,7 @@ class ReseedPlanner(
                 transition = FenceKind.PLACE.transition(),
                 matchKeys = setOf(p.matchKey),
                 poiName = p.placeName,
+                poiId = p.placeKakaoId,
             )
             budget--
         }

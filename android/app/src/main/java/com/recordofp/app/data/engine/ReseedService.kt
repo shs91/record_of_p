@@ -118,7 +118,7 @@ class ReseedService @Inject constructor(
                     when (req) {
                         is PlaceRequest -> TriggerCandidates(
                             matchKey = req.matchKey, isPlace = true,
-                            placePoint = req.point, placeName = req.name,
+                            placePoint = req.point, placeName = req.name, placeKakaoId = req.kakaoId,
                         )
                         is QueryRequest -> TriggerCandidates(
                             matchKey = req.matchKey,
