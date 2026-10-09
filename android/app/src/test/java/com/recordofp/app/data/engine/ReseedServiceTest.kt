@@ -182,8 +182,21 @@ class ReseedServiceTest {
         }
         val applier = FakeApplier()
         val service = build(FakeReminders(listOf(convenience)), FakePoi(), stateStore = state, applier = applier)
-        assertEquals(ReseedResult.SKIPPED_DEBOUNCE, service.reseed(ReseedCause.PERIODIC, here))
+        assertEquals(ReseedResult.SKIPPED_DEBOUNCE, service.reseed(ReseedCause.SENTINEL_EXIT, here))
         assertTrue(applier.applied.isEmpty())
+        assertTrue(applier.replaced.isEmpty())
+    }
+
+    @Test
+    fun `PERIODIC은 방금 재배치했어도 전체 재등록한다`() = runTest {
+        val state = FakeStateStore().apply { stamp = ReseedStamp(1_000_000_000_000 - 60_000, here) }
+        val applier = FakeApplier()
+        val service = build(
+            FakeReminders(listOf(convenience)), FakePoi(byQuery = mapOf("CS2" to listOf(poi("1", 37.501)))),
+            applier = applier, stateStore = state,
+        )
+        assertEquals(ReseedResult.APPLIED, service.reseed(ReseedCause.PERIODIC, here))
+        assertEquals(1, applier.replaced.size)
     }
 
     @Test
