@@ -62,16 +62,20 @@ fun locationSourceSettingsIntent(): Intent = Intent(Settings.ACTION_LOCATION_SOU
 fun batteryOptimizationSettingsIntent(): Intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
 
 /**
- * 시스템 설정 화면을 연다. 일부 제조사 빌드에 없는 화면이면 앱 상세 설정으로,
- * 그것마저 없으면 아무것도 하지 않는다 (최종 리뷰 M8)
+ * 시스템 설정 화면을 연다. 일부 제조사 빌드에 없거나 내보내지 않은 화면이면 앱 상세 설정으로,
+ * 그것마저 열 수 없으면 아무것도 하지 않는다 (최종 리뷰 M8, 묶음 B 최종 리뷰 M3)
  */
 fun Context.openSettings(intent: Intent) {
-    try {
-        startActivity(intent)
-    } catch (_: ActivityNotFoundException) {
-        try {
-            startActivity(appDetailsSettingsIntent(this))
-        } catch (_: ActivityNotFoundException) {
-        }
-    }
+    if (tryStartActivity(intent)) return
+    tryStartActivity(appDetailsSettingsIntent(this))
+}
+
+/** 화면이 없으면 ActivityNotFoundException, 내보내지 않은 화면이면 일부 제조사에서 SecurityException이 난다 */
+private fun Context.tryStartActivity(intent: Intent): Boolean = try {
+    startActivity(intent)
+    true
+} catch (_: ActivityNotFoundException) {
+    false
+} catch (_: SecurityException) {
+    false
 }
