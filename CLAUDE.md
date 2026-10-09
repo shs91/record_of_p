@@ -7,11 +7,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 P의기록(Record of P) — 카테고리/브랜드("아무 편의점이나") 단위로 할 일을 걸어두면 해당 장소 근처를 **도보로** 지날 때 알림을 주는 위치 기반 리마인더. Android(Kotlin) v1.0 선출시 → iOS(Swift) 포팅 예정.
 
 - **설계 문서(단일 진실 원천)**: `docs/superpowers/specs/2026-08-31-record-of-p-design.md` — 코드·커밋은 이 문서의 §번호를 근거로 인용한다.
-- **구현 계획(13 태스크, TDD)**: `docs/superpowers/plans/2026-08-31-record-of-p-v1.md` — 구현 완료(`feat/v1`, PR #1). 계획의 Global Constraints는 이후 작업에도 모두 적용된다. 태스크 단위 실행은 `superpowers:subagent-driven-development`(권장) 또는 `superpowers:executing-plans`로 한다.
+- **구현 계획(13 태스크, TDD)**: `docs/superpowers/plans/2026-08-31-record-of-p-v1.md` — 구현 완료(PR #1, 2026-10-09 `main` 병합). 계획의 Global Constraints는 이후 작업에도 모두 적용된다. 태스크 단위 실행은 `superpowers:subagent-driven-development`(권장) 또는 `superpowers:executing-plans`로 한다.
 - **실기기 검증 기록**: `docs/superpowers/notes/2026-09-01-device-verification-round1.md` — 통과 항목, 발견 사항(F0~F5)과 해결 커밋, 남은 검증 목록.
-- **디자인 개편안(클린 미니멀)**: `docs/superpowers/specs/2026-09-03-design-refresh-clean-minimal.md` — 현재 UI의 기준.
-- **계획 검토 결과**: `docs/superpowers/reviews/2026-09-29-v1-plan-review.md` — 원래 계획의 결함 목록이다. 검토가 구현보다 늦게 나와서 **현재 `feat/v1` 코드에는 반영되지 않았다**. 이 검토를 반영한 별도 구현이 `archive/v1-local` 브랜치에 있다(푸시하지 않음, 참고 구현). 현재 코드에 없는 수정은 이식 계획으로 옮긴다. C4~C7은 출시 전 체크리스트로 보류했다.
-- **보강 이식 계획(15 태스크, TDD)**: `docs/superpowers/plans/2026-10-03-v1-hardening-port.md` — 검토와 `archive/v1-local`의 수정 중 원격에 없는 것을 옮긴다(엔진 신뢰성 → 프라이버시·권한 → 알림 정확도 → UI). 코드 주석의 `최종 리뷰 C1`·`I2` 같은 번호는 로컬 최종 리뷰 번호다.
+- **디자인 시스템**: `docs/design/design-system.md` — 현재 UI의 기준(방향·토큰·컴포넌트). Android `ui/theme`과 이후 iOS 테마가 이 문서를 따른다.
+- **디자인 개편안(클린 미니멀)**: `docs/superpowers/specs/2026-09-03-design-refresh-clean-minimal.md` — 2026-09-03 개편의 결정 기록. 확정된 값은 디자인 시스템으로 옮겼다.
+- **계획 검토 결과**: `docs/superpowers/reviews/2026-09-29-v1-plan-review.md` — 원래 계획의 결함 목록이다. 검토가 구현보다 늦게 나와서 **현재 `main` 코드에는 반영되지 않았다**. 이 검토를 반영한 별도 구현이 `archive/v1-local` 브랜치에 있다(푸시하지 않음, 참고 구현). 현재 코드에 없는 수정은 이식 계획으로 옮긴다. C4~C7은 출시 전 체크리스트로 보류했다.
+- **보강 이식 계획(15 태스크, TDD)**: `docs/superpowers/plans/2026-10-03-v1-hardening-port.md` — 검토와 `archive/v1-local`의 수정 중 원격에 없는 것을 옮긴다(엔진 신뢰성 → 프라이버시·권한 → 알림 정확도 → UI). 코드 주석의 `최종 리뷰 C1`·`I2` 같은 번호는 로컬 최종 리뷰 번호다. 상태는 초안(사용자 검토 전)이고, 묶음 A~D마다 `feat/hardening-*` 브랜치와 PR을 하나씩 쓴다.
+- **변경 기록**: `CHANGELOG.md` — 출시 단위, 사용자 관점.
 
 ## 명령 (macOS — 항상 `android/`에서 실행)
 
@@ -56,6 +58,33 @@ cd android
 - **트리거 카탈로그**(`TriggerCatalog`)는 코드에 내장한다(DB에 두지 않음). 카카오 코드(`CS2` 등)로 해석하거나, 코드가 없는 업종·브랜드는 키워드 검색으로 해석한다. 표시명은 strings.xml에서 `cat_<id>`로 매핑한다.
 - **카카오 로컬 API**: `x`=경도, `y`=위도이고 좌표·거리가 **문자열**로 온다. radius ≤ 20,000m, size ≤ 15, `sort=distance`. 재배치 1회당 최대 2페이지.
 - 알림 채널은 `nearby`(높음)와 `status`(낮음) 두 개다(`Notifier`).
+
+## 프로젝트 규칙 (2026-10-09 확정)
+
+### Git — GitHub Flow + 태그
+
+- `main`은 항상 빌드·출시 가능하다. 직접 커밋·푸시하지 않는다. 브랜치 보호로 PR 필수, CI(`build`) 통과 필수, 관리자 예외 없음을 걸어 두었다.
+- 브랜치는 `main`에서 딴다: `feat/<주제>`, `fix/<주제>`, `docs/<주제>`. 수명은 짧게 둔다. 계획의 묶음 하나가 PR 하나다. `archive/<이름>`은 로컬 보관용이고 푸시하지 않는다.
+- 병합은 **merge commit만** 쓴다(squash·rebase는 저장소 설정에서 꺼 두었다). 태스크 커밋과 본문의 §번호를 `main` 이력에 남기기 위해서다. 병합하면 원격 브랜치는 자동으로 지워진다.
+- PR 본문에는 무엇·왜, 관련 스펙 §와 계획 태스크, 검증 결과(테스트 수, lint 오류 0), 실기기에서 확인할 항목을 적는다.
+- 출시: versionCode/versionName을 올리는 커밋을 병합한 뒤 `main`에 태그 `android-vX.Y.Z`(iOS는 `ios-vX.Y.Z`)를 붙이고, `CHANGELOG.md`의 `[미출시]`를 그 버전으로 확정한다.
+- 푸시, PR 생성·병합, 태그, GitHub 설정 변경은 사용자가 요청하거나 승인했을 때만 한다.
+
+### 디자인 — 문서 토큰 + 목업 승인
+
+- 기준은 `docs/design/design-system.md`다. 레퍼런스는 토스·당근·헤이딜러이고, 방향은 "심플하지만 너무 단순하지는 않게"다(문서 §1).
+- 토큰(색·타입·형태·간격·모션)을 바꾸면 디자인 시스템 문서와 `ui/theme` 코드를 같은 커밋에서 바꾸고, 문서의 변경 이력에 한 줄 남긴다.
+- 새 화면이나 눈에 띄는 시각 변경은 HTML 목업(라이트·다크) → 사용자 승인 → 구현 → 실기기 라이트·다크 스크린샷 확인 순서로 한다. 기존 컴포넌트 안의 작은 수정은 목업 없이 한다.
+- 화면 코드에서 색·글꼴은 테마 토큰만 쓴다(`Color(0x…)`·`.sp` 리터럴 금지). `Spacing` 토큰과 화면별 `@Preview`(라이트·다크)는 다음 UI 작업에서 도입하고, 그 뒤로는 필수다. 두 화면 이상에서 쓰는 컴포넌트는 `ui/common`으로 옮긴다.
+
+### 문서 — 상태표 + 변경 이력
+
+- 위치는 지금대로 둔다: `docs/superpowers/{specs,plans,reviews,notes}/YYYY-MM-DD-<주제>.md`, 디자인 시스템만 `docs/design/`.
+- **살아있는 문서**(설계 문서, 디자인 시스템)는 계속 고쳐 현재를 반영한다. **시점 기록**(계획·검토·노트·개편안)은 끝나면 본문을 동결하고 머리말 상태만 갱신한다. 큰 방향이 바뀌면 새 날짜로 문서를 새로 쓰고, 옛 문서는 지우지 않고 `대체됨(→ 새 문서)`로 표시한다.
+- 모든 문서 첫머리에 표로 `상태`와 `최종 수정`을 둔다. 살아있는 문서는 `버전`도 둔다. 상태는 `초안 → 승인 → 진행 중 → 완료 | 대체됨` 중 하나다. 살아있는 문서의 `승인`은 "현재 기준"이라는 뜻이고, `완료`는 시점 기록에만 쓴다. 문서를 고친 커밋에서 머리말도 함께 고친다.
+- 살아있는 문서는 끝에 `## 변경 이력` 표(`버전 | 날짜 | 바뀐 § | 무엇·왜 | 근거`)를 둔다. 의미가 바뀌면 버전을 올리고(1.0 → 1.1) 한 줄 추가한다. 근거에는 계획 태스크·검토 번호·사용자 결정을 적는다. 오타·서식 수정과 상태만 바뀐 경우는 기록하지 않고 버전도 올리지 않는다.
+- 설계 문서의 §번호는 코드와 커밋이 인용하므로 재배치·재사용하지 않는다. 새 절은 끝 번호 다음에 붙이고, 지운 절은 제목에 "(vX.Y에서 삭제 — 이유)"를 남긴다.
+- `CHANGELOG.md`는 출시 단위로 사용자에게 무엇이 달라졌는지 적는다. 작업 중에는 `[미출시]`에 쌓는다. 내부 리팩터링과 문서 변경은 적지 않는다.
 
 ## 작업 규칙 (계획서 Global Constraints 요약 + 저장소 관례)
 

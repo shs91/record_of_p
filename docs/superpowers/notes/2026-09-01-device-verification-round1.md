@@ -2,6 +2,8 @@
 
 | | |
 |---|---|
+| 상태 | 진행 중 — 남은 검증: 도보 프로토콜(4·5·6), TalkBack(10), 필드 튜닝 |
+| 최종 수정 | 2026-10-09 |
 | 기기 | Samsung Galaxy A25 (SM-A256N), Android 16 / SDK 36, One UI 8.5 |
 | 빌드 | feat/v1 @ 369f763, 카카오 REST 키 내장(32자, local.properties) |
 | 환경 | GMS 있음 · 카카오맵 앱 없음(웹 폴백 경로) · 모의 위치 앱 없음 · 기기 sqlite3 없음(run-as+로컬 Python으로 DB 검증) |

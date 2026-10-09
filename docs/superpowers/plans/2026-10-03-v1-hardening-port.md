@@ -1,8 +1,13 @@
 # v1 보강 이식 Implementation Plan
 
+| | |
+|---|---|
+| 상태 | 초안 — 사용자 검토 전 |
+| 최종 수정 | 2026-10-09 |
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 원격 기준 `feat/v1`(PR #1)에, 2026-09-29 계획 검토와 로컬 참고 구현(`archive/v1-local`)에서 나온 수정 중 원격에 없는 것을 TDD로 옮긴다.
+**Goal:** 원격 기준 `feat/v1`(PR #1, 2026-10-09 `main` 병합)에, 2026-09-29 계획 검토와 로컬 참고 구현(`archive/v1-local`)에서 나온 수정 중 원격에 없는 것을 TDD로 옮긴다.
 
 **Architecture:** 원격 구조는 그대로 둔다. 큐 2개(`reseed_now` REPLACE / `reseed_opportunistic` KEEP), 표시 후 기록(`recordShown`), `ProtectionReseedTrigger`, 클린 미니멀 UI가 여기에 해당한다. 엔진 신뢰성은 세 가지로 보강한다. DataStore의 **펜스 소실 표시(`fences_lost`)**, OS 호출부터 미러 기록까지를 묶는 **NonCancellable 선기록**, 이 앱의 OS 펜스를 PendingIntent 단위로 전부 바꾸는 **`FenceApplier.replaceAll`**이다. 알림 쪽은 이벤트 안에서 같은 항목을 한 번만 내보내고, 알림 id를 펜스 기준으로 바꾸고, PLACE 펜스에 카카오 지점 id를 싣는다. UI는 디자인 개편본 위에 손으로 다시 구현한다. 원격 UI가 로컬과 달라 cherry-pick이 되지 않기 때문이다.
 
@@ -29,7 +34,8 @@
 - 테스트 더블은 모킹 라이브러리 없이 인터페이스를 직접 구현한 페이크로 만든다. 테스트 이름은 백틱 한글 문장으로 쓴다.
 - 취소 예외 관례: `catch (e: Exception)` 앞에 `catch (c: CancellationException) { throw c }`를 둔다.
 - `ReminderRepository` 인터페이스를 바꾸면 테스트 페이크 4곳을 모두 고친다: `ReseedServiceTest.FakeReminders`, `HomeViewModelTest.FakeRepo`, `EditorViewModelTest.FakeRepo`, `NearbyViewModelTest.FakeRepo`.
-- 커밋은 태스크마다 한 번 한다. 형식은 `fix:`/`feat:`/`refactor:`/`test:` 접두어 + 한글 요약이고, 본문에 설계 §번호와 검토·최종 리뷰 번호를 적는다. 본문 끝에는 실행 환경이 지정한 `Co-Authored-By` 줄을 붙인다. 기존 커밋을 고치거나 다시 쓰지 않는다. **푸시하지 않는다**(브랜치 마무리 때 사용자가 정한다).
+- 커밋은 태스크마다 한 번 한다. 형식은 `fix:`/`feat:`/`refactor:`/`test:` 접두어 + 한글 요약이고, 본문에 설계 §번호와 검토·최종 리뷰 번호를 적는다. 본문 끝에는 실행 환경이 지정한 `Co-Authored-By` 줄을 붙인다. 기존 커밋을 고치거나 다시 쓰지 않는다.
+- 브랜치는 묶음마다 하나다: A `feat/hardening-engine`, B `feat/hardening-privacy`, C `feat/hardening-alerts`, D `feat/hardening-ui`. 앞 묶음이 병합된 `main`에서 딴다. 묶음이 끝나면 그 묶음 전체를 리뷰한 뒤 PR 하나로 올린다. 푸시·PR 생성·병합은 사용자가 정한다(CLAUDE.md Git 규칙).
 
 ## Review Focus
 
@@ -3533,7 +3539,7 @@ git commit -m "fix: 뒤로 버튼 설명·키보드 가림·뒤로 연타 가드
 
 ## 마무리 — 사용자 기기 확인 목록
 
-태스크가 모두 끝나면 브랜치 전체 리뷰를 한 번 하고, 사용자가 실기기에서 확인한다. `tools/device/e2e.sh`(macOS는 `ADB=~/Library/Android/sdk/platform-tools/adb`)와 진단 화면(설정 → 문제 해결)을 쓴다. 확인한 결과는 `docs/superpowers/notes/`에 2차 검증 노트로 남긴다.
+각 묶음 PR 본문에는 아래 목록 중 그 묶음과 관련된 항목 번호를 적는다. 네 묶음이 모두 병합되면 사용자가 실기기에서 한꺼번에 확인한다. `tools/device/e2e.sh`(macOS는 `ADB=~/Library/Android/sdk/platform-tools/adb`)와 진단 화면(설정 → 문제 해결)을 쓴다. 확인한 결과는 `docs/superpowers/notes/`에 2차 검증 노트로 남긴다.
 
 1. **재부팅**: `adb reboot` → 잠금 해제 → 진단에 `BOOT → APPLIED`가 남고 note가 `full-resync`인지 확인한다.
 2. **위치 껐다 켜기**: 기기 위치를 끄면 진단에 `FENCE_LOST`가 생기고, 홈 배너는 "기기 위치가 꺼져 있어요"가 된다. 다시 켜면 `FENCE_LOST → APPLIED`(full-resync)가 남는다.
