@@ -3,6 +3,7 @@ package com.recordofp.app.data.engine
 import com.recordofp.app.data.db.EngineRunLogDao
 import com.recordofp.app.data.db.EngineRunLogEntity
 import com.recordofp.app.data.db.GeofenceRegDao
+import com.recordofp.app.data.db.GeofenceRegEntity
 import com.recordofp.app.data.db.NotificationLogDao
 import com.recordofp.app.data.db.NotificationLogEntity
 import com.recordofp.app.data.db.ReminderDao
@@ -58,16 +59,26 @@ class GeofenceEventHandler @Inject constructor(
         // 기록되므로 같은 이벤트 안에서는 걸리지 않는다 (실기기 09-03 14:57:09)
         val passedInThisEvent = mutableSetOf<Long>()
 
+        // 센티널은 미러와 상관없이 키로 판정한다 — 첫 재배치 직후 즉시 이탈(INITIAL_TRIGGER_EXIT)이 미러 기록보다
+        // 먼저 도착해도 이동 감지 사슬이 끊기지 않는다. 잘못 판정한 대가는 디바운스되는 재배치 1회다 (묶음 A 인계)
+        val known = mutableListOf<GeofenceRegEntity>()
         for (fenceId in fenceIds) {
-            // 센티널은 미러와 상관없이 키로 판정한다 — 첫 재배치 직후 즉시 이탈(INITIAL_TRIGGER_EXIT)이 미러 기록보다
-            // 먼저 도착해도 이동 감지 사슬이 끊기지 않는다. 잘못 판정한 대가는 디바운스되는 재배치 1회다 (묶음 A 인계)
             if (fenceId == SENTINEL_FENCE_KEY) { sentinelExited = true; continue }
             val reg = regDao.byId(fenceId)
             if (reg == null) { // stale 이벤트 폐기 (§6.5.1) — 진단에는 남긴다 (검토 B7)
                 logEvent(now, "STALE", "fence=$fenceId")
                 continue
             }
+            known += reg
+        }
+        // OS가 주는 펜스 순서는 임의다 — 같은 항목이 여러 펜스로 통과하면 이벤트 위치에서 가까운 펜스가
+        // 알림을 가져가도록 가까운 순(안정 정렬)으로 판정한다
+        val ordered = if (triggeringPoint == null) known else known.sortedBy {
+            distanceMeters(triggeringPoint, GeoPoint(it.lat, it.lng))
+        }
 
+        for (reg in ordered) {
+            val fenceId = reg.geofenceId
             val reminderIds = triggerSpecDao.byIds(regDao.triggerIdsFor(fenceId))
                 .map { it.reminderId }.distinct()
             val passed = mutableListOf<Reminder>()
@@ -84,7 +95,8 @@ class GeofenceEventHandler @Inject constructor(
                         notificationLogDao.lastShownForItemAtPoi(reminderId, it)?.let(Instant::ofEpochMilli)
                     },
                     shownTodayForItem = notificationLogDao.countForItemSince(reminderId, startOfDay),
-                    shownTodayTotal = notificationLogDao.countTotalSince(startOfDay),
+                    // 표시 기록은 표시 뒤라 같은 이벤트에서 통과시킨 항목은 아직 로그에 없다 — 함께 센다 (위 중복 제거와 같은 이유)
+                    shownTodayTotal = notificationLogDao.countTotalSince(startOfDay) + passedInThisEvent.size,
                 )
                 val decision = gate.evaluate(
                     now = now,

@@ -86,8 +86,10 @@ class GeofenceEventHandlerTest {
         id = id, title = "할일$id", memo = null, status = status, snoozeUntil = null,
         createdAt = 0, updatedAt = 0, completedAt = null,
     )
-    private fun poiReg(fenceId: String, poiId: String, name: String) = GeofenceRegEntity(
-        geofenceId = fenceId, kind = "POI", lat = 37.5, lng = 127.0, radiusM = 120f,
+    private fun poiReg(
+        fenceId: String, poiId: String, name: String, lat: Double = 37.5, lng: Double = 127.0,
+    ) = GeofenceRegEntity(
+        geofenceId = fenceId, kind = "POI", lat = lat, lng = lng, radiusM = 120f,
         poiName = name, poiKakaoId = poiId, matchKey = "cat:convenience", reseedBatchId = "b", registeredAt = 0,
     )
     private fun spec(id: Long, reminderId: Long) = TriggerSpecEntity(
@@ -106,11 +108,12 @@ class GeofenceEventHandlerTest {
     private fun build(
         regs: FakeRegs, specs: FakeSpecs, reminders: FakeReminderDao,
         notifLog: FakeNotifLog = FakeNotifLog(), runs: FakeRuns = FakeRuns(),
+        policy: NotificationGate.Policy = NotificationGate.Policy(),
     ) = GeofenceEventHandler(
         regDao = regs, triggerSpecDao = specs, reminderDao = reminders,
         notificationLogDao = notifLog, runLogDao = runs,
         policyProvider = object : GatePolicyProvider {
-            override suspend fun policy() = NotificationGate.Policy()
+            override suspend fun policy() = policy
         },
         gate = NotificationGate(zone), zone = zone,
         clock = Clock.fixed(noon, zone),
@@ -144,25 +147,61 @@ class GeofenceEventHandlerTest {
 
     @Test
     fun `한 이벤트에서 같은 항목이 두 펜스로 통과해도 한 묶음에만 들어간다`() = runTest {
-        // 같은 가게를 PLACE로도, 카테고리로도 걸어 둔 항목 — 이벤트 하나에 두 펜스가 함께 들어온다.
-        // 실기기 09-03 14:57:09: 같은 항목 알림이 두 POI에서 동시에 떴다
+        // 같은 카테고리의 두 지점 DWELL이 한 이벤트로 함께 들어온다.
+        // 실기기 09-03 14:57:09: 같은 항목 알림이 CU·이마트24 두 곳에서 동시에 떴다
         val regs = FakeRegs().apply {
             regs["poi:100"] = poiReg("poi:100", "100", "CU 역삼점")
-            regs["place:20"] = placeReg("place:20", kakaoId = "100", name = "CU 역삼점")
-            links += listOf(RegTriggerEntity("poi:100", 11), RegTriggerEntity("place:20", 20))
+            regs["poi:200"] = poiReg("poi:200", "200", "이마트24 역삼점")
+            links += listOf(RegTriggerEntity("poi:100", 11), RegTriggerEntity("poi:200", 11))
         }
         val runs = FakeRuns()
         val handler = build(
             regs,
-            FakeSpecs(mapOf(11L to spec(11, 1), 20L to placeSpec(20, 1, "100"))),
+            FakeSpecs(mapOf(11L to spec(11, 1))),
             FakeReminderDao(mapOf(1L to reminder(1))),
             runs = runs,
         )
 
-        val out = handler.onFenceEvent(listOf("poi:100", "place:20"), null)
+        val out = handler.onFenceEvent(listOf("poi:100", "poi:200"), null)
 
         assertEquals(listOf("poi:100"), out.groups.map { it.fenceId })
         assertTrue(runs.entries.any { it.result == "BLOCK_SAME_EVENT" })
+    }
+
+    @Test
+    fun `같은 항목이 여러 펜스로 통과하면 이벤트 위치에서 가까운 펜스의 묶음에 들어간다`() = runTest {
+        val regs = FakeRegs().apply {
+            regs["poi:far"] = poiReg("poi:far", "100", "먼 CU", lat = 37.5018)
+            regs["poi:near"] = poiReg("poi:near", "200", "가까운 이마트24", lat = 37.5003)
+            links += listOf(RegTriggerEntity("poi:far", 11), RegTriggerEntity("poi:near", 11))
+        }
+        val handler = build(regs, FakeSpecs(mapOf(11L to spec(11, 1))), FakeReminderDao(mapOf(1L to reminder(1))))
+        val point = GeoPoint(37.5, 127.0)
+
+        val out = handler.onFenceEvent(listOf("poi:far", "poi:near"), point)
+
+        val group = out.groups.single()
+        assertEquals("poi:near", group.fenceId)
+        assertEquals(distanceMeters(point, GeoPoint(37.5003, 127.0)).roundToInt(), group.distanceM)
+    }
+
+    @Test
+    fun `하루 전체 상한은 같은 이벤트에서 이미 통과한 항목까지 센다`() = runTest {
+        val regs = FakeRegs().apply {
+            regs["poi:100"] = poiReg("poi:100", "100", "CU 역삼점")
+            links += listOf(RegTriggerEntity("poi:100", 11), RegTriggerEntity("poi:100", 12))
+        }
+        val runs = FakeRuns()
+        val handler = build(
+            regs, FakeSpecs(mapOf(11L to spec(11, 1), 12L to spec(12, 2))),
+            FakeReminderDao(mapOf(1L to reminder(1), 2L to reminder(2))),
+            runs = runs, policy = NotificationGate.Policy(dailyCapTotal = 1),
+        )
+
+        val out = handler.onFenceEvent(listOf("poi:100"), null)
+
+        assertEquals(listOf(1L), out.groups.single().reminders.map { it.id })
+        assertTrue(runs.entries.any { it.result == "BLOCK_TOTAL_DAILY_CAP" })
     }
 
     @Test

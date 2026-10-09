@@ -50,8 +50,8 @@ import java.time.format.DateTimeFormatter
  * "왜 알림이 안 왔는지"를 앱이 스스로 답하는 화면 (설계 §4.4).
  * 엔진 실행 이력을 최신순으로 보여주고, 텍스트로 내보내 공유할 수 있게 한다 —
  * 기기 밖 자동 전송은 없다. 사용자가 공유 버튼을 눌러야만 나간다.
- * 클린 미니멀 개편 (개편안 §2 진단): 결과별 컬러 도트(APPLIED 초록·BLOCK/FAILED 빨강·
- * STOOD_DOWN 회색), tabular-nums.
+ * 클린 미니멀 개편 (개편안 §2 진단): 결과별 컬러 도트(APPLIED·PASS 초록 ·
+ * BLOCK/FAILED/ERROR 빨강 · STOOD_DOWN·STALE 등 회색), tabular-nums.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

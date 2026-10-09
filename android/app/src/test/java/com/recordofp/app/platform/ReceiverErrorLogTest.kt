@@ -8,13 +8,15 @@ import java.time.ZoneOffset
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.cancellation.CancellationException
 import org.junit.Assert.assertEquals
+import org.junit.Assert.fail
 import org.junit.Test
 
-private class FakeRunLog(private val failInsert: Boolean = false) : EngineRunLogDao {
+private class FakeRunLog(private val insertError: Exception? = null) : EngineRunLogDao {
     val entries = mutableListOf<EngineRunLogEntity>()
     override suspend fun insert(entity: EngineRunLogEntity) {
-        if (failInsert) throw IllegalStateException("disk full")
+        insertError?.let { throw it }
         entries += entity
     }
     override fun observeRecent(limit: Int): Flow<List<EngineRunLogEntity>> = emptyFlow()
@@ -38,6 +40,17 @@ class ReceiverErrorLogTest {
 
     @Test
     fun `로그 쓰기마저 실패해도 예외를 던지지 않는다`() = runTest {
-        FakeRunLog(failInsert = true).logReceiverError(clock, "NOTIFICATION_ACTION", IllegalStateException("x"))
+        FakeRunLog(insertError = IllegalStateException("disk full")).logReceiverError(clock, "NOTIFICATION_ACTION", IllegalStateException("x"))
+    }
+
+    @Test
+    fun `취소는 삼키지 않고 그대로 전파한다`() = runTest {
+        val dao = FakeRunLog(insertError = CancellationException("cancelled"))
+        try {
+            dao.logReceiverError(clock, "FENCE_EVENT", IllegalStateException("x"))
+            fail("취소 예외가 전파되어야 한다")
+        } catch (e: CancellationException) {
+            assertEquals("cancelled", e.message)
+        }
     }
 }

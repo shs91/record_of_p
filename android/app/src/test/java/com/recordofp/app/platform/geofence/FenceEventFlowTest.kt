@@ -5,7 +5,9 @@ import com.recordofp.app.data.engine.EventOutcome
 import com.recordofp.app.domain.engine.SENTINEL_FENCE_KEY
 import com.recordofp.app.domain.model.Reminder
 import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.cancellation.CancellationException
 import org.junit.Assert.assertEquals
+import org.junit.Assert.fail
 import org.junit.Test
 
 private class FakeEventSteps(
@@ -91,5 +93,17 @@ class FenceEventFlowTest {
         runFenceEvent(listOf("poi:1", SENTINEL_FENCE_KEY), steps)
         assertEquals(listOf("evaluate", "show:poi:1", "shown:poi:1"), steps.calls)
         assertEquals(listOf("IllegalStateException"), steps.errors)
+    }
+
+    @Test
+    fun `취소는 오류로 기록하지 않고 그대로 전파한다`() = runTest {
+        val steps = FakeEventSteps(evaluateError = CancellationException("cancelled"))
+        try {
+            runFenceEvent(listOf("poi:1"), steps)
+            fail("취소 예외가 전파되어야 한다")
+        } catch (e: CancellationException) {
+            assertEquals("cancelled", e.message)
+        }
+        assertEquals(emptyList<String>(), steps.errors)
     }
 }
