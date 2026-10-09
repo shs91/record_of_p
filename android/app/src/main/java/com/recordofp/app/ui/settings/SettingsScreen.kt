@@ -2,7 +2,6 @@ package com.recordofp.app.ui.settings
 
 import android.content.Context
 import android.content.Intent
-import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -54,6 +53,10 @@ import com.recordofp.app.data.repo.NotificationPolicySettings
 import com.recordofp.app.ui.common.tabularNums
 import com.recordofp.app.ui.permissions.PermissionSnapshot
 import com.recordofp.app.ui.permissions.appDetailsSettingsIntent
+import com.recordofp.app.ui.permissions.appNotificationSettingsIntent
+import com.recordofp.app.ui.permissions.batteryOptimizationSettingsIntent
+import com.recordofp.app.ui.permissions.locationSourceSettingsIntent
+import com.recordofp.app.ui.permissions.openSettings
 import com.recordofp.app.ui.permissions.readPermissionSnapshot
 import com.recordofp.app.ui.theme.PillShape
 
@@ -111,7 +114,7 @@ fun SettingsScreen(
                 SectionLabel(stringResource(R.string.settings_section_protection))
                 val rows = protectionRows(context, snapshot)
                 rows.forEachIndexed { index, row ->
-                    ProtectionPermissionRow(row, onClick = { context.startActivity(row.intent) })
+                    ProtectionPermissionRow(row, onClick = { context.openSettings(row.intent) })
                     if (index != rows.lastIndex) {
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     }
@@ -182,30 +185,15 @@ private fun SectionLabel(text: String) {
 
 private data class ProtectionRow(val labelRes: Int, val granted: Boolean, val intent: Intent)
 
-/** 4개 보호 상태 행 — 꺼진 행 탭 시 이동할 시스템 설정 화면을 함께 담는다 (§4.3). */
+/** 보호 상태 행 — 꺼진 행 탭 시 이동할 시스템 설정 화면을 함께 담는다 (§4.3). */
 private fun protectionRows(context: Context, snapshot: PermissionSnapshot): List<ProtectionRow> = listOf(
-    ProtectionRow(
-        labelRes = R.string.settings_perm_notifications,
-        granted = snapshot.notifications,
-        intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName),
-    ),
-    ProtectionRow(
-        labelRes = R.string.settings_perm_location,
-        granted = snapshot.fineLocation,
-        intent = appDetailsSettingsIntent(context),
-    ),
-    ProtectionRow(
-        labelRes = R.string.settings_perm_background,
-        granted = snapshot.backgroundLocation,
-        intent = appDetailsSettingsIntent(context),
-    ),
-    ProtectionRow(
-        labelRes = R.string.settings_perm_battery,
-        granted = snapshot.batteryUnrestricted,
-        // 목록 화면만 연다 — ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS(자동 요청)는 절대 쓰지 않는다 (§4.2)
-        intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS),
-    ),
+    ProtectionRow(R.string.settings_perm_notifications, snapshot.notifications, appNotificationSettingsIntent(context)),
+    ProtectionRow(R.string.settings_perm_location, snapshot.fineLocation, appDetailsSettingsIntent(context)),
+    ProtectionRow(R.string.settings_perm_background, snapshot.backgroundLocation, appDetailsSettingsIntent(context)),
+    // 기기 위치가 꺼지면 OS가 펜스를 전부 지운다 — 권한이 다 있어도 알림이 오지 않는 이유 (최종 리뷰 I4)
+    ProtectionRow(R.string.settings_perm_location_services, snapshot.locationServicesOn, locationSourceSettingsIntent()),
+    // 목록 화면만 연다 — ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS(자동 요청)는 절대 쓰지 않는다 (§4.2)
+    ProtectionRow(R.string.settings_perm_battery, snapshot.batteryUnrestricted, batteryOptimizationSettingsIntent()),
 )
 
 @Composable

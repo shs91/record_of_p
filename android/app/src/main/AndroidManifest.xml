@@ -10,13 +10,18 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- 백업 끔(Android 11 이하) + 추출 규칙(Android 12+ 기기 이전)으로 위치·항목이 기기 밖으로 나가지 않게 한다 (§9, 검토 B8).
+         allowBackup="false"면 Android 11 이하에서는 백업이 통째로 꺼지므로 fullBackupContent가 필요 없다 (lint DataExtractionRules 억제 이유) -->
     <application
         android:name=".RecordOfPApp"
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.RecordOfP">
+        android:theme="@style/Theme.RecordOfP"
+        tools:targetApi="31"
+        tools:ignore="DataExtractionRules">
 
         <activity
             android:name=".MainActivity"

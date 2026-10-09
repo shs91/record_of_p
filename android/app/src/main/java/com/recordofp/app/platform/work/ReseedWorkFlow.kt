@@ -55,11 +55,11 @@ internal suspend fun runReseedWork(
     val here = steps.currentLocation()
     if (here == null) {
         steps.logNoLocation(cause)
-        return ReseedWorkResult.RETRY // §6.4 위치 미취득 → 백오프 재시도
+        return retryUnlessOpportunistic(cause) // §6.4 위치 미취득 → 백오프 재시도 (APP_OPEN 제외)
     }
 
     return when (steps.reseed(cause, here)) {
-        ReseedResult.FAILED -> ReseedWorkResult.RETRY
+        ReseedResult.FAILED -> retryUnlessOpportunistic(cause)
         ReseedResult.SKIPPED_DEBOUNCE -> {
             // EXIT는 재신호가 없다 — 디바운스 창 이후로 스스로 재예약한다 (§6.2)
             if (cause == ReseedCause.SENTINEL_EXIT) steps.scheduleSentinelRetry(EngineParams.RESEED_MIN_INTERVAL_MS)
@@ -68,3 +68,11 @@ internal suspend fun runReseedWork(
         ReseedResult.APPLIED, ReseedResult.CLEARED_NO_TRIGGERS, ReseedResult.STOOD_DOWN -> ReseedWorkResult.SUCCESS
     }
 }
+
+/**
+ * APP_OPEN은 기회적 실행이라 재시도하지 않는다. 재시도가 reseed_opportunistic(KEEP) 큐에 남으면
+ * 이후의 앱 진입·보호 상태 복구(기기 위치를 다시 켠 경우 등) 요청이 버려진다. 다음 앱 진입이 다시 시도하고,
+ * 복구 책임은 재시도가 있는 BOOT·FENCE_LOST(reseed_now)와 PERIODIC이 진다 (§6.4, 묶음 B 최종 리뷰 I2)
+ */
+private fun retryUnlessOpportunistic(cause: ReseedCause): ReseedWorkResult =
+    if (cause == ReseedCause.APP_OPEN) ReseedWorkResult.SUCCESS else ReseedWorkResult.RETRY

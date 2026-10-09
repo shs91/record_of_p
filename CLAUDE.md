@@ -47,7 +47,7 @@ cd android
    원인(`BOOT`/`FENCE_LOST`/`SENTINEL_EXIT`/`PERIODIC`/`APP_OPEN`/`ITEM_CHANGE`/`RETRY`) → `ReseedWorker`(WorkManager) → 판정(`ReseedGovernor`) → 활성 트리거를 matchKey 단위 조회 요청으로 해석(`TriggerResolver`) → 카카오 POI 조회(`PoiRepository`) → `ReseedPlanner.plan()` → 현재 등록분과 차분(`DiffCalculator`) → `GeofenceController`로 OS 적용 → `geofence_reg`/`reg_trigger` 미러 갱신 → `EngineRunLog` 기록.
    - 앱이 위치를 폴링하는 코드는 금지다. 이동 감지는 현재 위치 중심 반경 1km **EXIT 센티널 펜스**로 한다.
    - POI 조회가 실패하면 **기존 등록을 지우지 않고** 유지한 뒤 백오프 재시도한다(§6.4).
-   - 큐: APP_OPEN 이외의 원인은 `reseed_now` 하나를 `REPLACE`로 공유하고, APP_OPEN만 `reseed_opportunistic`(`KEEP`)을 쓴다. 따라서 대기 중이거나 **실행 중인** 재배치가 다른 원인으로 대체될 수 있다. `ReseedService`는 Mutex로 reseed·standDown을 직렬화한다. BOOT·FENCE_LOST·PERIODIC과 펜스 소실 표시가 켜진 재배치는 미러와 상관없이 이 앱의 OS 펜스를 전부 지우고(`replaceAll`) 계획된 펜스를 전부 다시 등록한다.
+   - 큐: APP_OPEN 이외의 원인은 `reseed_now` 하나를 `REPLACE`로 공유하고, APP_OPEN만 `reseed_opportunistic`(`KEEP`)을 쓴다. APP_OPEN은 위치를 못 얻거나 실패해도 재시도하지 않는다(재시도가 KEEP 큐에 남으면 이후의 APP_OPEN이 버려진다). 따라서 대기 중이거나 **실행 중인** 재배치가 다른 원인으로 대체될 수 있다. `ReseedService`는 Mutex로 reseed·standDown을 직렬화한다. BOOT·FENCE_LOST·PERIODIC과 펜스 소실 표시가 켜진 재배치는 미러와 상관없이 이 앱의 OS 펜스를 전부 지우고(`replaceAll`) 계획된 펜스를 전부 다시 등록한다.
 2. **이벤트(Notification)** — 지오펜스 전이 → `GeofenceBroadcastReceiver`(goAsync) → 미러에 없는 id(stale)는 폐기 → `reg_trigger`→`trigger_spec`→`reminder` 로드 → `NotificationGate` 필터 체인(상태→스누즈→방해금지→항목 쿨다운→항목·지점 쿨다운→항목당 일 상한→전체 일 상한) → POI 단위로 묶어 알림 1건 발행. `NotificationLog`는 알림이 실제로 표시된 뒤에 `recordShown`으로 기록한다. 차단 사유는 진단 화면용으로 `EngineRunLog`에 남긴다.
 
 ### 알아두어야 할 개념
@@ -57,7 +57,7 @@ cd android
 - **`geofence_reg`는 OS 등록 상태의 미러**다. OS 쪽 등록은 재부팅, 앱/Play 서비스 데이터 삭제, `GEOFENCE_NOT_AVAILABLE` 수신 시 사라지지만 미러는 남는다. 미러를 기준으로 차분하는 코드는 이 불일치를 반드시 고려해야 한다(검토 문서 참고). 어긋남은 DataStore의 **펜스 소실 표시(`fences_lost`)**로 다룬다. BOOT·FENCE_LOST(`GEOFENCE_NOT_AVAILABLE`) 신호를 받은 리시버가 재배치를 예약하기 전, 워커 첫 시도, OS 호출 직전에 표시를 켜고, 미러 기록까지 성공하면 끈다. 표시가 켜져 있으면 다음 재배치는 원인과 상관없이 `replaceAll`로 전체 재등록하고, 조회가 실패하면 미러대로 OS를 되살린다.
 - **트리거 카탈로그**(`TriggerCatalog`)는 코드에 내장한다(DB에 두지 않음). 카카오 코드(`CS2` 등)로 해석하거나, 코드가 없는 업종·브랜드는 키워드 검색으로 해석한다. 표시명은 strings.xml에서 `cat_<id>`로 매핑한다.
 - **카카오 로컬 API**: `x`=경도, `y`=위도이고 좌표·거리가 **문자열**로 온다. radius ≤ 20,000m, size ≤ 15, `sort=distance`. 재배치 1회당 최대 2페이지.
-- 알림 채널은 `nearby`(높음)와 `status`(낮음) 두 개다(`Notifier`).
+- 알림 채널은 `nearby`(높음)와 `status`(낮음) 두 개다. id는 `domain/model/NotificationChannels`, 생성은 `Notifier`가 한다. "근처 알림이 보일 수 있는가"(앱 알림 + nearby 채널)는 `data/notify/nearbyAlertsEnabled` 하나로 판단한다. 발행과 보호 상태가 같은 판단을 쓴다.
 
 ## 프로젝트 규칙 (2026-10-09 확정)
 
@@ -94,6 +94,7 @@ cd android
 - 라이브러리는 계획에 명시된 것(coroutines-test, mockwebserver, turbine)만 추가한다.
 - 위치 데이터를 기기 밖으로 보내는 코드는 금지한다. 외부 통신은 `KakaoLocalApi` 하나뿐이고 분석·광고 SDK는 넣지 않는다(§9).
 - 배터리 최적화 예외는 자동으로 요청하지 않는다(Play 정책). 설정 화면으로 안내만 한다.
+- 새 저장 위치(SharedPreferences, `files/` 아래 파일 등)를 만들면 `res/xml/data_extraction_rules.xml`의 cloud-backup·device-transfer 제외에 더한다. 빠뜨리면 기기 간 이전으로 기기 밖에 복사된다(설계 §9).
 - 스켈레톤의 `TODO(v1): §…` 마커는 해당 기능을 구현할 때 제거한다.
 - 커밋 메시지는 `feat:`/`fix:`/`test:`/`refactor:`/`docs:`/`build:`/`chore:` 접두어 + 한글 요약, 본문에 스펙 §번호를 적는다. 계획 태스크 하나가 끝날 때마다 커밋한다.
 - 취소 예외 관례: `catch (e: Exception)` 앞에서 `CancellationException`을 다시 던진다(`catch (c: CancellationException) { throw c }`). 취소를 실패(FAILED)로 기록하지 않기 위해서다.
