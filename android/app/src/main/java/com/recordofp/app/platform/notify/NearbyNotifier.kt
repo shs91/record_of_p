@@ -50,12 +50,22 @@ class NearbyNotifier @Inject constructor(
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 ),
             )
-        if (group.reminders.size == 1) {
-            builder
-                .addAction(0, context.getString(R.string.action_complete),
-                    NotificationActionReceiver.pendingIntent(context, NotificationActionReceiver.ACTION_COMPLETE, first.id, notificationId))
-                .addAction(0, context.getString(R.string.action_mute_today),
-                    NotificationActionReceiver.pendingIntent(context, NotificationActionReceiver.ACTION_MUTE_TODAY, first.id, notificationId))
+        if (group.reminders.size > 1) {
+            // 펼치면 전체 항목 목록 (§6.5 4단계 "항목 나열")
+            val inbox = NotificationCompat.InboxStyle()
+            group.reminders.forEach { inbox.addLine(it.title) }
+            builder.setStyle(inbox)
+        }
+        val ids = group.reminders.map { it.id }
+        alertActionsFor(group).forEach { action ->
+            val (labelRes, intentAction) = when (action) {
+                AlertAction.COMPLETE -> R.string.action_complete to NotificationActionReceiver.ACTION_COMPLETE
+                AlertAction.MUTE_TODAY -> R.string.action_mute_today to NotificationActionReceiver.ACTION_MUTE_TODAY
+            }
+            builder.addAction(
+                0, context.getString(labelRes),
+                NotificationActionReceiver.pendingIntent(context, intentAction, ids, notificationId),
+            )
         }
         NotificationManagerCompat.from(context).notify(notificationId, builder.build())
         return true
