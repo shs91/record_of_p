@@ -21,3 +21,7 @@ android/captures/
 
 # 실기기 검증 산출물 (스크린샷, DB 사본)
 tools/device/out/
+
+# Claude Code (개인 설정)
+.claude/settings.local.json
+CLAUDE.local.md

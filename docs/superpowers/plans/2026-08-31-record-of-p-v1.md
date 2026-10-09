@@ -1,5 +1,10 @@
 # P의기록 (Record of P) Android v1.0 Implementation Plan
 
+| | |
+|---|---|
+| 상태 | 완료 — 원격 `feat/v1`에서 구현, PR #1로 2026-10-09 `main` 병합. 체크박스는 진행 표시로 쓰지 않았다 |
+| 최종 수정 | 2026-10-09 |
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 설계 문서 v1.0의 범위(§3.1)를 전부 구현해 필드 테스트 가능한 P의기록 Android 앱을 완성한다.
