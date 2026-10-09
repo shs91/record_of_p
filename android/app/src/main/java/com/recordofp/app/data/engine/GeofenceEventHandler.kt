@@ -59,7 +59,11 @@ class GeofenceEventHandler @Inject constructor(
         val passedInThisEvent = mutableSetOf<Long>()
 
         for (fenceId in fenceIds) {
-            val reg = regDao.byId(fenceId) ?: continue // stale 이벤트 폐기 (§6.5.1)
+            val reg = regDao.byId(fenceId)
+            if (reg == null) { // stale 이벤트 폐기 (§6.5.1) — 진단에는 남긴다 (검토 B7)
+                logEvent(now, "STALE", "fence=$fenceId")
+                continue
+            }
             if (reg.kind == FenceKind.SENTINEL.name) { sentinelExited = true; continue }
 
             val reminderIds = triggerSpecDao.byIds(regDao.triggerIdsFor(fenceId))
@@ -113,12 +117,19 @@ class GeofenceEventHandler @Inject constructor(
         EngineRunLogEntity(at = at.toEpochMilli(), cause = LOG_CAUSE, result = result, registeredCount = 0, note = note),
     )
 
-    /** 알림이 실제로 화면에 뜬 뒤에만 쿨다운 계산의 원본을 남긴다 (표시 전 기록 금지, §6.5 5단계) */
-    suspend fun recordShown(reminderIds: List<Long>, poiId: String?) {
-        val shownAt = clock.millis()
-        reminderIds.forEach { id ->
-            notificationLogDao.insert(NotificationLogEntity(reminderId = id, poiKakaoId = poiId, shownAt = shownAt))
+    /** 알림이 실제로 화면에 뜬 뒤: 쿨다운 원본(NotificationLog)과 진단용 PASS를 남긴다 (§6.5 3·5단계, 검토 B7) */
+    suspend fun recordShown(group: AlertGroup) {
+        val shown = clock.instant()
+        group.reminders.forEach { r ->
+            notificationLogDao.insert(NotificationLogEntity(reminderId = r.id, poiKakaoId = group.poiId, shownAt = shown.toEpochMilli()))
+            logEvent(shown, NotificationGate.Decision.PASS.name, "reminder=${r.id} poi=${group.poiName}")
         }
+    }
+
+    /** 알림 권한이나 "근처 알림" 채널이 꺼져 표시하지 못했을 때 — 상한·쿨다운은 소모하지 않는다 (검토 C2) */
+    suspend fun recordNotShown(group: AlertGroup) {
+        val at = clock.instant()
+        group.reminders.forEach { r -> logEvent(at, "BLOCK_NOTIFICATIONS_OFF", "reminder=${r.id} poi=${group.poiName}") }
     }
 
     companion object {

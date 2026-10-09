@@ -116,17 +116,17 @@ class GeofenceEventHandlerTest {
     )
 
     @Test
-    fun `통과한 리마인더는 POI 그룹으로 묶이고 recordShown 호출로 NotificationLog가 기록된다`() = runTest {
+    fun `통과한 리마인더는 POI 그룹으로 묶이고 표시 후 기록이 NotificationLog와 PASS를 남긴다`() = runTest {
         val regs = FakeRegs().apply {
             regs["poi:100"] = poiReg("poi:100", "100", "CU 역삼점")
             links += listOf(RegTriggerEntity("poi:100", 11), RegTriggerEntity("poi:100", 12))
         }
-        val notifLog = FakeNotifLog()
+        val notifLog = FakeNotifLog(); val runs = FakeRuns()
         val handler = build(
             regs,
             FakeSpecs(mapOf(11L to spec(11, 1), 12L to spec(12, 2))),
             FakeReminderDao(mapOf(1L to reminder(1), 2L to reminder(2))),
-            notifLog = notifLog,
+            notifLog = notifLog, runs = runs,
         )
         val out = handler.onFenceEvent(listOf("poi:100"), null)
         val group = out.groups.single()
@@ -135,8 +135,10 @@ class GeofenceEventHandlerTest {
         assertEquals(listOf(1L, 2L), group.reminders.map { it.id })
         assertTrue(notifLog.rows.isEmpty()) // 표시 전이므로 아직 기록되지 않는다 (M1)
 
-        handler.recordShown(group.reminders.map { it.id }, group.poiId)
+        handler.recordShown(group)
+
         assertEquals(2, notifLog.rows.size) // 리마인더별 1행 (쿨다운 원본)
+        assertEquals(2, runs.entries.count { it.result == "PASS" }) // 진단에 발화로 보인다 (검토 B7)
     }
 
     @Test
@@ -217,11 +219,29 @@ class GeofenceEventHandlerTest {
     }
 
     @Test
-    fun `등록에 없는 stale 이벤트는 무시된다`() = runTest {
-        val handler = build(FakeRegs(), FakeSpecs(emptyMap()), FakeReminderDao(emptyMap()))
+    fun `등록에 없는 stale 이벤트는 무시되고 진단에 남는다`() = runTest {
+        val runs = FakeRuns()
+        val handler = build(FakeRegs(), FakeSpecs(emptyMap()), FakeReminderDao(emptyMap()), runs = runs)
         val out = handler.onFenceEvent(listOf("poi:ghost"), null)
         assertTrue(out.groups.isEmpty())
         assertTrue(!out.sentinelExited)
+        assertEquals("STALE", runs.entries.single().result)
+    }
+
+    @Test
+    fun `표시하지 못한 묶음은 쿨다운을 소모하지 않고 사유를 남긴다`() = runTest {
+        val regs = FakeRegs().apply {
+            regs["poi:100"] = poiReg("poi:100", "100", "CU 역삼점")
+            links += RegTriggerEntity("poi:100", 11)
+        }
+        val notifLog = FakeNotifLog(); val runs = FakeRuns()
+        val handler = build(regs, FakeSpecs(mapOf(11L to spec(11, 1))), FakeReminderDao(mapOf(1L to reminder(1))), notifLog, runs)
+        val group = handler.onFenceEvent(listOf("poi:100"), null).groups.single()
+
+        handler.recordNotShown(group)
+
+        assertTrue(notifLog.rows.isEmpty()) // 보이지 않은 알림으로 상한·쿨다운을 소모하지 않는다 (검토 C2)
+        assertTrue(runs.entries.any { it.result == "BLOCK_NOTIFICATIONS_OFF" })
     }
 
     @Test

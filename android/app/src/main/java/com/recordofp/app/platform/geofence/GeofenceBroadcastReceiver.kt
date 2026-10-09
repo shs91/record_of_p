@@ -45,8 +45,8 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
             try {
                 val outcome = handler.onFenceEvent(ids, triggeringPoint)
                 outcome.groups.forEach { group ->
-                    // 표시가 실제로 성공했을 때만 기록 — 알림이 꺼져 있으면 쿨다운을 소모하지 않는다 (M1)
-                    if (notifier.show(group)) handler.recordShown(group.reminders.map { it.id }, group.poiId)
+                    // 표시가 실제로 성공했을 때만 쿨다운을 소모한다 (M1, 검토 C2)
+                    if (notifier.show(group)) handler.recordShown(group) else handler.recordNotShown(group)
                 }
                 if (outcome.sentinelExited) ReseedWorker.runNow(context, ReseedCause.SENTINEL_EXIT)
             } catch (c: CancellationException) {
