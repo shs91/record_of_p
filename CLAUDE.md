@@ -47,7 +47,7 @@ cd android
    원인(`BOOT`/`FENCE_LOST`/`SENTINEL_EXIT`/`PERIODIC`/`APP_OPEN`/`ITEM_CHANGE`/`RETRY`) → `ReseedWorker`(WorkManager) → 판정(`ReseedGovernor`) → 활성 트리거를 matchKey 단위 조회 요청으로 해석(`TriggerResolver`) → 카카오 POI 조회(`PoiRepository`) → `ReseedPlanner.plan()` → 현재 등록분과 차분(`DiffCalculator`) → `GeofenceController`로 OS 적용 → `geofence_reg`/`reg_trigger` 미러 갱신 → `EngineRunLog` 기록.
    - 앱이 위치를 폴링하는 코드는 금지다. 이동 감지는 현재 위치 중심 반경 1km **EXIT 센티널 펜스**로 한다.
    - POI 조회가 실패하면 **기존 등록을 지우지 않고** 유지한 뒤 백오프 재시도한다(§6.4).
-   - 큐: APP_OPEN 이외의 원인은 `reseed_now` 하나를 `REPLACE`로 공유하고, APP_OPEN만 `reseed_opportunistic`(`KEEP`)을 쓴다. 따라서 대기 중이거나 **실행 중인** 재배치가 다른 원인으로 대체될 수 있다. `ReseedService`는 Mutex로 reseed·standDown을 직렬화한다. BOOT·FENCE_LOST·PERIODIC과 펜스 소실 표시가 켜진 재배치는 미러와 상관없이 이 앱의 OS 펜스를 전부 지우고(`replaceAll`) 계획된 펜스를 전부 다시 등록한다.
+   - 큐: APP_OPEN 이외의 원인은 `reseed_now` 하나를 `REPLACE`로 공유하고, APP_OPEN만 `reseed_opportunistic`(`KEEP`)을 쓴다. APP_OPEN은 위치를 못 얻거나 실패해도 재시도하지 않는다(재시도가 KEEP 큐에 남으면 이후의 APP_OPEN이 버려진다). 따라서 대기 중이거나 **실행 중인** 재배치가 다른 원인으로 대체될 수 있다. `ReseedService`는 Mutex로 reseed·standDown을 직렬화한다. BOOT·FENCE_LOST·PERIODIC과 펜스 소실 표시가 켜진 재배치는 미러와 상관없이 이 앱의 OS 펜스를 전부 지우고(`replaceAll`) 계획된 펜스를 전부 다시 등록한다.
 2. **이벤트(Notification)** — 지오펜스 전이 → `GeofenceBroadcastReceiver`(goAsync) → 미러에 없는 id(stale)는 폐기 → `reg_trigger`→`trigger_spec`→`reminder` 로드 → `NotificationGate` 필터 체인(상태→스누즈→방해금지→항목 쿨다운→항목·지점 쿨다운→항목당 일 상한→전체 일 상한) → POI 단위로 묶어 알림 1건 발행. `NotificationLog`는 알림이 실제로 표시된 뒤에 `recordShown`으로 기록한다. 차단 사유는 진단 화면용으로 `EngineRunLog`에 남긴다.
 
 ### 알아두어야 할 개념

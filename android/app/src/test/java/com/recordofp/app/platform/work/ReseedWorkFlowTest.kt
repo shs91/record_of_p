@@ -90,6 +90,19 @@ class ReseedWorkFlowTest {
     }
 
     @Test
+    fun `APP_OPEN에서 위치를 못 얻으면 기록만 하고 재시도하지 않는다 - 기회적 큐를 막지 않는다`() = runTest {
+        // 재시도가 KEEP 큐에 남으면, 위치를 다시 켠 뒤의 보호 복구 APP_OPEN(F1)이 버려진다 (묶음 B 최종 리뷰 I2)
+        val steps = FakeSteps(location = null)
+        assertEquals(ReseedWorkResult.SUCCESS, run(ReseedCause.APP_OPEN, steps))
+        assertEquals(listOf("perm", "location", "noLocation"), steps.calls)
+    }
+
+    @Test
+    fun `APP_OPEN 재배치가 실패해도 재시도하지 않는다`() = runTest {
+        assertEquals(ReseedWorkResult.SUCCESS, run(ReseedCause.APP_OPEN, FakeSteps(result = ReseedResult.FAILED)))
+    }
+
+    @Test
     fun `디바운스된 센티널 이탈은 최소 간격 뒤로 다시 예약하고 성공으로 끝낸다`() = runTest {
         // EXIT는 재신호가 없다 — 버리면 사용자는 유일한 센티널 밖에 남는다 (§6.2)
         val steps = FakeSteps(result = ReseedResult.SKIPPED_DEBOUNCE)
