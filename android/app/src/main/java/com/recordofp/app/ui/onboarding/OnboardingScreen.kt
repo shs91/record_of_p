@@ -58,7 +58,7 @@ fun OnboardingScreen(viewModel: OnboardingViewModel = hiltViewModel()) {
     ) { _ -> step = 2 }
 
     // Android 12+는 FINE을 COARSE 없이 요청하면 요청 자체를 무시한다 — 둘을 함께 요청한다 (검토 B2).
-    // 사용자가 "대략적 위치"만 고르면 FINE이 없으므로 보호 상태가 '정확한 위치 꺼짐'으로 안내한다
+    // 사용자가 "대략적 위치"만 고르면 FINE이 없어 엔진이 대기한다(근처 알림 없음). 보호 상태가 '정확한 위치 꺼짐'으로 안내한다
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { _ -> viewModel.finish() }
