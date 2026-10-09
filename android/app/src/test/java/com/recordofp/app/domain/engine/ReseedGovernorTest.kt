@@ -22,10 +22,11 @@ class ReseedGovernorTest {
     }
 
     @Test
-    fun `BOOT와 ITEM_CHANGE는 디바운스를 무시한다`() {
+    fun `BOOT·FENCE_LOST·ITEM_CHANGE는 디바운스를 무시한다`() {
         val fresh = stamp(ageMs = 1 * min) // 1분 전 — 10분 미만
-        assertTrue(governor.shouldReseed(ReseedCause.BOOT, now, fresh, origin))
-        assertTrue(governor.shouldReseed(ReseedCause.ITEM_CHANGE, now, fresh, origin))
+        listOf(ReseedCause.BOOT, ReseedCause.FENCE_LOST, ReseedCause.ITEM_CHANGE).forEach { c ->
+            assertTrue("$c", governor.shouldReseed(c, now, fresh, origin))
+        }
     }
 
     @Test

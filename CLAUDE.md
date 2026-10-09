@@ -44,17 +44,17 @@ cd android
 ### 두 개의 핵심 파이프라인
 
 1. **재배치(Reseed)** — 어떤 지오펜스를 OS에 등록할지 결정한다.
-   원인(`BOOT`/`SENTINEL_EXIT`/`PERIODIC`/`APP_OPEN`/`ITEM_CHANGE`/`RETRY`) → `ReseedWorker`(WorkManager) → 판정(`ReseedGovernor`) → 활성 트리거를 matchKey 단위 조회 요청으로 해석(`TriggerResolver`) → 카카오 POI 조회(`PoiRepository`) → `ReseedPlanner.plan()` → 현재 등록분과 차분(`DiffCalculator`) → `GeofenceController`로 OS 적용 → `geofence_reg`/`reg_trigger` 미러 갱신 → `EngineRunLog` 기록.
+   원인(`BOOT`/`FENCE_LOST`/`SENTINEL_EXIT`/`PERIODIC`/`APP_OPEN`/`ITEM_CHANGE`/`RETRY`) → `ReseedWorker`(WorkManager) → 판정(`ReseedGovernor`) → 활성 트리거를 matchKey 단위 조회 요청으로 해석(`TriggerResolver`) → 카카오 POI 조회(`PoiRepository`) → `ReseedPlanner.plan()` → 현재 등록분과 차분(`DiffCalculator`) → `GeofenceController`로 OS 적용 → `geofence_reg`/`reg_trigger` 미러 갱신 → `EngineRunLog` 기록.
    - 앱이 위치를 폴링하는 코드는 금지다. 이동 감지는 현재 위치 중심 반경 1km **EXIT 센티널 펜스**로 한다.
    - POI 조회가 실패하면 **기존 등록을 지우지 않고** 유지한 뒤 백오프 재시도한다(§6.4).
-   - 큐: APP_OPEN 이외의 원인은 `reseed_now` 하나를 `REPLACE`로 공유하고, APP_OPEN만 `reseed_opportunistic`(`KEEP`)을 쓴다. 따라서 대기 중이거나 **실행 중인** 재배치가 다른 원인으로 대체될 수 있다. `ReseedService`는 Mutex로 reseed·standDown을 직렬화한다. BOOT·PERIODIC은 미러와 상관없이 계획된 펜스를 전부 다시 등록한다.
+   - 큐: APP_OPEN 이외의 원인은 `reseed_now` 하나를 `REPLACE`로 공유하고, APP_OPEN만 `reseed_opportunistic`(`KEEP`)을 쓴다. 따라서 대기 중이거나 **실행 중인** 재배치가 다른 원인으로 대체될 수 있다. `ReseedService`는 Mutex로 reseed·standDown을 직렬화한다. BOOT·FENCE_LOST·PERIODIC과 펜스 소실 표시가 켜진 재배치는 미러와 상관없이 이 앱의 OS 펜스를 전부 지우고(`replaceAll`) 계획된 펜스를 전부 다시 등록한다.
 2. **이벤트(Notification)** — 지오펜스 전이 → `GeofenceBroadcastReceiver`(goAsync) → 미러에 없는 id(stale)는 폐기 → `reg_trigger`→`trigger_spec`→`reminder` 로드 → `NotificationGate` 필터 체인(상태→스누즈→방해금지→항목 쿨다운→항목·지점 쿨다운→항목당 일 상한→전체 일 상한) → POI 단위로 묶어 알림 1건 발행. `NotificationLog`는 알림이 실제로 표시된 뒤에 `recordShown`으로 기록한다. 차단 사유는 진단 화면용으로 `EngineRunLog`에 남긴다.
 
 ### 알아두어야 할 개념
 
 - **matchKey**: 트리거의 안정 키 — `cat:<catalogId>`, `brand:<trim+lowercase 키워드>`, `place:<triggerSpecId>`. 리마인더 여러 개가 같은 카테고리를 쓰면 조회는 1번만 한다(카카오 쿼터 방어). 한 POI 펜스가 여러 matchKey를 대변할 수 있다(N:M, `reg_trigger`).
 - **펜스 키 = OS requestId = `geofence_reg.geofenceId`**: `sentinel`, `poi:<kakaoId>`, `place:<id>`. 키가 안정적이어야 차분 적용이 성립한다(uuid 발급 금지).
-- **`geofence_reg`는 OS 등록 상태의 미러**다. OS 쪽 등록은 재부팅, 앱/Play 서비스 데이터 삭제, `GEOFENCE_NOT_AVAILABLE` 수신 시 사라지지만 미러는 남는다. 미러를 기준으로 차분하는 코드는 이 불일치를 반드시 고려해야 한다(검토 문서 참고).
+- **`geofence_reg`는 OS 등록 상태의 미러**다. OS 쪽 등록은 재부팅, 앱/Play 서비스 데이터 삭제, `GEOFENCE_NOT_AVAILABLE` 수신 시 사라지지만 미러는 남는다. 미러를 기준으로 차분하는 코드는 이 불일치를 반드시 고려해야 한다(검토 문서 참고). 어긋남은 DataStore의 **펜스 소실 표시(`fences_lost`)**로 다룬다. BOOT·FENCE_LOST(`GEOFENCE_NOT_AVAILABLE`) 워커 첫 시도와 OS 호출 직전에 표시를 켜고, 미러 기록까지 성공하면 끈다. 표시가 켜져 있으면 다음 재배치는 원인과 상관없이 `replaceAll`로 전체 재등록하고, 조회가 실패하면 미러대로 OS를 되살린다.
 - **트리거 카탈로그**(`TriggerCatalog`)는 코드에 내장한다(DB에 두지 않음). 카카오 코드(`CS2` 등)로 해석하거나, 코드가 없는 업종·브랜드는 키워드 검색으로 해석한다. 표시명은 strings.xml에서 `cat_<id>`로 매핑한다.
 - **카카오 로컬 API**: `x`=경도, `y`=위도이고 좌표·거리가 **문자열**로 온다. radius ≤ 20,000m, size ≤ 15, `sort=distance`. 재배치 1회당 최대 2페이지.
 - 알림 채널은 `nearby`(높음)와 `status`(낮음) 두 개다(`Notifier`).
