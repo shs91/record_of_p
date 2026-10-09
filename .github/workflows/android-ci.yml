@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
     paths: ['android/**', '.github/workflows/android-ci.yml']
+  # main 보호가 `build` 통과를 요구하므로 PR에는 paths 필터를 두지 않는다 — 문서만 바꾼 PR도 병합할 수 있어야 한다
   pull_request:
-    paths: ['android/**', '.github/workflows/android-ci.yml']
 
 jobs:
   build:
