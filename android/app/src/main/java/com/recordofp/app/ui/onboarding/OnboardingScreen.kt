@@ -57,8 +57,10 @@ fun OnboardingScreen(viewModel: OnboardingViewModel = hiltViewModel()) {
         ActivityResultContracts.RequestPermission(),
     ) { _ -> step = 2 }
 
+    // Android 12+는 FINE을 COARSE 없이 요청하면 요청 자체를 무시한다 — 둘을 함께 요청한다 (검토 B2).
+    // 사용자가 "대략적 위치"만 고르면 FINE이 없으므로 보호 상태가 '정확한 위치 꺼짐'으로 안내한다
     val locationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission(),
+        ActivityResultContracts.RequestMultiplePermissions(),
     ) { _ -> viewModel.finish() }
 
     // SDK 33 미만에는 알림 런타임 권한이 존재하지 않는다 — 해당 step을 자동 통과한다
@@ -101,7 +103,11 @@ fun OnboardingScreen(viewModel: OnboardingViewModel = hiltViewModel()) {
         ) {
             PrimaryButton(
                 text = stringResource(R.string.onboard_allow),
-                onClick = { locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION) },
+                onClick = {
+                    locationPermissionLauncher.launch(
+                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
+                    )
+                },
             )
             TextButton(onClick = { viewModel.finish() }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.onboard_start), color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -10,13 +10,16 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- 백업 끔(Android 11 이하) + 추출 규칙(Android 12+ 기기 이전)으로 위치·항목이 기기 밖으로 나가지 않게 한다 (§9, 검토 B8) -->
     <application
         android:name=".RecordOfPApp"
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.RecordOfP">
+        android:theme="@style/Theme.RecordOfP"
+        tools:targetApi="31">
 
         <activity
             android:name=".MainActivity"

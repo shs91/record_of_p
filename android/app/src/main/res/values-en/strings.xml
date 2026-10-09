@@ -59,7 +59,7 @@
     <string name="onboard_2_title">Allow notifications</string>
     <string name="onboard_2_body">We need notification permission to alert you near a place.</string>
     <string name="onboard_3_title">Allow location</string>
-    <string name="onboard_3_body">We need location permission to find nearby stores.</string>
+    <string name="onboard_3_body">We need location permission to find nearby stores. For accurate nearby alerts, please turn on \'Precise location\'.</string>
     <string name="onboard_why_title">Why do we need this?</string>
     <string name="onboard_why_1">Used only to find stores near you</string>
     <string name="onboard_why_2">Your movement history is never stored</string>
@@ -73,7 +73,7 @@
 
     <string name="settings_section_protection">Protection status</string>
     <string name="settings_perm_notifications">Notification permission</string>
-    <string name="settings_perm_location">Location permission</string>
+    <string name="settings_perm_location">Precise location</string>
     <string name="settings_perm_background">Allow all the time (background)</string>
     <string name="settings_perm_battery">Battery optimization exemption</string>
     <string name="settings_perm_ok">On</string>
