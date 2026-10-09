@@ -26,7 +26,8 @@ class NearbyNotifier @Inject constructor(
     @SuppressLint("MissingPermission") // nearbyAlertsEnabled()가 areNotificationsEnabled()로 POST_NOTIFICATIONS 부여 여부를 확인한다
     fun show(group: AlertGroup): Boolean {
         if (!nearbyAlertsEnabled(context)) return false
-        val notificationId = (group.poiId ?: group.poiName ?: "poi").hashCode()
+        // 펜스 단위로 알림 1건 — POI가 같아도 펜스(PLACE·CATEGORY)가 다르면 별개 알림이라 서로 덮어쓰지 않는다
+        val notificationId = group.fenceId.hashCode()
         val first = group.reminders.first()
         val text = if (group.reminders.size == 1) first.title
         else context.getString(R.string.notif_more_items, first.title, group.reminders.size - 1)
@@ -49,12 +50,22 @@ class NearbyNotifier @Inject constructor(
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 ),
             )
-        if (group.reminders.size == 1) {
-            builder
-                .addAction(0, context.getString(R.string.action_complete),
-                    NotificationActionReceiver.pendingIntent(context, NotificationActionReceiver.ACTION_COMPLETE, first.id, notificationId))
-                .addAction(0, context.getString(R.string.action_mute_today),
-                    NotificationActionReceiver.pendingIntent(context, NotificationActionReceiver.ACTION_MUTE_TODAY, first.id, notificationId))
+        if (group.reminders.size > 1) {
+            // 펼치면 전체 항목 목록 (§6.5 4단계 "항목 나열")
+            val inbox = NotificationCompat.InboxStyle()
+            group.reminders.forEach { inbox.addLine(it.title) }
+            builder.setStyle(inbox)
+        }
+        val ids = group.reminders.map { it.id }
+        alertActionsFor(group).forEach { action ->
+            val (labelRes, intentAction) = when (action) {
+                AlertAction.COMPLETE -> R.string.action_complete to NotificationActionReceiver.ACTION_COMPLETE
+                AlertAction.MUTE_TODAY -> R.string.action_mute_today to NotificationActionReceiver.ACTION_MUTE_TODAY
+            }
+            builder.addAction(
+                0, context.getString(labelRes),
+                NotificationActionReceiver.pendingIntent(context, intentAction, ids, notificationId),
+            )
         }
         NotificationManagerCompat.from(context).notify(notificationId, builder.build())
         return true

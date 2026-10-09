@@ -62,4 +62,16 @@ class TriggerResolverTest {
         )
         assertTrue(out.isEmpty())
     }
+
+    @Test
+    fun `PLACE 요청은 카카오 지점 id를 싣고 빈 id는 버린다`() {
+        fun place(id: Long, kakaoId: String?) = TriggerSpec(
+            id = id, reminderId = 1, type = TriggerType.PLACE,
+            placeName = "우리집 앞 GS25", placeKakaoId = kakaoId, placePoint = GeoPoint(37.5, 127.0),
+        )
+        val out = resolver.resolve(listOf(place(7, "k9"), place(8, ""))).associateBy { it.matchKey }
+        assertEquals("k9", (out.getValue("place:7") as PlaceRequest).kakaoId)
+        assertEquals(null, (out.getValue("place:8") as PlaceRequest).kakaoId)
+    }
+
 }

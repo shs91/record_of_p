@@ -141,6 +141,14 @@ class ReseedServiceTest {
     )
 
     @Test
+    fun `PLACE 펜스의 미러에 카카오 지점 id가 남는다 (검토 C1)`() = runTest {
+        val regDao = FakeRegDao()
+        val service = build(FakeReminders(listOf(place.copy(placeKakaoId = "k9"))), FakePoi(), regDao = regDao)
+        service.reseed(ReseedCause.ITEM_CHANGE, here)
+        assertEquals("k9", regDao.regs.getValue("place:20").poiKakaoId)
+    }
+
+    @Test
     fun `해피 패스 - 펜스 적용, 미러·링크 갱신, 스탬프 기록`() = runTest {
         val regDao = FakeRegDao(); val applier = FakeApplier(); val state = FakeStateStore()
         val service = build(

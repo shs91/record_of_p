@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| 상태 | 진행 중 — 묶음 A 완료(PR #3 병합), 묶음 B(T5~T6) 구현·리뷰 완료(`feat/hardening-privacy`, 2026-10-09), 묶음 C·D 남음 |
+| 상태 | 진행 중 — 묶음 A·B 완료(PR #3·#4 병합), 묶음 C(T7~T11) 구현·리뷰 완료(`feat/hardening-alerts`, 2026-10-09), 묶음 D 남음 |
 | 최종 수정 | 2026-10-09 |
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -44,7 +44,7 @@
 1. **부팅 직후 네트워크가 없을 때** — 카카오 조회가 실패해도 센티널·PLACE·기존 POI 펜스가 OS에 다시 있어야 한다. → Task 2 `BOOT에서 POI 조회가 실패해도 미러대로 OS를 되살린다`
 2. **대기 중이던 BOOT 작업이 ITEM_CHANGE로 대체될 때**(`reseed_now`가 REPLACE) — 그래도 다음 재배치는 전체 재등록이어야 한다. → Task 1 `markFencesLost 뒤에는 차분 원인도 전체 재등록한다`
 3. **실행 중인 재배치가 다른 원인의 REPLACE로 취소될 때** — OS 반영과 미러 기록이 함께 끝나야 한다. → Task 1 `OS 적용 중에 작업이 취소돼도 미러 기록까지 마친다`
-4. **같은 가게를 PLACE로도, 카테고리로도 걸어 둔 항목** — 그 가게에 들어가면 알림이 한 번만 떠야 한다(실기기 09-03 14:57:09 사례). → Task 7 `한 이벤트에서 같은 항목이 두 펜스로 통과해도 한 묶음에만 들어간다`
+4. **같은 항목이 걸린 같은 카테고리 지점 두 곳이 겹치는 자리** — 두 지점의 DWELL이 한 이벤트로 함께 들어와도 알림은 한 번만 떠야 한다(실기기 09-03 14:57:09 — CU·이마트24에서 같은 항목 알림이 동시에 떴다). PLACE(ENTER)와 POI(DWELL)는 한 이벤트에 함께 오지 않는다. → Task 7 `한 이벤트에서 같은 항목이 두 펜스로 통과해도 한 묶음에만 들어간다`
 5. **'항상 허용'을 끄고, 같은 자리에서 6시간 안에 다시 켰을 때** — 돌아오자마자 펜스가 다시 등록돼야 한다. → Task 2 `standDown은 재배치 스탬프를 지워 권한이 돌아오면 APP_OPEN이 바로 재배치한다`
 
 ## 대조표 항목 ↔ 태스크
@@ -2234,13 +2234,15 @@ stale 줄을 바꾼다.
 
 - [ ] **Step 5: 진단 화면에서 PASS를 발화로 보이게 한다**
 
-`DiagnosticsScreen.kt`의 `resultDotColor` 첫 줄을 바꾼다.
+`DiagnosticsScreen.kt`의 `resultDotColor`를 바꾼다. PASS를 초록으로 더하고, 묶음 A 인계대로 `NO_PERMISSION` 분기를 지운다. 워커는 088ec01(F2) 뒤로 이 결과를 쓰지 않는다. 남은 옛 행은 보존 기간(14일) 안에 지워지고, 그동안은 회색으로 보인다.
 
 ```kotlin
     result.contains("APPLIED") || result == "PASS" -> successColor()
+    result.startsWith("BLOCK") || result.contains("FAILED") ->
+        MaterialTheme.colorScheme.error
 ```
 
-KDoc을 `/** 결과별 컬러 도트 — APPLIED·PASS 초록 · BLOCK/FAILED/NO_PERMISSION 빨강 · 그 밖 회색 (개편안 §2) */`로 고친다.
+KDoc을 `/** 결과별 컬러 도트 — APPLIED·PASS 초록 · BLOCK/FAILED 빨강 · 그 밖(STOOD_DOWN·STALE 등) 회색 (개편안 §2) */`로 고친다.
 
 - [ ] **Step 6: 테스트 통과와 전체 검증을 확인한다**
 
@@ -2271,8 +2273,9 @@ git commit -m "feat: 알림 발화·stale·표시 실패를 진단 로그에 기
 - Modify: `android/app/src/main/java/com/recordofp/app/platform/geofence/GeofenceBroadcastReceiver.kt`
 - Modify: `android/app/src/main/java/com/recordofp/app/platform/notify/NotificationActionReceiver.kt`
 - Modify: `android/app/src/main/java/com/recordofp/app/domain/engine/FencePlan.kt`, `ReseedPlanner.kt` (센티널 키 상수)
+- Modify: `android/app/src/main/java/com/recordofp/app/data/engine/GeofenceEventHandler.kt` (센티널을 키로 판정 — 묶음 A 인계)
 - Modify: `android/app/src/main/java/com/recordofp/app/ui/settings/DiagnosticsScreen.kt`
-- Test: `android/app/src/test/java/com/recordofp/app/platform/geofence/FenceEventFlowTest.kt`, `android/app/src/test/java/com/recordofp/app/platform/ReceiverErrorLogTest.kt` (둘 다 생성)
+- Test: `android/app/src/test/java/com/recordofp/app/platform/geofence/FenceEventFlowTest.kt`, `android/app/src/test/java/com/recordofp/app/platform/ReceiverErrorLogTest.kt` (둘 다 생성), `android/app/src/test/java/com/recordofp/app/data/engine/GeofenceEventHandlerTest.kt` (수정)
 
 **Interfaces:**
 - Consumes: Task 9의 `recordShown(group)`, `recordNotShown(group)`, Task 7의 `GeofenceEventHandler.LOG_CAUSE`
@@ -2428,9 +2431,23 @@ class FenceEventFlowTest {
 }
 ```
 
+`GeofenceEventHandlerTest`에 추가한다(import `com.recordofp.app.domain.engine.SENTINEL_FENCE_KEY`). 묶음 A 인계 항목이다.
+
+```kotlin
+    @Test
+    fun `미러에 센티널 행이 없어도 센티널 키 이벤트는 이탈로 보고하고 stale로 남기지 않는다`() = runTest {
+        // 첫 재배치 직후 즉시 이탈(INITIAL_TRIGGER_EXIT)이 미러 기록보다 먼저 도착하는 경우 (묶음 A 인계)
+        val runs = FakeRuns()
+        val out = build(FakeRegs(), FakeSpecs(emptyMap()), FakeReminderDao(emptyMap()), runs = runs)
+            .onFenceEvent(listOf(SENTINEL_FENCE_KEY), null)
+        assertTrue(out.sentinelExited)
+        assertTrue(runs.entries.isEmpty())
+    }
+```
+
 - [ ] **Step 2: 실패를 확인한다**
 
-Run: `./gradlew testDebugUnitTest --tests "*.FenceEventFlowTest" --tests "*.ReceiverErrorLogTest"`
+Run: `./gradlew testDebugUnitTest --tests "*.FenceEventFlowTest" --tests "*.ReceiverErrorLogTest" --tests "*.GeofenceEventHandlerTest"`
 Expected: 컴파일 실패 — `SENTINEL_FENCE_KEY`, `FenceEventSteps`, `runFenceEvent`, `logReceiverError`가 없다.
 
 - [ ] **Step 3: 센티널 키를 상수로 만든다**
@@ -2443,6 +2460,14 @@ const val SENTINEL_FENCE_KEY = "sentinel"
 ```
 
 `ReseedPlanner.kt` 센티널의 `key = "sentinel",` → `key = SENTINEL_FENCE_KEY,`
+
+`GeofenceEventHandler.onFenceEvent` 루프 첫머리에서 센티널을 미러 조회보다 먼저 키로 판정한다(묶음 A 인계). Task 9의 stale 분기 바로 앞에 넣고, 그 뒤의 `if (reg.kind == FenceKind.SENTINEL.name) { ... }` 줄은 지운다(쓰이지 않게 된 `FenceKind` import도 지운다).
+
+```kotlin
+            // 센티널은 미러와 상관없이 키로 판정한다 — 첫 재배치 직후 즉시 이탈(INITIAL_TRIGGER_EXIT)이 미러 기록보다
+            // 먼저 도착해도 이동 감지 사슬이 끊기지 않는다. 잘못 판정한 대가는 디바운스되는 재배치 1회다 (묶음 A 인계)
+            if (fenceId == SENTINEL_FENCE_KEY) { sentinelExited = true; continue }
+```
 
 - [ ] **Step 4: 오류 기록 헬퍼와 처리 순서를 만든다**
 
@@ -2593,16 +2618,16 @@ companion object에 `private const val LOG_CAUSE = "NOTIFICATION_ACTION"`을 더
 
 - [ ] **Step 7: 진단 화면에서 ERROR를 빨강으로 보인다**
 
-`resultDotColor`의 빨강 조건에 `|| result == "ERROR"`를 더한다.
+`resultDotColor`의 빨강 조건에 `|| result == "ERROR"`를 더한다(`NO_PERMISSION`은 Task 9에서 지웠다). KDoc의 빨강 목록에도 ERROR를 더한다.
 
 ```kotlin
-    result.startsWith("BLOCK") || result.contains("FAILED") || result.contains("NO_PERMISSION") || result == "ERROR" ->
+    result.startsWith("BLOCK") || result.contains("FAILED") || result == "ERROR" ->
         MaterialTheme.colorScheme.error
 ```
 
 - [ ] **Step 8: 테스트 통과와 전체 검증을 확인한다**
 
-Run: `./gradlew testDebugUnitTest --tests "*.FenceEventFlowTest" --tests "*.ReceiverErrorLogTest" --tests "*.ReseedPlannerTest"` → PASS
+Run: `./gradlew testDebugUnitTest --tests "*.FenceEventFlowTest" --tests "*.ReceiverErrorLogTest" --tests "*.ReseedPlannerTest" --tests "*.GeofenceEventHandlerTest"` → PASS
 Run: `./gradlew testDebugUnitTest lintDebug assembleDebug` → 전부 통과, lint 오류 0
 
 - [ ] **Step 9: 커밋한다**
@@ -2614,11 +2639,14 @@ git add android/app/src/main/java/com/recordofp/app/platform/ReceiverErrorLog.kt
   android/app/src/main/java/com/recordofp/app/platform/notify/NotificationActionReceiver.kt \
   android/app/src/main/java/com/recordofp/app/domain/engine/FencePlan.kt \
   android/app/src/main/java/com/recordofp/app/domain/engine/ReseedPlanner.kt \
+  android/app/src/main/java/com/recordofp/app/data/engine/GeofenceEventHandler.kt \
   android/app/src/main/java/com/recordofp/app/ui/settings/DiagnosticsScreen.kt \
   android/app/src/test/java/com/recordofp/app/platform/geofence/FenceEventFlowTest.kt \
-  android/app/src/test/java/com/recordofp/app/platform/ReceiverErrorLogTest.kt
+  android/app/src/test/java/com/recordofp/app/platform/ReceiverErrorLogTest.kt \
+  android/app/src/test/java/com/recordofp/app/data/engine/GeofenceEventHandlerTest.kt
 git commit -m "fix: 지오펜스 리시버 무중단 - 센티널 우선 예약과 묶음별 예외 격리" -m "알림 하나가 실패해도 나머지 알림과 센티널 재배치가 살아남고, 리시버 오류는 진단 로그에 남는다.
-처리 순서는 runFenceEvent로 JVM 테스트한다. (§4.4, §6.2, §6.5, 최종 리뷰 I1)"
+처리 순서는 runFenceEvent로 JVM 테스트한다. 센티널 이탈은 미러와 상관없이 키로 판정한다(묶음 A 인계).
+(§4.4, §6.2, §6.5, 최종 리뷰 I1)"
 ```
 
 ---
@@ -2774,6 +2802,47 @@ git add android/app/src/main/java/com/recordofp/app/platform/notify/AlertActions
   android/app/src/test/java/com/recordofp/app/platform/notify/AlertActionsTest.kt
 git commit -m "feat: 여러 항목 근처 알림에 전체 목록과 묶음 [오늘 그만]" -m "묶음 알림을 펼치면 모든 항목이 보이고 [오늘 그만]이 묶음 전체를 억제한다. [완료]는 단건에만 단다. (§4.1, §6.5)"
 ```
+
+- [ ] **Step 8: 설계 문서를 1.3으로, CLAUDE.md 이벤트 파이프라인을 갱신하고 커밋한다 (묶음 C 전체 반영)**
+
+설계 문서는 살아있는 문서다(CLAUDE.md 문서 규칙). 묶음 C(Task 7~11)가 바꾼 동작과 묶음 A 인계의 "다음 설계 문서 개정" 두 항목을 `docs/superpowers/specs/2026-08-31-record-of-p-design.md`에 반영한다. §번호는 바꾸지 않는다.
+
+1. §4.1 2번의 `액션 버튼 [완료] [오늘 그만]. 탭하면 해당 항목으로 딥링크.`를 바꾼다.
+   `항목이 하나면 액션 버튼 [완료] [오늘 그만]을 달고, 탭하면 해당 항목으로 딥링크한다. 여러 항목이면 펼쳤을 때 모든 제목을 보여 주고 [오늘 그만]만 단다(묶음 전체를 억제한다. [완료]는 어느 항목인지 모호해서 두지 않는다). 탭하면 홈으로 간다.`
+2. §4.4 끝에 이어 쓴다.
+   ` 실제로 표시한 알림(PASS), 필터 차단 사유, 같은 이벤트 안의 중복(BLOCK_SAME_EVENT), 등록에 없는 이벤트(STALE), 알림이 꺼져 표시하지 못한 경우(BLOCK_NOTIFICATIONS_OFF), 리시버 오류(ERROR)를 모두 남긴다. 그래서 필드 테스트(§10.2)의 발화·미발화를 이 화면만으로 집계할 수 있다.`
+3. §4.5 표 바로 아래에 한 줄을 더한다.
+   `"같은 지점"은 카카오 장소 id로 판정한다. PLACE 트리거도 사용자가 고른 장소의 카카오 id로 이 재알림 간격이 걸린다(id 없이 저장된 옛 PLACE는 항목당 쿨다운만 걸린다).`
+4. §5.3 `GeofenceReg` 행의 `geofenceId(PK, uuid)`를 `geofenceId(PK, 안정 키 = OS requestId — `sentinel`·`poi:<카카오 id>`·`place:<TriggerSpec id>`)`로 바꾼다(묶음 A 인계).
+5. §6.2 RETRY 행의 `직전 재배치 실패 시 백오프(15분→1h→6h) 재시도`를 `직전 재배치 실패 시 WorkManager 지수 백오프(15분에서 시작해 두 배씩, 상한 5시간)로 재시도`로 바꾼다(묶음 A 인계).
+6. §6.3 1번 끝에 이어 쓴다.
+   ` PLACE 펜스에는 사용자가 고른 장소의 카카오 id를 실어 같은 지점 재알림 간격(§4.5)의 키로 쓴다.`
+7. §6.5 1·3·4·5번을 바꾼다.
+   - 1번: `1. 이벤트의 geofenceId가 현재 등록 테이블에 유효한지 검증(stale 이벤트는 폐기하고 진단에 STALE로 남긴다). 단, 센티널은 미러와 상관없이 키(`sentinel`)로 판정한다 — 첫 재배치 직후 즉시 이탈이 미러 기록보다 먼저 도착해도 이동 감지가 끊기지 않게 한다. 센티널 이탈 재배치는 알림 발행보다 먼저 예약한다.`
+   - 3번 끝에 이어 쓴다: ` 한 이벤트에 여러 펜스가 함께 들어와 같은 항목이 두 번 통과하면 첫 펜스에만 넣는다(BLOCK_SAME_EVENT). 표시 기록은 표시한 뒤에 하므로 같은 이벤트 안에서는 쿨다운이 걸리지 않기 때문이다.`
+   - 4번: `4. 통과 항목을 펜스 단위로 묶어 **알림 1건** 발행(항목 나열 — §4.1). 알림 id도 펜스 기준이라 같은 가게의 PLACE 알림과 카테고리 알림이 서로 덮어쓰지 않는다. 묶음마다 따로 처리해, 하나가 실패해도(예: 방금 알림 권한 회수) 나머지 알림과 센티널 재배치는 살아남는다. 리시버에서 잡은 오류는 진단에 ERROR로 남긴다. 알림 채널 분리: "근처 알림"(높음), "서비스 상태"(낮음)`
+   - 5번 끝에 이어 쓴다: ` 표시한 항목은 진단에 PASS로, 표시하지 못한 묶음은 BLOCK_NOTIFICATIONS_OFF로 남긴다.`
+8. 머리말 표: `| 버전 | 1.2 |` → `| 버전 | 1.3 |`, `최종 수정`을 커밋하는 날짜로 바꾼다.
+9. 끝의 변경 이력 표에 한 행을 더한다(날짜는 커밋하는 날짜).
+   `| 1.3 | <날짜> | §4.1, §4.4, §4.5, §5.3, §6.2, §6.3, §6.5 | 여러 항목 알림의 목록·[오늘 그만], 진단 기록(PASS·STALE·BLOCK_SAME_EVENT·BLOCK_NOTIFICATIONS_OFF·ERROR), PLACE 지점 쿨다운(카카오 id), 이벤트 안 중복 제거와 펜스 기준 알림, 센티널 키 판정과 우선 예약, 묶음별 예외 격리. 기존 불일치 정정(geofenceId는 안정 키, RETRY 백오프) | 보강 계획 묶음 C(T7~T11), 검토 B7·C1·C2, 최종 리뷰 I1, 묶음 A 인계 |`
+
+`CLAUDE.md` "두 개의 핵심 파이프라인"의 2번(이벤트) 줄을 바꾼다.
+
+`2. **이벤트(Notification)** — 지오펜스 전이 → `GeofenceBroadcastReceiver`(goAsync, 처리 순서·예외 격리는 `runFenceEvent`) → 센티널은 키로 판정해 재배치를 알림보다 먼저 예약 → 미러에 없는 id(stale)는 폐기 → `reg_trigger`→`trigger_spec`→`reminder` 로드 → `NotificationGate` 필터 체인(상태→스누즈→방해금지→항목 쿨다운→항목·지점 쿨다운→항목당 일 상한→전체 일 상한) → 같은 이벤트에서 이미 통과한 항목은 건너뜀 → 펜스 단위로 묶어 알림 1건 발행(알림 id도 펜스 기준). `NotificationLog`는 알림이 실제로 표시된 뒤에 `recordShown`으로 기록한다. 통과(PASS)·차단 사유·stale·표시 실패·리시버 오류는 진단 화면용으로 `EngineRunLog`에 남긴다.`
+
+```bash
+git add docs/superpowers/specs/2026-08-31-record-of-p-design.md CLAUDE.md
+git commit -m "docs: 설계 문서 1.3 — 묶음 C 알림 정확도 반영" -m "여러 항목 알림, 진단 기록, PLACE 지점 쿨다운, 이벤트 안 중복 제거·펜스 기준 알림, 센티널 키 판정, 묶음별 격리.
+geofenceId·RETRY 백오프 기존 불일치 정정. (§4.1, §4.4, §4.5, §5.3, §6.2, §6.3, §6.5)"
+```
+
+### 묶음 C 인계 (2026-10-09 최종 리뷰)
+
+묶음 C(`feat/hardening-alerts`) 최종 리뷰에서 나왔지만 이 묶음에서 고치지 않은 것이다.
+
+- **후속(태스크 미정)**: 지오펜스 브로드캐스트는 각자 코루틴에서 돌아, 거의 동시에 온 두 이벤트가 모두 기록(`recordShown`) 전에 게이트를 통과하면 같은 항목 알림이 두 번 뜰 수 있다. 프로세스 전역 `Mutex`로 `runFenceEvent`를 직렬화한다. 동시성 변경이라 별도 TDD로 한다.
+- **후속(태스크 미정)**: 리시버 ERROR 행의 note에는 예외 클래스·메시지만 있다. 어느 펜스·항목의 표시가 실패했는지(`fenceId`, 리마인더 id)를 함께 남긴다.
+- **묶음 D 전 디자인 라운드**: 여러 항목 알림의 InboxStyle은 펼쳐도 일정 줄 수(Android 버전에 따라 5~7줄)만 보인다. 넘치면 요약 줄에 "+N"을 단다(문자열 ko·en 필요). 묶음 알림의 모양(목록·액션)도 이 라운드에서 함께 확인한다.
 
 ---
 
@@ -3647,7 +3716,7 @@ git commit -m "fix: 뒤로 버튼 설명·키보드 가림·뒤로 연타 가드
 3. **부팅 직후 오프라인**: 비행기 모드로 재부팅 → `BOOT → FAILED`, note가 `restored-from-mirror`로 시작하는지 확인한다. 네트워크를 켜면 재시도 후 APPLIED가 된다.
 4. **'항상 허용' 해제와 재허용**: 해제하면 진단에 `STOOD_DOWN · ACCESS_BACKGROUND_LOCATION`이 남고, 홈 배너가 단계 안내를 담은 업셀 카드가 된다. [설정 열기]로 다시 허용하고 돌아오면 곧바로 `APP_OPEN → APPLIED`가 남는다.
 5. **근처 알림 채널만 끄기**: 알림을 길게 눌러 채널을 끄면 대시보드의 알림 행이 꺼짐이 된다. 이벤트가 오면 `BLOCK_NOTIFICATIONS_OFF`가 남고, 하루 상한은 줄지 않는다.
-6. **같은 가게를 PLACE와 카테고리로**: 그 가게에 가면 알림이 한 번만 뜬다. 진단에 `BLOCK_SAME_EVENT`가 남는다.
+6. **같은 항목이 두 펜스에 걸릴 때**: (a) 한 가게를 PLACE로도, 카테고리로도 걸어 두고 그 가게에 가면 PLACE 진입 알림이 한 번 뜨고, 1분 남짓 뒤의 카테고리 DWELL은 진단에 `BLOCK_ITEM_COOLDOWN`으로 남는다. (b) 같은 카테고리 지점 두 곳의 120m 원이 겹치는 자리에 1분 넘게 머물면 알림은 한 번(가까운 지점 이름)이고, 두 DWELL이 한 이벤트로 오면 `BLOCK_SAME_EVENT`, 따로 오면 `BLOCK_ITEM_COOLDOWN`이 남는다.
 7. **여러 항목 알림**: 펼치면 모든 제목이 보이고, [오늘 그만]을 누르면 묶음 전체가 다음 날 05:00까지 억제된다.
 8. **온보딩(Android 12+)**: 위치 허용을 누르면 "정확한 위치/대략적 위치" 선택 대화상자가 뜬다. 대략적 위치만 고르면 홈 배너가 "정확한 위치 권한이 필요해요"가 된다.
 9. **에디터**: 브랜드를 입력만 하고 [+] 없이 저장해도 홈 칩에 브랜드가 보인다. 저장을 빠르게 두 번 눌러도 항목은 하나다.

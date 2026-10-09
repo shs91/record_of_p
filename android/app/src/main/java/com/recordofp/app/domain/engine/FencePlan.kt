@@ -2,6 +2,9 @@ package com.recordofp.app.domain.engine
 
 import com.recordofp.app.domain.model.GeoPoint
 
+/** 센티널 펜스의 OS requestId·미러 키 — 리시버가 이벤트에 센티널이 있는지 볼 때도 쓴다 */
+const val SENTINEL_FENCE_KEY = "sentinel"
+
 enum class FenceKind { SENTINEL, POI, PLACE }
 
 enum class FenceTransition { ENTER, DWELL, EXIT }
@@ -28,6 +31,7 @@ data class TriggerCandidates(
     val isPlace: Boolean = false,
     val placePoint: GeoPoint? = null,
     val placeName: String? = null,
+    val placeKakaoId: String? = null,
     val candidates: List<PoiCandidate> = emptyList(),
 )
 

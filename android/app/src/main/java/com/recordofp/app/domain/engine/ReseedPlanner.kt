@@ -20,7 +20,7 @@ class ReseedPlanner(
     fun plan(current: GeoPoint, triggers: List<TriggerCandidates>): List<PlannedFence> {
         val fences = mutableListOf<PlannedFence>()
         fences += PlannedFence(
-            key = "sentinel",
+            key = SENTINEL_FENCE_KEY,
             kind = FenceKind.SENTINEL,
             center = current,
             radiusM = EngineParams.SENTINEL_RADIUS_M,
@@ -43,6 +43,7 @@ class ReseedPlanner(
                 transition = FenceKind.PLACE.transition(),
                 matchKeys = setOf(p.matchKey),
                 poiName = p.placeName,
+                poiId = p.placeKakaoId,
             )
             budget--
         }
