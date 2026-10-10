@@ -17,7 +17,6 @@
     <string name="notif_more_items">\'%1$s\' and %2$d more</string>
     <string name="action_complete">Done</string>
     <string name="action_mute_today">Not today</string>
-    <string name="action_add_brand">Add brand</string>
     <string name="action_remove">Remove</string>
     <string name="action_refresh">Refresh</string>
     <string name="action_back">Back</string>
@@ -43,6 +42,8 @@
     <string name="editor_section_category">Where should we remind you?</string>
     <string name="editor_section_brand">Add a brand</string>
     <string name="editor_brand_example">e.g. GS25</string>
+    <string name="editor_brand_add">Add</string>
+    <string name="editor_brand_pending_hint">Saved with the note even if you don\'t tap Add</string>
     <string name="editor_section_place">Specific place</string>
     <string name="editor_place_hint">Search for a specific place</string>
     <string name="editor_place_error_network">Check your network connection.</string>

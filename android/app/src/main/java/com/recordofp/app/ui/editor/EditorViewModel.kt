@@ -58,13 +58,29 @@ data class EditorUiState(
     }
 }
 
+/** 에디터 화면이 부르는 동작 — 뷰모델이 구현하고, 미리보기는 빈 구현을 넘긴다 (디자인 시스템 §5) */
+interface EditorActions {
+    fun onTitleChange(v: String)
+    fun onMemoChange(v: String)
+    fun toggleCategory(id: String)
+    fun onBrandInputChange(v: String)
+    fun commitBrandInput()
+    fun removeBrand(keyword: String)
+    fun onPlaceQueryChange(v: String)
+    fun searchPlace()
+    fun pickPlace(place: PickedPlace)
+    fun clearPlace()
+    fun save()
+    fun delete()
+}
+
 @HiltViewModel
 class EditorViewModel @Inject constructor(
     private val repository: ReminderRepository,
     private val poiRepository: PoiRepository,
     private val locationProvider: LocationProvider,
     savedStateHandle: SavedStateHandle,
-) : ViewModel() {
+) : ViewModel(), EditorActions {
 
     private val _state = MutableStateFlow(EditorUiState())
     val state: StateFlow<EditorUiState> = _state
@@ -107,21 +123,21 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    fun onTitleChange(v: String) = _state.update { it.copy(title = v) }
-    fun onMemoChange(v: String) = _state.update { it.copy(memo = v) }
-    fun toggleCategory(id: String) = _state.update {
+    override fun onTitleChange(v: String) = _state.update { it.copy(title = v) }
+    override fun onMemoChange(v: String) = _state.update { it.copy(memo = v) }
+    override fun toggleCategory(id: String) = _state.update {
         val s = it.selectedCategoryIds
         it.copy(selectedCategoryIds = if (id in s) s - id else s + id)
     }
-    fun onBrandInputChange(v: String) = _state.update { it.copy(brandInput = v) }
-    fun commitBrandInput() = _state.update { it.withBrandInputCommitted() }
-    fun removeBrand(keyword: String) = _state.update { it.copy(brandKeywords = it.brandKeywords - keyword) }
-    fun onPlaceQueryChange(v: String) =
+    override fun onBrandInputChange(v: String) = _state.update { it.copy(brandInput = v) }
+    override fun commitBrandInput() = _state.update { it.withBrandInputCommitted() }
+    override fun removeBrand(keyword: String) = _state.update { it.copy(brandKeywords = it.brandKeywords - keyword) }
+    override fun onPlaceQueryChange(v: String) =
         _state.update { it.copy(placeQuery = v, placeSearchError = null) }
-    fun pickPlace(place: PickedPlace) = _state.update { it.copy(place = place, placeResults = emptyList(), placeQuery = "") }
-    fun clearPlace() = _state.update { it.copy(place = null) }
+    override fun pickPlace(place: PickedPlace) = _state.update { it.copy(place = place, placeResults = emptyList(), placeQuery = "") }
+    override fun clearPlace() = _state.update { it.copy(place = null) }
 
-    fun searchPlace() {
+    override fun searchPlace() {
         val query = _state.value.placeQuery.trim()
         if (query.isEmpty()) return
         // T12(NearbyViewModel.load)와 동일한 취소-재시작 가드 — 연타 시 먼저 보낸 검색이 늦게 도착해
@@ -161,7 +177,7 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    fun save() {
+    override fun save() {
         // 입력만 하고 확정하지 않은 브랜드도 저장한다 — 조용히 버리지 않는다 (최종 리뷰 I6)
         val s = _state.value.withBrandInputCommitted()
         if (!s.canSave) return // 저장·삭제 중이면 canSave가 false — 연타 무시
@@ -203,7 +219,7 @@ class EditorViewModel @Inject constructor(
     }
 
     /** 편집 모드에서 기록 삭제. 저장과 동일하게 saved 플래그를 재사용해 화면을 닫는다 (§3.1 CRUD 갭) */
-    fun delete() {
+    override fun delete() {
         val s = _state.value
         val id = s.editingId ?: return
         if (s.saving) return // 연타 무시

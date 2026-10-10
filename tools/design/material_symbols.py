@@ -29,6 +29,7 @@ ICONS = {
     "ic_trigger_brand": "shopping_bag",
     "ic_trigger_search": "search",
     "ic_trigger_place": "location_on",
+    "ic_alert_error": "error",
 }
 
 # VectorPath: 원본 경로를 그대로 옮긴다(정밀도를 줄이면 모양이 바뀐다). 24dp 아이콘이라 성능 영향이 작다

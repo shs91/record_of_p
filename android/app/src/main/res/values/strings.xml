@@ -17,7 +17,6 @@
     <string name="notif_more_items">\'%1$s\' 외 %2$d건</string>
     <string name="action_complete">완료</string>
     <string name="action_mute_today">오늘 그만</string>
-    <string name="action_add_brand">브랜드 추가</string>
     <string name="action_remove">삭제</string>
     <string name="action_refresh">새로고침</string>
     <string name="action_back">뒤로</string>
@@ -43,6 +42,8 @@
     <string name="editor_section_category">어디서 알려드릴까요?</string>
     <string name="editor_section_brand">브랜드 추가</string>
     <string name="editor_brand_example">예: GS25</string>
+    <string name="editor_brand_add">추가</string>
+    <string name="editor_brand_pending_hint">추가를 누르지 않아도 저장할 때 함께 추가돼요</string>
     <string name="editor_section_place">특정 장소</string>
     <string name="editor_place_hint">특정 장소 검색</string>
     <string name="editor_place_error_network">네트워크 연결을 확인해주세요.</string>
