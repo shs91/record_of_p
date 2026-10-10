@@ -50,6 +50,7 @@
     <string name="editor_title_edit">Edit note</string>
     <string name="editor_delete">Delete</string>
     <string name="editor_delete_confirm">Delete this note?</string>
+    <string name="editor_save_failed">Couldn\'t save your changes. Please try again.</string>
     <string name="home_empty">No notes yet.\nWrite it down the moment you think of it.</string>
     <string name="home_completed">Done</string>
     <string name="home_fab">Note</string>

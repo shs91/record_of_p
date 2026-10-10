@@ -33,13 +33,21 @@ class EditorViewModelTest {
 
     private class FakeRepo : ReminderRepository {
         var saved: Reminder? = null
+        var upsertCount = 0
+        var upsertError: Exception? = null
+        var deleteCount = 0
         var deletedId: Long? = null
         var byIdResult: Reminder? = null
         override fun observeActive(): Flow<List<Reminder>> = emptyFlow()
-        override suspend fun upsert(reminder: Reminder): Long { saved = reminder; return 1 }
+        override suspend fun upsert(reminder: Reminder): Long {
+            upsertCount++
+            upsertError?.let { throw it }
+            saved = reminder
+            return 1
+        }
         override suspend fun complete(id: Long) {}
         override suspend fun muteUntil(id: Long, untilEpochMs: Long) {}
-        override suspend fun delete(id: Long) { deletedId = id }
+        override suspend fun delete(id: Long) { deleteCount++; deletedId = id }
         override suspend fun activeTriggers() = emptyList<com.recordofp.app.domain.model.TriggerSpec>()
         override suspend fun byId(id: Long): Reminder? = byIdResult
     }
@@ -86,7 +94,8 @@ class EditorViewModelTest {
         vm.onTitleChange("휴지")
         vm.toggleCategory("convenience")
         vm.toggleCategory("mart")
-        vm.addBrand(" GS25 ")
+        vm.onBrandInputChange(" GS25 ")
+        vm.commitBrandInput()
         vm.pickPlace(PickedPlace("우리집 앞 CU", "k9", GeoPoint(37.51, 127.0)))
         vm.save()
         dispatcher.scheduler.advanceUntilIdle()
@@ -183,5 +192,63 @@ class EditorViewModelTest {
 
         assertEquals(7L, repo.deletedId)
         assertTrue(vm.state.value.saved)
+    }
+
+    @Test
+    fun `입력만 하고 확정하지 않은 브랜드도 저장된다`() = runTest {
+        val vm = vm()
+        vm.onTitleChange("휴지")
+        vm.onBrandInputChange(" 이마트24 ")
+        assertTrue(vm.state.value.canSave) // 입력 중인 브랜드도 트리거로 센다
+        vm.save()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(listOf("이마트24"), repo.saved!!.triggers.map { it.brandKeyword })
+    }
+
+    @Test
+    fun `공백만 입력한 브랜드는 트리거로 세지 않는다`() = runTest {
+        val vm = vm()
+        vm.onTitleChange("휴지")
+        vm.onBrandInputChange("   ")
+        assertTrue(!vm.state.value.canSave)
+        vm.commitBrandInput()
+        assertEquals(emptyList<String>(), vm.state.value.brandKeywords)
+        assertEquals("", vm.state.value.brandInput)
+    }
+
+    @Test
+    fun `저장 중에 다시 눌러도 한 번만 저장된다`() = runTest {
+        val vm = vm()
+        vm.onTitleChange("휴지")
+        vm.toggleCategory("convenience")
+        vm.save()
+        vm.save() // 연타
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1, repo.upsertCount)
+    }
+
+    @Test
+    fun `저장이 실패하면 앱을 죽이지 않고 오류를 표시하며 다시 저장할 수 있다`() = runTest {
+        repo.upsertError = IllegalStateException("disk full")
+        val vm = vm()
+        vm.onTitleChange("휴지")
+        vm.toggleCategory("convenience")
+        vm.save()
+        dispatcher.scheduler.advanceUntilIdle()
+        val s = vm.state.value
+        assertTrue(s.saveFailed)
+        assertTrue(!s.saved)
+        assertTrue(s.canSave)
+    }
+
+    @Test
+    fun `삭제 중에 다시 눌러도 한 번만 삭제된다`() = runTest {
+        repo.byIdResult = Reminder(id = 7, title = "건전지 사기", createdAt = 100, updatedAt = 200)
+        val vm = vm(reminderId = 7)
+        dispatcher.scheduler.advanceUntilIdle()
+        vm.delete()
+        vm.delete()
+        dispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1, repo.deleteCount)
     }
 }

@@ -33,17 +33,29 @@ data class EditorUiState(
     val memo: String = "",
     val selectedCategoryIds: Set<String> = emptySet(),
     val brandKeywords: List<String> = emptyList(),
+    /** 입력 중인(아직 칩으로 확정하지 않은) 브랜드 — 저장 시 함께 확정된다. 회전에도 남도록 상태에 둔다 (최종 리뷰 I6) */
+    val brandInput: String = "",
     val place: PickedPlace? = null,
     val placeQuery: String = "",
     val placeResults: List<PoiCandidate> = emptyList(),
     val placeSearchError: PlaceSearchError? = null,
+    /** 저장·삭제 진행 중 — 연타로 두 번 처리되지 않게 한다 (최종 리뷰 I6) */
+    val saving: Boolean = false,
+    val saveFailed: Boolean = false,
     val saved: Boolean = false,
     /** null이면 새 기록, 값이 있으면 편집 중인 기존 기록의 id (§3.1 CRUD 갭) */
     val editingId: Long? = null,
 ) {
     val canSave: Boolean
-        get() = title.isNotBlank() &&
-            (selectedCategoryIds.isNotEmpty() || brandKeywords.isNotEmpty() || place != null)
+        get() = !saving && title.isNotBlank() &&
+            (selectedCategoryIds.isNotEmpty() || brandKeywords.isNotEmpty() || brandInput.isNotBlank() || place != null)
+
+    /** 입력 중인 브랜드를 칩으로 확정한다 (앞뒤 공백 제거, 중복 무시) */
+    fun withBrandInputCommitted(): EditorUiState {
+        val k = brandInput.trim()
+        if (k.isEmpty()) return copy(brandInput = "")
+        return copy(brandKeywords = if (k in brandKeywords) brandKeywords else brandKeywords + k, brandInput = "")
+    }
 }
 
 @HiltViewModel
@@ -101,11 +113,8 @@ class EditorViewModel @Inject constructor(
         val s = it.selectedCategoryIds
         it.copy(selectedCategoryIds = if (id in s) s - id else s + id)
     }
-    fun addBrand(keyword: String) {
-        val k = keyword.trim()
-        if (k.isEmpty()) return
-        _state.update { if (k in it.brandKeywords) it else it.copy(brandKeywords = it.brandKeywords + k) }
-    }
+    fun onBrandInputChange(v: String) = _state.update { it.copy(brandInput = v) }
+    fun commitBrandInput() = _state.update { it.withBrandInputCommitted() }
     fun removeBrand(keyword: String) = _state.update { it.copy(brandKeywords = it.brandKeywords - keyword) }
     fun onPlaceQueryChange(v: String) =
         _state.update { it.copy(placeQuery = v, placeSearchError = null) }
@@ -153,8 +162,10 @@ class EditorViewModel @Inject constructor(
     }
 
     fun save() {
-        val s = _state.value
-        if (!s.canSave) return
+        // 입력만 하고 확정하지 않은 브랜드도 저장한다 — 조용히 버리지 않는다 (최종 리뷰 I6)
+        val s = _state.value.withBrandInputCommitted()
+        if (!s.canSave) return // 저장·삭제 중이면 canSave가 false — 연타 무시
+        _state.value = s.copy(saving = true, saveFailed = false)
         val triggers = buildList {
             s.selectedCategoryIds.forEach { add(TriggerSpec(type = TriggerType.CATEGORY, categoryId = it)) }
             s.brandKeywords.forEach { add(TriggerSpec(type = TriggerType.BRAND, brandKeyword = it)) }
@@ -168,26 +179,45 @@ class EditorViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            repository.upsert(
-                Reminder(
-                    id = s.editingId ?: 0L,
-                    title = s.title.trim(),
-                    memo = s.memo.trim().ifEmpty { null },
-                    createdAt = createdAt,
-                    updatedAt = 0,
-                    triggers = triggers,
-                ),
-            )
-            _state.update { it.copy(saved = true) }
+            try {
+                repository.upsert(
+                    Reminder(
+                        id = s.editingId ?: 0L,
+                        title = s.title.trim(),
+                        memo = s.memo.trim().ifEmpty { null },
+                        createdAt = createdAt,
+                        updatedAt = 0,
+                        triggers = triggers,
+                    ),
+                )
+                // saving은 그대로 둔다 — 화면이 닫히기 전까지 다시 눌리지 않게
+                _state.update { it.copy(saved = true) }
+            } catch (c: CancellationException) {
+                throw c
+            } catch (e: Exception) {
+                Log.w(TAG, "기록 저장 실패", e)
+                // 앱을 죽이지 않고 알린다. 입력은 그대로라 다시 저장할 수 있다 (최종 리뷰 I6)
+                _state.update { it.copy(saving = false, saveFailed = true) }
+            }
         }
     }
 
     /** 편집 모드에서 기록 삭제. 저장과 동일하게 saved 플래그를 재사용해 화면을 닫는다 (§3.1 CRUD 갭) */
     fun delete() {
-        val id = _state.value.editingId ?: return
+        val s = _state.value
+        val id = s.editingId ?: return
+        if (s.saving) return // 연타 무시
+        _state.value = s.copy(saving = true, saveFailed = false)
         viewModelScope.launch {
-            repository.delete(id)
-            _state.update { it.copy(saved = true) }
+            try {
+                repository.delete(id)
+                _state.update { it.copy(saved = true) }
+            } catch (c: CancellationException) {
+                throw c
+            } catch (e: Exception) {
+                Log.w(TAG, "기록 삭제 실패", e)
+                _state.update { it.copy(saving = false, saveFailed = true) }
+            }
         }
     }
 

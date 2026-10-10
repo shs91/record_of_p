@@ -68,7 +68,6 @@ fun EditorScreen(
     viewModel: EditorViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var brandInput by remember { mutableStateOf("") }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.saved) { if (state.saved) onDone() }
@@ -126,6 +125,14 @@ fun EditorScreen(
                 .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (state.saveFailed) {
+                // 저장·삭제 실패 — 입력은 그대로 남아 있으니 다시 시도하면 된다 (최종 리뷰 I6)
+                Text(
+                    stringResource(R.string.editor_save_failed),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
             EditorField(
                 value = state.title,
                 onValueChange = viewModel::onTitleChange,
@@ -168,13 +175,13 @@ fun EditorScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 EditorField(
-                    value = brandInput,
-                    onValueChange = { brandInput = it },
+                    value = state.brandInput,
+                    onValueChange = viewModel::onBrandInputChange,
                     placeholder = stringResource(R.string.editor_brand_example),
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = { viewModel.addBrand(brandInput); brandInput = "" }) {
+                IconButton(onClick = viewModel::commitBrandInput) {
                     Icon(
                         Icons.Filled.Add,
                         contentDescription = stringResource(R.string.action_add_brand),
@@ -241,6 +248,7 @@ fun EditorScreen(
                 // 삭제는 저장과 동선을 분리해 맨 아래 빨간 텍스트버튼으로 (개편안 §2)
                 TextButton(
                     onClick = { showDeleteConfirm = true },
+                    enabled = !state.saving,
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 ) {
                     Text(
