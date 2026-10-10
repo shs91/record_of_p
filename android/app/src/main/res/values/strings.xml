@@ -12,8 +12,8 @@
     <string name="channel_status_name">서비스 상태</string>
     <string name="channel_status_desc">권한·동작 상태 관련 안내</string>
 
-    <string name="notif_nearby_title">📍 %1$s 근처예요</string>
-    <string name="notif_nearby_title_dist">📍 %1$s 근처예요 (약 %2$dm)</string>
+    <string name="notif_nearby_title">%1$s 근처예요</string>
+    <string name="notif_nearby_title_dist">%1$s 근처예요 (약 %2$dm)</string>
     <string name="notif_more_items">\'%1$s\' 외 %2$d건</string>
     <string name="action_complete">완료</string>
     <string name="action_mute_today">오늘 그만</string>

@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="window_background">#101418</color>
+    <!-- 근처 알림 강조색 다크 = 다크 primary -->
+    <color name="notification_accent">#5B95F8</color>
 </resources>

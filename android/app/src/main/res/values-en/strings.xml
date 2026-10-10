@@ -12,8 +12,8 @@
     <string name="channel_status_name">Service status</string>
     <string name="channel_status_desc">Permission and health notices</string>
 
-    <string name="notif_nearby_title">📍 Near %1$s</string>
-    <string name="notif_nearby_title_dist">📍 Near %1$s (~%2$dm)</string>
+    <string name="notif_nearby_title">Near %1$s</string>
+    <string name="notif_nearby_title_dist">Near %1$s (~%2$dm)</string>
     <string name="notif_more_items">\'%1$s\' and %2$d more</string>
     <string name="action_complete">Done</string>
     <string name="action_mute_today">Not today</string>

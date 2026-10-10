@@ -3,4 +3,6 @@
     <color name="ic_launcher_background">#1B6EF3</color>
     <!-- 콜드스타트 창 배경 = 종이색 (다크는 values-night) -->
     <color name="window_background">#F7F8FA</color>
+    <!-- 근처 알림 강조색(setColor) = primary. platform은 ui/theme을 쓰지 않으므로 리소스로 둔다 (개편안 2 §2) -->
+    <color name="notification_accent">#1B6EF3</color>
 </resources>
