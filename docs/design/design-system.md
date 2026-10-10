@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | 상태 | 승인 — 현재 UI의 기준 |
-| 버전 | 1.2 |
+| 버전 | 1.3 |
 | 최종 수정 | 2026-10-10 |
-| 구현 | Android `ui/theme/{Color,CategoryColors,Type,Shape,Spacing,Motion,Theme,Previews}.kt`, 아이콘 `res/drawable/ic_cat_*`·`ic_trigger_*` · iOS 미착수 |
+| 구현 | Android `ui/theme/{Color,CategoryColors,Type,Shape,Spacing,Motion,Theme,Previews}.kt`, 아이콘 `res/drawable/ic_cat_*`·`ic_trigger_*`·`ic_banner_*`·`ic_alert_error` · iOS 미착수 |
 | 근거 | 디자인 개편안 `docs/superpowers/specs/2026-09-03-design-refresh-clean-minimal.md`, 개편안 2 `docs/superpowers/specs/2026-10-10-design-refresh-heydealer.md`(결정 기록)과 현재 코드 값 |
 
 Android와 iOS 테마는 이 문서의 표를 따른다. 토큰을 바꾸면 이 문서와 코드를 **같은 커밋**에서 바꾸고 끝의 변경 이력에 한 줄 남긴다.
@@ -70,6 +70,7 @@ Android와 iOS 테마는 이 문서의 표를 따른다. 토큰을 바꾸면 이
 - 경고(앰버)와 오류(빨강)를 구분한다. 보호 상태가 꺼진 것은 경고다.
 - 글자는 WCAG 4.5:1, 테두리·아이콘은 3:1을 넘는다. 라이트의 보조 글자·블루 글자·오류·테두리·성공은 이 기준에 맞춰 보정했다(개편안 2 §1.1). 오류는 개편안의 `#DC2E3C`보다 한 단계 어두운 `#D62C3A`로, 종이 위에서도 4.5:1을 넘는다. `ThemeContrastTest`가 쓰이는 면 위의 대비를 확인한다.
 - `primary`는 종이 위 글자로 4.32:1이라 기준에 못 미친다. 블루 면 위 흰 글자(4.59:1)와 아이콘에만 쓰고, 종이·카드·연블루 위의 블루 글자(거리 숫자, 에디터 [저장]·[추가])는 `onPrimaryContainer`를 쓴다.
+- 근처 알림 강조색(`setColor`)은 `res/values{,-night}/colors.xml`의 `notification_accent`다. primary와 같은 값이고, platform 코드가 `ui/theme`을 쓰지 않도록 리소스로 둔다.
 
 ### 2.2 타입
 
@@ -166,6 +167,8 @@ Material 슬롯 밖의 스타일은 `AppTextStyles`(`Type.kt`)에 둔다.
 | 편의점 · 대형마트 · 약국 · 은행 · 우체국 | `ic_cat_convenience` · `ic_cat_mart` · `ic_cat_pharmacy` · `ic_cat_bank` · `ic_cat_post` | storefront · shopping_cart · medication · account_balance · local_post_office |
 | 주유소 · 세탁소 · 카페 · 병원 · 지하철역 | `ic_cat_fuel` · `ic_cat_laundry` · `ic_cat_cafe` · `ic_cat_hospital` · `ic_cat_subway` | local_gas_station · checkroom · local_cafe · local_hospital · subway |
 | 브랜드 프리셋 · 브랜드 직접 입력 · 특정 지점 | `ic_trigger_brand` · `ic_trigger_search` · `ic_trigger_place` | shopping_bag · search · location_on |
+| 보호 배너: 알림 꺼짐 · 정확한 위치 · 기기 위치 꺼짐 ('항상 허용'은 `ic_trigger_place`) | `ic_banner_notifications_off` · `ic_banner_precise` · `ic_banner_location_off` | notifications_off · my_location · location_off |
+| 저장 실패 | `ic_alert_error` | error |
 
 화면은 `TriggerVisual.iconRes()`로 고른다. 카탈로그의 이모지(`TriggerCatalog.emoji`)는 화면에서 쓰지 않는다.
 
@@ -175,15 +178,18 @@ Material 슬롯 밖의 스타일은 `AppTextStyles`(`Type.kt`)에 둔다.
 
 | 컴포넌트 | 위치 | 쓰임 |
 |---|---|---|
-| 기록 카드 `ReminderRow` | home | 제목 + 트리거 칩, 스와이프로 완료 |
-| 트리거 칩 `TriggerChips` | home | 회색 pill(secondaryContainer) |
-| 보호 배너 | home | 경고 면(tertiaryContainer). 보호가 꺼졌을 때 |
-| 확장 FAB "＋ 기록" | home | 새 기록 |
-| 거리 배지 `DistanceBadge` | `ui/common` | 연블루 pill + 블루 숫자, 999m 넘으면 km 한 자리 |
-| 주변 POI 카드 `NearbyPoiCard` | nearby | 그룹 헤더(이모지 + SemiBold) 아래 카드 |
-| TopAppBar | editor, settings, nearby, diagnostics | 상태바 인셋을 처리하는 상단 바. 에디터는 ✕ · 제목 · 저장, 나머지는 뒤로 · 제목 |
-| 섹션 레이블 `SectionLabel` | editor, settings | labelMedium. **두 화면에 각각 있다 — 공통화 후보** |
-| 입력 필드 `EditorField` · 제거 가능 칩 `RemovableChip` · 장소 결과 카드 `PlaceResultCard` | editor | 기록 편집 |
+| 트리거 시각 `TriggerVisual` · 트리거 타일 `TriggerTile` | `ui/common` | 트리거 → 타일 색·아이콘·이름. 타일은 홈 카드 48dp, 빈 상태 44dp, 주변 보기 그룹 머리 32dp |
+| 기록 카드 `ReminderRow` | home(`ReminderCard.kt`) | 대표 트리거 타일(카테고리 → 특정 지점 → 브랜드) + 제목(두 줄) + 트리거 이름 줄(한 줄). 시작→끝 스와이프 완료(성공 면·원 체크), TalkBack 사용자 지정 동작 "완료" |
+| 개수 pill | home | 큰 타이틀 옆, 잉크 바탕·종이 글자 15 Bold tabular. 0개면 숨김, TalkBack은 "N개" |
+| 빈 상태 `HomeEmptyState` | home | 연블루 원 안 P-핀 + 카테고리 타일 셋(편의점·약국·카페), 제목 20 Bold + 본문 두 줄 |
+| 보호 배너 `ProtectionBanner` | home | 앰버 면 20dp, 36dp 원 아이콘, 제목·본문, '항상 허용' 단계 칩(마지막만 강조), [설정 열기] pill |
+| 실행 취소 스낵바 `UndoSnackbar` | home | inverse 면 16dp, 성공 체크 원, [실행 취소](inversePrimary) |
+| 확장 FAB "＋ 기록" | home | 새 기록. 스낵바가 뜨면 위로 올라간다 |
+| 거리 배지 `DistanceBadge` | `ui/common` | 에디터 장소 결과 — 연블루 pill + onPrimaryContainer 숫자, 999m 넘으면 km 한 자리 |
+| 주변 보기 그룹 `NearbyGroupSection` · 지점 행 `NearbyPoiRow` | nearby | 32dp 타일 + 이름 + "N곳", 그룹마다 카드 하나에 헤어라인 행(64dp). 거리 숫자 22 Bold(1km 넘으면 보조색) + 단위 |
+| TopAppBar · 뒤로 `BackButton` | editor, settings, nearby, diagnostics · `ui/common` | 상태바 인셋을 처리하는 상단 바. 에디터는 ✕ · 제목 · 저장(onPrimaryContainer), 나머지는 뒤로(TalkBack "뒤로") · 제목 |
+| 에디터 `EditorSection` · `EditorField` · `CategoryChip` · `RemovableChip` · `AddBrandButton` · `SearchPlaceButton` · `SaveFailedNotice` · `PlaceResultCard` | editor(`EditorComponents.kt`) | 섹션 제목 15 SemiBold, 카드 바탕 입력(1dp 테두리·포커스 2dp 블루, 56dp), 카테고리 칩(선택 = tint + ink 테두리 + 체크), 브랜드 [추가]·안내, 고른 브랜드(회색)·지점(연블루) 칩, 저장 실패 오류 면 |
+| 섹션 레이블 `SectionLabel` | settings | labelMedium. 에디터는 섹션 제목으로 바뀌어 설정에만 남았다 |
 | 그룹 카드 `GroupCard` · 상태 pill `StatusPill` | settings | 보호 상태, 알림 정책, 문제 해결 묶음. pill은 "켜짐"/"꺼짐" |
 | 진단 행 `DiagnosticsRow` | diagnostics | 결과별 8dp 컬러 도트: APPLIED·PASS 성공색, BLOCK·FAILED·ERROR 오류색, 나머지(STOOD_DOWN·STALE 등) 테두리 회색 |
 | 핀 그래픽 `PinMarkGraphic` · 왜 카드 `WhyCard` · 페이지 도트 `PageDots` · 하단 버튼 `PrimaryButton` | onboarding | 단계별 권한 안내 |
@@ -206,6 +212,7 @@ Material 슬롯 밖의 스타일은 `AppTextStyles`(`Type.kt`)에 둔다.
 
 | 버전 | 날짜 | 바뀐 § | 무엇·왜 | 근거 |
 |---|---|---|---|---|
+| 1.3 | 2026-10-10 | §2.1, §2.7, §3 | 개편안 2 컴포넌트 반영 — 카테고리 타일 기록 카드·개수 pill·빈 상태, 보호 배너, 실행 취소 스낵바, 에디터 컴포넌트, 주변 보기 그룹·행, 트리거 타일·뒤로 버튼 공통화, 알림 강조색, 배너·오류 아이콘 | 개편안 2 §2, 보강 계획 Task 13·14·17~20 |
 | 1.2 | 2026-10-10 | §1.3, §2.1, §2.2, §2.4, §2.5, §2.6, §2.7, §5 | 개편안 2 토큰 반영 — 라이트 대비 보정(보조 글자·블루 글자·오류·테두리·성공), 완료·스낵바 색, 카테고리 10색, 글자 추가 스타일, 간격·모션 토큰, Material Symbols 아이콘, 미리보기·간격 규칙. 오류색은 종이 위 4.5:1을 위해 개편안의 `#DC2E3C` 대신 `#D62C3A` | 개편안 2 §1·§4(2026-10-10 승인), 보강 계획 Task 16 |
 | 1.1 | 2026-10-09 | §3 | 진단 행 도트에 PASS(발화, 성공색)·ERROR(리시버 오류, 오류색)를 더하고 더는 기록되지 않는 NO_PERMISSION을 뺐다 | 보강 계획 T9·T10, 묶음 C 최종 리뷰 |
 | 1.0 | 2026-10-09 | 전체 | 최초 작성. 개편안(2026-09-03)의 결정과 현재 코드 값을 옮기고, 레퍼런스(토스·당근·헤이딜러)와 방향을 더했다. | 프로젝트 규칙 확정(2026-10-09) |

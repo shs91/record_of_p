@@ -11,7 +11,7 @@ P의기록(Record of P) — 카테고리/브랜드("아무 편의점이나") 단
 - **실기기 검증 기록**: `docs/superpowers/notes/2026-09-01-device-verification-round1.md` — 통과 항목, 발견 사항(F0~F5)과 해결 커밋, 남은 검증 목록.
 - **디자인 시스템**: `docs/design/design-system.md` — 현재 UI의 기준(방향·토큰·컴포넌트). Android `ui/theme`과 이후 iOS 테마가 이 문서를 따른다.
 - **디자인 개편안(클린 미니멀)**: `docs/superpowers/specs/2026-09-03-design-refresh-clean-minimal.md` — 2026-09-03 개편의 결정 기록. 확정된 값은 디자인 시스템으로 옮겼다.
-- **디자인 개편안 2(헤이딜러 성격)**: `docs/superpowers/specs/2026-10-10-design-refresh-heydealer.md` — 2026-10-10 승인. 방향 B(카테고리 타일), 대비 보정·카테고리 10색·스낵바 토큰, 화면별 컴포넌트, 묶음 D에 주는 영향. 토큰은 디자인 시스템 1.2로 옮겼고, 화면은 묶음 D(`feat/hardening-ui`)에서 바꾼다.
+- **디자인 개편안 2(헤이딜러 성격)**: `docs/superpowers/specs/2026-10-10-design-refresh-heydealer.md` — 2026-10-10 승인. 방향 B(카테고리 타일), 대비 보정·카테고리 10색·스낵바 토큰, 화면별 컴포넌트, 묶음 D에 주는 영향. 토큰과 컴포넌트는 디자인 시스템 1.2·1.3으로 옮겼다(묶음 D). 실기기 라이트·다크 스크린샷 확인이 남았다.
 - **계획 검토 결과**: `docs/superpowers/reviews/2026-09-29-v1-plan-review.md` — 원래 계획의 결함 목록이다. 검토가 구현보다 늦게 나와서 **현재 `main` 코드에는 반영되지 않았다**. 이 검토를 반영한 별도 구현이 `archive/v1-local` 브랜치에 있다(푸시하지 않음, 참고 구현). 현재 코드에 없는 수정은 이식 계획으로 옮긴다. C4~C7은 출시 전 체크리스트로 보류했다.
 - **보강 이식 계획(20 태스크, TDD)**: `docs/superpowers/plans/2026-10-03-v1-hardening-port.md` — 검토와 `archive/v1-local`의 수정 중 원격에 없는 것을 옮긴다(엔진 신뢰성 → 프라이버시·권한 → 알림 정확도 → UI). 묶음 D(UI)는 디자인 개편안 2도 함께 구현한다(Task 16~20 추가, 실행 순서는 계획의 묶음 D 표). 코드 주석의 `최종 리뷰 C1`·`I2` 같은 번호는 로컬 최종 리뷰 번호다. 묶음 A~C는 병합됐고(PR #3~#5), 묶음마다 `feat/hardening-*` 브랜치와 PR을 하나씩 쓴다.
 - **변경 기록**: `CHANGELOG.md` — 출시 단위, 사용자 관점.
@@ -49,7 +49,7 @@ cd android
    - 앱이 위치를 폴링하는 코드는 금지다. 이동 감지는 현재 위치 중심 반경 1km **EXIT 센티널 펜스**로 한다.
    - POI 조회가 실패하면 **기존 등록을 지우지 않고** 유지한 뒤 백오프 재시도한다(§6.4).
    - 큐: APP_OPEN 이외의 원인은 `reseed_now` 하나를 `REPLACE`로 공유하고, APP_OPEN만 `reseed_opportunistic`(`KEEP`)을 쓴다. APP_OPEN은 위치를 못 얻거나 실패해도 재시도하지 않는다(재시도가 KEEP 큐에 남으면 이후의 APP_OPEN이 버려진다). 따라서 대기 중이거나 **실행 중인** 재배치가 다른 원인으로 대체될 수 있다. `ReseedService`는 Mutex로 reseed·standDown을 직렬화한다. BOOT·FENCE_LOST·PERIODIC과 펜스 소실 표시가 켜진 재배치는 미러와 상관없이 이 앱의 OS 펜스를 전부 지우고(`replaceAll`) 계획된 펜스를 전부 다시 등록한다.
-2. **이벤트(Notification)** — 지오펜스 전이 → `GeofenceBroadcastReceiver`(goAsync, 처리 순서·예외 격리는 `runFenceEvent`) → 센티널은 키로 판정해 재배치를 알림보다 먼저 예약 → 미러에 없는 id(stale)는 폐기 → `reg_trigger`→`trigger_spec`→`reminder` 로드 → `NotificationGate` 필터 체인(상태→스누즈→방해금지→항목 쿨다운→항목·지점 쿨다운→항목당 일 상한→전체 일 상한) → 같은 이벤트에서는 가까운 펜스부터 판정하고 이미 통과한 항목은 건너뜀 → 펜스 단위로 묶어 알림 1건 발행(알림 id도 펜스 기준). `NotificationLog`는 알림이 실제로 표시된 뒤에 `recordShown`으로 기록한다. 통과(PASS)·차단 사유·stale·표시 실패·리시버 오류는 진단 화면용으로 `EngineRunLog`에 남긴다.
+2. **이벤트(Notification)** — 지오펜스 전이 → `GeofenceBroadcastReceiver`(goAsync, 처리 순서·예외 격리는 `runFenceEvent`) → 센티널은 키로 판정해 재배치를 알림보다 먼저 예약 → 미러에 없는 id(stale)는 폐기 → `reg_trigger`→`trigger_spec`→`reminder` 로드 → `NotificationGate` 필터 체인(상태→스누즈→방해금지→항목 쿨다운→항목·지점 쿨다운→항목당 일 상한→전체 일 상한) → 같은 이벤트에서는 가까운 펜스부터 판정하고 이미 통과한 항목은 건너뜀 → 펜스 단위로 묶어 알림 1건 발행(알림 id도 펜스 기준, 강조색은 `R.color.notification_accent`). `NotificationLog`는 알림이 실제로 표시된 뒤에 `recordShown`으로 기록한다. 통과(PASS)·차단 사유·stale·표시 실패·리시버 오류는 진단 화면용으로 `EngineRunLog`에 남긴다.
 
 ### 알아두어야 할 개념
 

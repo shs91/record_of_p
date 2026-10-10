@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| 상태 | 진행 중 — 묶음 A·B·C 병합(PR #3·#4·#5). 묶음 D(Task 12~20)는 디자인 개편안 2를 반영해 갱신했다(2026-10-10 사용자 승인, 실행 전) |
+| 상태 | 진행 중 — 묶음 A·B·C 병합(PR #3·#4·#5), 묶음 D(Task 12~20) 구현 완료(`feat/hardening-ui`, 최종 리뷰 전) |
 | 최종 수정 | 2026-10-10 |
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
