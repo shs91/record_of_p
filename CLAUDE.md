@@ -13,7 +13,7 @@ P의기록(Record of P) — 카테고리/브랜드("아무 편의점이나") 단
 - **디자인 개편안(클린 미니멀)**: `docs/superpowers/specs/2026-09-03-design-refresh-clean-minimal.md` — 2026-09-03 개편의 결정 기록. 확정된 값은 디자인 시스템으로 옮겼다.
 - **디자인 개편안 2(헤이딜러 성격)**: `docs/superpowers/specs/2026-10-10-design-refresh-heydealer.md` — 2026-10-10 승인. 방향 B(카테고리 타일), 대비 보정·카테고리 10색·스낵바 토큰, 화면별 컴포넌트, 묶음 D에 주는 영향. 값은 묶음 D 구현 때 디자인 시스템으로 옮긴다.
 - **계획 검토 결과**: `docs/superpowers/reviews/2026-09-29-v1-plan-review.md` — 원래 계획의 결함 목록이다. 검토가 구현보다 늦게 나와서 **현재 `main` 코드에는 반영되지 않았다**. 이 검토를 반영한 별도 구현이 `archive/v1-local` 브랜치에 있다(푸시하지 않음, 참고 구현). 현재 코드에 없는 수정은 이식 계획으로 옮긴다. C4~C7은 출시 전 체크리스트로 보류했다.
-- **보강 이식 계획(15 태스크, TDD)**: `docs/superpowers/plans/2026-10-03-v1-hardening-port.md` — 검토와 `archive/v1-local`의 수정 중 원격에 없는 것을 옮긴다(엔진 신뢰성 → 프라이버시·권한 → 알림 정확도 → UI). 코드 주석의 `최종 리뷰 C1`·`I2` 같은 번호는 로컬 최종 리뷰 번호다. 상태는 초안(사용자 검토 전)이고, 묶음 A~D마다 `feat/hardening-*` 브랜치와 PR을 하나씩 쓴다.
+- **보강 이식 계획(20 태스크, TDD)**: `docs/superpowers/plans/2026-10-03-v1-hardening-port.md` — 검토와 `archive/v1-local`의 수정 중 원격에 없는 것을 옮긴다(엔진 신뢰성 → 프라이버시·권한 → 알림 정확도 → UI). 묶음 D(UI)는 디자인 개편안 2도 함께 구현한다(Task 16~20 추가, 실행 순서는 계획의 묶음 D 표). 코드 주석의 `최종 리뷰 C1`·`I2` 같은 번호는 로컬 최종 리뷰 번호다. 묶음 A~C는 병합됐고(PR #3~#5), 묶음마다 `feat/hardening-*` 브랜치와 PR을 하나씩 쓴다.
 - **변경 기록**: `CHANGELOG.md` — 출시 단위, 사용자 관점.
 
 ## 명령 (macOS — 항상 `android/`에서 실행)

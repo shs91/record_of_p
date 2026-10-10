@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| 상태 | 진행 중 — 묶음 A·B 완료(PR #3·#4 병합), 묶음 C(T7~T11) 구현·리뷰 완료(`feat/hardening-alerts`, 2026-10-09), 묶음 D 남음 |
-| 최종 수정 | 2026-10-09 |
+| 상태 | 진행 중 — 묶음 A·B·C 병합(PR #3·#4·#5). 묶음 D(Task 12~20)는 디자인 개편안 2를 반영해 갱신했다(2026-10-10 사용자 승인, 실행 전) |
+| 최종 수정 | 2026-10-10 |
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -18,11 +18,13 @@
 - 계획 검토: `docs/superpowers/reviews/2026-09-29-v1-plan-review.md` (코드 주석의 `검토 B1` 등)
 - 대조표(무엇을 옮길지의 근거): `.superpowers/sdd/2026-08-31-record-of-p-v1/2026-10-03-local-vs-remote.md` (gitignore 대상, 로컬에만 있음). 코드 주석의 `최종 리뷰 C1`·`I2` 등은 로컬 최종 리뷰 번호다.
 - 참고 구현: 브랜치 `archive/v1-local` — `git show archive/v1-local:<경로>`로 읽는다. **cherry-pick 하지 않는다.** 원격 코드와 구조가 달라서, 이 계획의 코드가 원격에 맞게 고쳐 둔 버전이다.
+- 묶음 D의 모양: 디자인 개편안 2 `docs/superpowers/specs/2026-10-10-design-refresh-heydealer.md`(2026-10-10 승인, 목업 링크는 문서 머리)와 디자인 시스템 `docs/design/design-system.md`
 
 ## Global Constraints
 
 - 명령은 항상 `android/`에서 실행한다: `./gradlew testDebugUnitTest`, 전체 검증은 `./gradlew testDebugUnitTest lintDebug assembleDebug`.
 - 기준선(이 계획 시작 시점, 커밋 `3d7fced`): 단위 테스트 80개 통과, `lintDebug` 오류 0·경고 22, `assembleDebug` 성공. 태스크가 끝날 때마다 테스트 전부 통과, lint 오류 0을 유지한다. 새 경고가 생기면 보고한다.
+- 묶음 D 기준선(`main` 1bdcaa5, PR #6 병합 뒤): 테스트 131개 통과, lint 오류 0·경고 25(모두 기존 경고 — 의존성 버전 등). 묶음 D는 "묶음 D 공통 규칙"도 따른다.
 - `domain/` 아래에는 Android/GMS import와 data·platform·ui·di 패키지 import를 금지한다(설계 §5.2). PostToolUse 훅(`.claude/hooks/check-domain-purity.sh`)이 막는다. 시간은 `java.time.Clock`으로 주입한다.
 - 의존 방향: `ui → data → domain`, `platform → domain + data`. ui는 platform을 import하지 않는다(MainActivity 같은 조립 지점만 예외).
 - 튜닝 상수는 `EngineParams`에서만 가져온다. 리터럴을 다른 곳에 다시 쓰지 않는다(설계 §10.2).
@@ -47,6 +49,8 @@
 4. **같은 항목이 걸린 같은 카테고리 지점 두 곳이 겹치는 자리** — 두 지점의 DWELL이 한 이벤트로 함께 들어와도 알림은 한 번만 떠야 한다(실기기 09-03 14:57:09 — CU·이마트24에서 같은 항목 알림이 동시에 떴다). PLACE(ENTER)와 POI(DWELL)는 한 이벤트에 함께 오지 않는다. → Task 7 `한 이벤트에서 같은 항목이 두 펜스로 통과해도 한 묶음에만 들어간다`
 5. **'항상 허용'을 끄고, 같은 자리에서 6시간 안에 다시 켰을 때** — 돌아오자마자 펜스가 다시 등록돼야 한다. → Task 2 `standDown은 재배치 스탬프를 지워 권한이 돌아오면 APP_OPEN이 바로 재배치한다`
 
+묶음 D(UI)의 Review Focus는 "묶음 D — UI·사용성" 절 머리에 따로 있다.
+
 ## 대조표 항목 ↔ 태스크
 
 | 묶음 | 태스크 | 대조표 ID |
@@ -62,10 +66,15 @@
 | | 9 | B7(PASS·stale 로그), 검토 C2 마무리 |
 | | 10 | I1, N2 |
 | | 11 | T7-2(다건 알림) |
-| D UI | 12 | I6 |
-| | 13 | I3 |
-| | 14 | I5, I7, N1 대책 |
+| D UI (실행 순서: 16 → 12 → 15 → 17 → 13 → 14 → 18 → 19 → 20) | 16 | 개편안 2 §1(토큰)·§4(아이콘) |
+| | 12 | I6 |
 | | 15 | C2-b, C2-c, C2-f, M1 |
+| | 17 | 개편안 2 §2 에디터 |
+| | 13 | I3, 묶음 B 인계(빠른 설정 위치 토글), 개편안 2 §2 보호 배너 |
+| | 14 | I5, I7, N1 대책, 개편안 2 §2 완료 스와이프·스낵바 |
+| | 18 | 개편안 2 §2 기록 카드·개수 pill·빈 상태 |
+| | 19 | 개편안 2 §2 주변 보기 |
+| | 20 | 개편안 2 §2·§3 근처 알림 |
 
 ## File Structure
 
@@ -73,7 +82,9 @@
 android/app/src/main/
 ├─ AndroidManifest.xml                         [T5 백업 차단·추출 규칙, T15 adjustResize]
 ├─ res/xml/data_extraction_rules.xml           [T5 생성] DB·DataStore를 백업·기기 이전에서 제외
-├─ res/values{,-en}/strings.xml                [T5·T6·T12·T13·T14·T15 문자열 추가]
+├─ res/values{,-en}/strings.xml                [T5·T6·T12~T15·T17~T20 문자열]
+├─ res/values{,-night}/colors.xml              [T20 notification_accent]
+├─ res/drawable/ic_cat_*·ic_trigger_*·ic_banner_*·ic_alert_error.xml [T16·T13·T17, tools/design/material_symbols.py가 만든다]
 └─ java/com/recordofp/app/
    ├─ domain/
    │  ├─ engine/ReseedGovernor.kt              [T3 FENCE_LOST, T4 시계 역행·PERIODIC 면제]
@@ -94,21 +105,32 @@ android/app/src/main/
    │  ├─ geofence/GeofenceBroadcastReceiver.kt [T3 NOT_AVAILABLE, T9 기록 호출, T10 FenceEventFlow로 위임]
    │  ├─ geofence/FenceEventFlow.kt            [T10 생성] 이벤트 처리 순서·예외 격리 (JVM 테스트)
    │  ├─ notify/Notifier.kt                    [T6 채널 상수 이전]
-   │  ├─ notify/NearbyNotifier.kt              [T6 채널 판정, T7 펜스 기준 id, T11 InboxStyle·액션]
+   │  ├─ notify/NearbyNotifier.kt              [T6 채널 판정, T7 펜스 기준 id, T11 InboxStyle·액션, T20 setColor]
    │  ├─ notify/AlertActions.kt                [T11 생성] 묶음별 액션 결정 (JVM 테스트)
    │  ├─ notify/NotificationActionReceiver.kt  [T10 오류 기록, T11 LongArray]
    │  ├─ work/ReseedWorkFlow.kt                [T3 생성] 워커 분기 판단 (JVM 테스트)
    │  └─ work/ReseedWorker.kt                  [T3 분기 위임·UPDATE]
    └─ ui/
       ├─ AppNavHost.kt                         [T15 popFrom]
+      ├─ theme/{Color,Theme,Type}.kt           [T16 대비 보정·inverse·onSuccess·AppTextStyles]
+      ├─ theme/{CategoryColors,Spacing,Motion,Previews}.kt [T16 생성]
+      ├─ common/TriggerVisual.kt               [T16 생성] 트리거 → 타일 색·아이콘·이름
+      ├─ common/TriggerTile.kt                 [T18 생성]
+      ├─ common/DistanceBadge.kt               [T16 숫자 색, T19 distanceParts·isFarDistance]
       ├─ common/BackButton.kt                  [T15 생성]
       ├─ permissions/PermissionStatus.kt       [T6 채널·기기 위치·설정 열기, T13 topIssue]
-      ├─ home/HomeScreen.kt                    [T13 보호 배너, T14 실행 취소·TalkBack]
+      ├─ permissions/RememberPermissionSnapshot.kt [T13 생성] 재개·위치 토글 때 다시 읽기
+      ├─ home/HomeScreen.kt                    [T13 배너, T14 실행 취소, T18 HomeContent·개수 pill]
+      ├─ home/{ProtectionBanner,UndoSnackbar,ReminderCard,HomeEmptyState,HomePreviews}.kt [T13·T14·T18 생성]
       ├─ home/HomeViewModel.kt                 [T14 reactivate]
-      ├─ editor/EditorViewModel.kt             [T12 저장 가드]
-      ├─ editor/EditorScreen.kt                [T12 브랜드 입력·오류 문구, T15 imePadding]
+      ├─ editor/EditorViewModel.kt             [T12 저장 가드, T17 EditorActions]
+      ├─ editor/EditorScreen.kt                [T12 브랜드 입력·오류 문구, T15 imePadding, T17 EditorContent]
+      ├─ editor/{EditorComponents,EditorPreviews}.kt [T17 생성]
+      ├─ nearby/{NearbyScreen,NearbyViewModel}.kt [T15 BackButton, T19 그룹 visual·NearbyContent]
+      ├─ nearby/NearbyPreviews.kt              [T19 생성]
       ├─ onboarding/OnboardingScreen.kt        [T5 FINE+COARSE]
-      └─ settings/{SettingsScreen,DiagnosticsScreen}.kt, nearby/NearbyScreen.kt [T6·T9·T10·T15]
+      └─ settings/{SettingsScreen,DiagnosticsScreen}.kt [T6·T9·T10·T13 스냅샷·T15]
+tools/design/material_symbols.py               [T16 생성] Material Symbols → VectorDrawable
 ```
 
 ---
@@ -2842,25 +2864,886 @@ geofenceId·RETRY 백오프 기존 불일치 정정. (§4.1, §4.4, §4.5, §5.3
 
 - **후속(태스크 미정)**: 지오펜스 브로드캐스트는 각자 코루틴에서 돌아, 거의 동시에 온 두 이벤트가 모두 기록(`recordShown`) 전에 게이트를 통과하면 같은 항목 알림이 두 번 뜰 수 있다. 프로세스 전역 `Mutex`로 `runFenceEvent`를 직렬화한다. 동시성 변경이라 별도 TDD로 한다.
 - **후속(태스크 미정)**: 리시버 ERROR 행의 note에는 예외 클래스·메시지만 있다. 어느 펜스·항목의 표시가 실패했는지(`fenceId`, 리마인더 id)를 함께 남긴다.
-- **묶음 D 전 디자인 라운드**: 여러 항목 알림의 InboxStyle은 펼쳐도 일정 줄 수(Android 버전에 따라 5~7줄)만 보인다. 넘치면 요약 줄에 "+N"을 단다(문자열 ko·en 필요). 묶음 알림의 모양(목록·액션)도 이 라운드에서 함께 확인한다.
+- **묶음 D 전 디자인 라운드**: 여러 항목 알림의 InboxStyle은 펼쳐도 일정 줄 수(Android 버전에 따라 5~7줄)만 보인다. 넘치면 요약 줄에 "+N"을 단다(문자열 ko·en 필요). 묶음 알림의 모양(목록·액션)도 이 라운드에서 함께 확인한다. → 2026-10-10 디자인 라운드(개편안 2 §2)가 여러 항목 알림을 "T11 그대로"로 정해 묶음 D에서 하지 않는다. "+N"은 후속 후보로 남긴다.
 
 ---
 
-## 묶음 D — UI·사용성
+## 묶음 D — UI·사용성 (2026-10-10 갱신: 디자인 개편안 2 반영)
+
+> **갱신 기록**: 디자인 개편안 2(`docs/superpowers/specs/2026-10-10-design-refresh-heydealer.md`, 2026-10-10 승인)의 §5를 태스크로 옮겼다. 원래 Task 12~15의 동작 수정은 그대로 두고 시각 사항을 더했으며, 새 Task 16~20을 붙였다. 태스크 번호는 추가한 순서다. **실행은 아래 표의 순서이고, 이 절의 문서 순서도 같다.** 이 절의 코드는 `main`(1bdcaa5)에서 딴 임시 worktree에 이 순서로 적용해, 태스크마다 `./gradlew testDebugUnitTest lintDebug assembleDebug`가 통과하는 것을 확인했다(테스트 수는 표의 누적값, lint는 매번 오류 0·경고 25).
+
+| 순서 | 태스크 | 내용 | 테스트(누적) |
+|---|---|---|---|
+| 1 | Task 16 | 토큰·아이콘 — 대비 보정, 완료·스낵바 색, 카테고리 색, 간격·모션, 글자 추가 스타일, 아이콘, 트리거 시각 매핑, 디자인 시스템 1.2 | 140 |
+| 2 | Task 12 | 에디터 저장 가드 — 입력 중 브랜드 보존, 연타 방지, 실패 안내 | 146 |
+| 3 | Task 15 | UI 마감 — 뒤로 버튼 설명, 키보드 가림, 뒤로 연타 가드, 정책 기본값 단일화 | 147 |
+| 4 | Task 17 | 에디터 시각 — 카드 바탕 입력, 카테고리 색 칩, 브랜드 [추가]·안내, 저장 실패 면 | 147 |
+| 5 | Task 13 | 홈 보호 배너 — 꺼진 것을 이름으로, 단계 칩, 빠른 설정 위치 토글 반영 | 150 |
+| 6 | Task 14 | 완료 실행 취소 — 한 방향 스와이프, 스낵바, TalkBack 완료 | 152 |
+| 7 | Task 18 | 홈 카드·개수 pill·빈 상태 | 155 |
+| 8 | Task 19 | 주변 보기 — 그룹 타일, 지점 카드, 큰 거리 숫자 | 159 |
+| 9 | Task 20 | 근처 알림 — 제목 이모지 제거, 브랜드 블루. 문서 마감(설계 1.4, 디자인 시스템 1.3) | 160 |
+
+Task 15를 앞으로 옮겼다. 뒤로 버튼(`BackButton`)과 키보드 인셋(`imePadding`)이 먼저 들어가 있어야 Task 17·19가 화면을 다시 그릴 때 그대로 들고 간다.
+
+### 묶음 D 공통 규칙
+
+Global Constraints에 더해 이 묶음의 모든 태스크에 적용한다.
+
+- 화면 코드의 색·글꼴은 테마 토큰과 `ui/theme` 헬퍼만 쓴다(`Color(0x…)`·`.sp` 금지). 간격은 `Spacing` 단계(4·8·12·16·20·24·32dp)에 있는 값을 토큰으로 쓴다. 단계 밖의 값(카드 사이 10, 카드 안쪽 14, 칩 패딩 9, 행 좌우 18 등)은 그 컴포넌트 안 리터럴로 둔다.
+- 고치는 화면은 본체를 상태와 동작만 받는 `XxxContent`로 떼고 `@LightDarkPreviews`(라이트·다크)와 큰 글꼴(`fontScale = 2f`) 미리보기를 둔다. 미리보기는 `RecordOfPTheme { }`를 기본값으로 감싼다(기본값이 `uiMode`를 따르므로 `successColor()` 같은 헬퍼와 스킴이 같은 테마를 본다).
+- 고정 높이 대신 `heightIn(min = …)`을 쓴다. 큰 글꼴에서 잘리지 않게 하기 위해서다. 터치 영역은 48dp 이상이다(Material 버튼·칩·IconButton은 기본으로 보장한다).
+- 아이콘은 `tools/design/material_symbols.py`의 `ICONS`에 한 줄 넣고 저장소 루트에서 `python3 -I tools/design/material_symbols.py`를 다시 실행해 만든다. drawable을 손으로 쓰지 않고 아이콘 라이브러리를 더하지 않는다. 스크립트는 jsDelivr에서 `@material-symbols/svg-400@0.47.0`을 받는다(개발 도구가 쓰는 네트워크이고, 앱의 외부 통신과는 무관하다).
+- `TriggerCatalog.emoji`는 화면에서 쓰지 않는다. 필드는 남긴다(개편안 2 §4, iOS 포팅 때 판단).
+- 묶음 C 인계의 InboxStyle "+N"은 하지 않는다. 개편안 2 §2가 여러 항목 알림을 "T11 그대로"로 정했다.
+- 커밋 전에 `./gradlew testDebugUnitTest lintDebug assembleDebug`의 테스트 수가 위 표와 같은지 본다. lint 경고가 25개를 넘으면 무엇이 늘었는지 보고한다.
+
+### 구현에서 개편안 2와 다른 점 (2026-10-10 사용자 승인)
+
+목업을 코드로 옮기면서 생긴 차이다. 사용자가 계획 검토에서 이대로 승인했다.
+
+1. **입력 필드 높이**: 개편안은 제목 56dp, 나머지 48~52dp다. 계획은 모든 필드를 Material 텍스트 필드 최소 높이 56dp로 두고, 옆의 [추가]·검색 버튼도 56dp로 맞춘다. `OutlinedTextField`의 TalkBack 힌트와 포커스 테두리(1dp → 2dp 블루)를 그대로 쓰기 위해서다.
+2. **브랜드·지점 칩 지우기**: 목업은 칩 안의 28dp ✕ 버튼이다. 계획은 칩 전체를 누르면 빠지게 한다(터치 영역 48dp). ✕는 표시로 남고, TalkBack은 "GS25 삭제"로 읽는다.
+3. **브랜드 안내 문구**: 입력란에 글자가 있을 때만 보인다. 목업은 입력 중 상태만 그렸다.
+4. **메모 입력**: 지금은 두 줄 높이로 시작한다. 목업에 맞춰 한 줄로 시작해 내용만큼 늘어난다.
+5. **영어 문구**: 앱 영어는 기록을 "note"라고 부른다(New note, Edit note, Delete this note?). 개편안 §3의 "reminder"를 "note"로 바꿔 쓴다 — "No notes yet", "%d notes", "Saved with the note even if you don't tap Add".
+6. **글자 크기**: 목업의 14px 버튼 글자(배너 [설정 열기])는 타입 스케일의 `labelLarge`(15sp)로 쓴다. 타입 스케일 밖의 크기는 개편안이 정한 두 가지(거리 숫자 22, 빈 상태 제목 20)만 더한다.
+7. **다크 알림 강조색**: 개편안은 `setColor(primary)`만 정했다. 다크에서는 다크 primary(`#5B95F8`, `values-night`)를 쓴다.
+8. **카탈로그에서 빠진 옛 카테고리**: 지금은 "편의점"으로 잘못 보인다. 계획은 id를 그대로 보이고 회색 타일·검색 아이콘으로 그린다.
+9. **카드 글자 줄 수**: 홈 카드 제목은 두 줄, 트리거 줄은 한 줄까지 보이고 넘치면 말줄임한다(개편안에 없는 경우).
+
+### 묶음 D Review Focus
+
+개편안이 암시하지만 화면 목업이 다루지 않은 조건 중, 사용자에게 가장 먼저 문제가 될 다섯 가지다. 각 줄의 확인 수단을 담당 태스크에 넣었다.
+
+1. **카탈로그에서 빠진 옛 카테고리 id가 저장된 기록**(앱 업데이트로 카탈로그 항목이 빠진 경우) — 홈 카드·에디터가 죽거나 다른 카테고리 이름을 보이면 안 된다. → Task 16 `카탈로그에서 빠진 옛 카테고리 id도 그릴 수 있다 - 고유 색 없이 검색 아이콘`
+2. **브랜드 입력란에 공백만 있을 때** — 저장 버튼이 켜지거나 빈 브랜드 칩이 생기면 안 된다. → Task 12 `공백만 입력한 브랜드는 트리거로 세지 않는다`
+3. **시스템 글꼴 크기 최대(200%)** — 개수 pill·칩·배너 버튼·스낵바·카드가 잘리거나 겹치면 안 된다. → 고정 높이 금지(`heightIn`), Task 13·17·18·19의 큰 글꼴 미리보기, 마무리 기기 확인 17번
+4. **1km를 넘는 거리와 쉼표 소수점 언어의 기기** — "1,1km"로 보이거나 먼 곳이 가까운 곳처럼 강조되면 안 된다. → Task 19 `1km를 넘어야 멀다`, `기기 언어가 쉼표 소수점이어도 점으로 쓴다`
+5. **대소문자를 섞어 입력한 브랜드(GS25)** — 주변 보기 그룹 머리가 matchKey의 소문자("gs25")로 보이면 안 된다. → Task 19 `그룹은 머리에 그릴 트리거를 함께 낸다 - 브랜드는 입력한 대소문자 그대로`
+
+---
+
+### Task 16: 토큰·아이콘 — 개편안 2의 바탕 (디자인 시스템 1.2)
+
+개편안 2 §1(토큰)과 §4(아이콘)를 코드와 디자인 시스템 문서로 옮긴다. 화면 구성은 아직 바꾸지 않는다. 눈에 보이는 변화는 라이트의 보조 글자·오류·테두리·완료 바탕 색과 에디터 장소 결과의 거리 배지 숫자 색뿐이다. 대비 약속(글자 4.5:1, 테두리·아이콘 3:1, 다크 타일 6:1)은 JVM 테스트로 지킨다. 트리거를 타일 색·아이콘·이름으로 바꾸는 `TriggerVisual`도 여기서 만든다. 뒤 태스크의 에디터 칩·홈 카드·주변 보기 그룹 머리가 모두 이것을 쓴다.
+
+**Files:**
+- Create: `tools/design/material_symbols.py`
+- Create(스크립트가 만든다): `android/app/src/main/res/drawable/ic_cat_convenience.xml`, `ic_cat_mart.xml`, `ic_cat_pharmacy.xml`, `ic_cat_bank.xml`, `ic_cat_post.xml`, `ic_cat_fuel.xml`, `ic_cat_laundry.xml`, `ic_cat_cafe.xml`, `ic_cat_hospital.xml`, `ic_cat_subway.xml`, `ic_trigger_brand.xml`, `ic_trigger_search.xml`, `ic_trigger_place.xml`
+- Create: `android/app/src/main/java/com/recordofp/app/ui/theme/CategoryColors.kt`, `Spacing.kt`, `Motion.kt`, `Previews.kt`
+- Create: `android/app/src/main/java/com/recordofp/app/ui/common/TriggerVisual.kt`
+- Modify: `android/app/src/main/java/com/recordofp/app/ui/theme/Color.kt`, `Theme.kt`, `Type.kt`
+- Modify: `android/app/src/main/java/com/recordofp/app/ui/common/DistanceBadge.kt`
+- Modify: `docs/design/design-system.md`(1.2), `CLAUDE.md`(디자인 규칙), `docs/superpowers/specs/2026-10-10-design-refresh-heydealer.md`(머리말 상태)
+- Test: `android/app/src/test/java/com/recordofp/app/ui/theme/ThemeContrastTest.kt`, `android/app/src/test/java/com/recordofp/app/ui/common/TriggerVisualTest.kt` (생성)
+
+**Interfaces:**
+- Consumes: `TriggerCatalog.entries`·`byId(id)`·`CatalogEntry.isBrandPreset`, `catalogLabelRes(categoryId)`
+- Produces:
+  - `ui/theme`: `internal val LightColors: ColorScheme`, `internal val DarkColors: ColorScheme`; 색 값 `BlueTextLight`, `OnSuccessLight`·`OnSuccessDark`, `InverseSurfaceLight`·`Dark`, `InverseOnSurfaceLight`·`Dark`, `InversePrimaryLight`·`Dark`, `InverseSuccessLight`·`Dark`; `@Composable fun onSuccessColor(): Color`, `@Composable fun inverseSuccessColor(): Color`; `data class TileColors(val tint: Color, val ink: Color)`; `object CategoryPalette { fun of(categoryId: String, dark: Boolean): TileColors? }`; `@Composable fun categoryTileColors(categoryId: String): TileColors?`; `object Spacing { xxs, xs, s, m, l, xl, xxl, screen }`(Dp); `object Motion { const val SHORT_MS: Int; const val STANDARD_MS: Int; val easing: Easing }`; `object AppTextStyles { val numberLarge: TextStyle; val emptyTitle: TextStyle }`; `annotation class LightDarkPreviews`
+  - `ui/common`: `sealed interface TriggerVisual` — `Category(categoryId: String)`, `BrandPreset(categoryId: String)`, `BrandKeyword(keyword: String)`, `Place(name: String)`; `fun categoryVisual(categoryId: String): TriggerVisual`; `fun TriggerSpec.visual(): TriggerVisual`; `@DrawableRes fun TriggerVisual.iconRes(): Int`; `@Composable fun TriggerVisual.label(): String`; `@Composable fun TriggerVisual.tileColors(): TileColors`
+
+- [ ] **Step 1: 실패 테스트를 쓴다**
+
+`android/app/src/test/java/com/recordofp/app/ui/theme/ThemeContrastTest.kt`:
+
+```kotlin
+package com.recordofp.app.ui.theme
+
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import com.recordofp.app.domain.model.TriggerCatalog
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/** 개편안 2 §1.1·§1.3의 대비 약속을 지킨다 — WCAG 글자 4.5:1, 테두리·아이콘 3:1 */
+class ThemeContrastTest {
+
+    private fun contrast(a: Color, b: Color): Double {
+        val la = a.luminance() + 0.05
+        val lb = b.luminance() + 0.05
+        return maxOf(la, lb).toDouble() / minOf(la, lb)
+    }
+
+    private fun assertContrast(name: String, fg: Color, bg: Color, min: Double) {
+        val c = contrast(fg, bg)
+        assertTrue("$name 대비 ${"%.2f".format(c)} < $min", c >= min)
+    }
+
+    @Test
+    fun `보조 글자·연블루 위 블루·오류는 쓰이는 면 위에서 글자 대비 기준을 넘는다`() {
+        for ((theme, s) in listOf("라이트" to LightColors, "다크" to DarkColors)) {
+            assertContrast("$theme 보조 글자/종이", s.onSurfaceVariant, s.background, 4.5)
+            assertContrast("$theme 보조 글자/칩", s.onSurfaceVariant, s.secondaryContainer, 4.5)
+            assertContrast("$theme 보조 글자/카드", s.onSurfaceVariant, s.surface, 4.5)
+            assertContrast("$theme 블루 글자/연블루", s.onPrimaryContainer, s.primaryContainer, 4.5)
+            assertContrast("$theme 블루 글자/카드", s.onPrimaryContainer, s.surface, 4.5)
+            assertContrast("$theme 블루 글자/종이", s.onPrimaryContainer, s.background, 4.5)
+            assertContrast("$theme 오류/카드", s.error, s.surface, 4.5)
+            assertContrast("$theme 오류 면 글자", s.onErrorContainer, s.errorContainer, 4.5)
+            assertContrast("$theme 경고 글자/경고 면", s.onTertiaryContainer, s.tertiaryContainer, 4.5)
+            assertContrast("$theme 경고 버튼 글자", s.surface, s.onTertiaryContainer, 4.5)
+            assertContrast("$theme 개수 pill", s.background, s.onSurface, 4.5)
+        }
+        assertContrast("라이트 흰 글자/오류", Color.White, LightColors.error, 4.5)
+    }
+
+    @Test
+    fun `입력 테두리는 카드 위에서 3대1을 넘는다`() {
+        assertContrast("라이트 테두리", LightColors.outline, LightColors.surface, 3.0)
+        assertContrast("다크 테두리", DarkColors.outline, DarkColors.surface, 3.0)
+    }
+
+    @Test
+    fun `완료 면과 스낵바의 글자는 글자 대비 기준을 넘는다`() {
+        assertContrast("라이트 완료", OnSuccessLight, SuccessLight, 4.5)
+        assertContrast("다크 완료", OnSuccessDark, SuccessDark, 4.5)
+        for ((theme, s) in listOf("라이트" to LightColors, "다크" to DarkColors)) {
+            assertContrast("$theme 스낵바 글자", s.inverseOnSurface, s.inverseSurface, 4.5)
+            assertContrast("$theme 스낵바 실행 취소", s.inversePrimary, s.inverseSurface, 4.5)
+        }
+        assertContrast("라이트 스낵바 체크 원", InverseSuccessLight, InverseSurfaceLight, 3.0)
+        assertContrast("다크 스낵바 체크 원", InverseSuccessDark, InverseSurfaceDark, 3.0)
+    }
+
+    @Test
+    fun `브랜드 프리셋을 뺀 카탈로그 카테고리마다 라이트·다크 타일 색이 있다`() {
+        for (entry in TriggerCatalog.entries) {
+            if (entry.isBrandPreset) {
+                assertNull(entry.id, CategoryPalette.of(entry.id, dark = false))
+            } else {
+                assertNotNull(entry.id, CategoryPalette.of(entry.id, dark = false))
+                assertNotNull(entry.id, CategoryPalette.of(entry.id, dark = true))
+            }
+        }
+    }
+
+    @Test
+    fun `카테고리 ink는 tint 위에서 라이트 4·5대1·다크 6대1을, 카드 위에서 4·5대1을 넘는다`() {
+        for (entry in TriggerCatalog.entries.filterNot { it.isBrandPreset }) {
+            val light = CategoryPalette.of(entry.id, dark = false)!!
+            val dark = CategoryPalette.of(entry.id, dark = true)!!
+            assertContrast("${entry.id} 라이트 타일", light.ink, light.tint, 4.5)
+            assertContrast("${entry.id} 다크 타일", dark.ink, dark.tint, 6.0)
+            // 에디터의 선택 안 된 칩은 카드 위에 카테고리 ink 아이콘을 그린다
+            assertContrast("${entry.id} 라이트 카드", light.ink, LightColors.surface, 4.5)
+            assertContrast("${entry.id} 다크 카드", dark.ink, DarkColors.surface, 4.5)
+        }
+    }
+}
+```
+
+(JVM 테스트 이름에는 `.`을 쓸 수 없어 "4.5"를 "4·5"로 적었다. Compose의 `Color`와 `luminance()`는 JVM 단위 테스트에서 그대로 동작한다 — 계획 작성 때 확인했다.)
+
+`android/app/src/test/java/com/recordofp/app/ui/common/TriggerVisualTest.kt`:
+
+```kotlin
+package com.recordofp.app.ui.common
+
+import com.recordofp.app.R
+import com.recordofp.app.domain.model.TriggerCatalog
+import com.recordofp.app.domain.model.TriggerSpec
+import com.recordofp.app.domain.model.TriggerType
+import com.recordofp.app.ui.theme.CategoryPalette
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class TriggerVisualTest {
+
+    @Test
+    fun `카탈로그 카테고리는 Category, 브랜드 프리셋은 BrandPreset이 된다`() {
+        for (entry in TriggerCatalog.entries) {
+            val visual = TriggerSpec(type = TriggerType.CATEGORY, categoryId = entry.id).visual()
+            val expected = if (entry.isBrandPreset) {
+                TriggerVisual.BrandPreset(entry.id)
+            } else {
+                TriggerVisual.Category(entry.id)
+            }
+            assertEquals(expected, visual)
+        }
+    }
+
+    @Test
+    fun `카테고리마다 아이콘이 다르고 브랜드·지점은 공용 아이콘을 쓴다`() {
+        val categoryIcons = TriggerCatalog.entries.filterNot { it.isBrandPreset }
+            .map { TriggerVisual.Category(it.id).iconRes() }
+        assertEquals(categoryIcons.size, categoryIcons.toSet().size)
+        assertEquals(R.drawable.ic_trigger_brand, TriggerVisual.BrandPreset("daiso").iconRes())
+        assertEquals(R.drawable.ic_trigger_search, TriggerVisual.BrandKeyword("GS25").iconRes())
+        assertEquals(R.drawable.ic_trigger_place, TriggerVisual.Place("크린토피아 역삼점").iconRes())
+    }
+
+    @Test
+    fun `카탈로그에서 빠진 옛 카테고리 id도 그릴 수 있다 - 고유 색 없이 검색 아이콘`() {
+        val visual = TriggerSpec(type = TriggerType.CATEGORY, categoryId = "removed_cat").visual()
+        assertEquals(TriggerVisual.Category("removed_cat"), visual)
+        assertEquals(R.drawable.ic_trigger_search, visual.iconRes())
+        assertNull(CategoryPalette.of("removed_cat", dark = false))
+    }
+
+    @Test
+    fun `값이 빠진 브랜드·지점 트리거도 빈 이름으로 그린다`() {
+        assertEquals(TriggerVisual.BrandKeyword(""), TriggerSpec(type = TriggerType.BRAND).visual())
+        assertEquals(TriggerVisual.Place(""), TriggerSpec(type = TriggerType.PLACE).visual())
+        assertEquals(TriggerVisual.Category(""), TriggerSpec(type = TriggerType.CATEGORY).visual())
+    }
+}
+```
+
+- [ ] **Step 2: 실패를 확인한다**
+
+Run: `./gradlew testDebugUnitTest --tests "*.ThemeContrastTest" --tests "*.TriggerVisualTest"`
+Expected: 컴파일 실패 — `LightColors`가 private이고, `OnSuccessLight`·`CategoryPalette`·`TriggerVisual`·`R.drawable.ic_trigger_brand`가 없다.
+
+- [ ] **Step 3: 색 토큰을 바꾼다**
+
+`ui/theme/Color.kt` 전체를 바꾼다.
+
+```kotlin
+package com.recordofp.app.ui.theme
+
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+
+/**
+ * 고정 브랜드 팔레트 (디자인 시스템 §2.1).
+ * 흰 종이(background) 위의 잉크(onSurface) — 블루는 "행동"에만 아껴 쓴다.
+ * 다이나믹 컬러는 쓰지 않는다: 기록 앱의 종이는 기기 벽지를 따라가지 않는다.
+ * 라이트의 보조 글자·연블루 위 블루·오류·테두리·성공은 WCAG 대비에 맞춰 보정했다(개편안 2 §1.1) — ThemeContrastTest가 지킨다.
+ */
+
+// ── 라이트 ──────────────────────────────────────────────
+val PaperLight = Color(0xFFF7F8FA) // background: 종이
+val CardLight = Color(0xFFFFFFFF) // surface: 카드
+val InkLight = Color(0xFF191F28) // onSurface: 잉크
+val SubInkLight = Color(0xFF636E7C) // onSurfaceVariant: 보조
+val BlueLight = Color(0xFF1B6EF3) // primary: 행동
+val BlueContainerLight = Color(0xFFEAF1FE) // primaryContainer: 연블루
+val BlueTextLight = Color(0xFF1762D8) // onPrimaryContainer: 연블루·카드 위 블루 글자(거리 숫자, 저장·추가)
+val ChipLight = Color(0xFFF2F4F6) // secondaryContainer: 회색 pill 칩
+val ChipInkLight = Color(0xFF4E5968) // onSecondaryContainer
+val AmberContainerLight = Color(0xFFFFF4E0) // tertiaryContainer: 보호 배너(경고≠오류)
+val AmberInkLight = Color(0xFF96660A) // onTertiaryContainer
+val ErrorLight = Color(0xFFDC2E3C)
+val LineLight = Color(0xFFE5E8EB) // outlineVariant: 헤어라인
+val OutlineLight = Color(0xFF878F9B) // outline: 입력 필드 외곽선(카드 위 3:1)
+val SuccessLight = Color(0xFF0A8049) // 완료 스와이프 바탕
+val OnSuccessLight = Color(0xFFFFFFFF)
+val InverseSurfaceLight = Color(0xFF191F28) // 스낵바 바탕
+val InverseOnSurfaceLight = Color(0xFFF7F8FA)
+val InversePrimaryLight = Color(0xFF9EC1FF) // 스낵바 [실행 취소]
+val InverseSuccessLight = Color(0xFF2ED07E) // 스낵바 앞 성공 체크 원
+
+// ── 다크 ────────────────────────────────────────────────
+val PaperDark = Color(0xFF101418)
+val CardDark = Color(0xFF1B2027)
+val InkDark = Color(0xFFE9EDF2)
+val SubInkDark = Color(0xFF8B95A1)
+val BlueDark = Color(0xFF5B95F8) // 채도 낮춘 블루 — 어둠 속 눈부심 방지. onPrimaryContainer도 이 값
+val BlueContainerDark = Color(0xFF1E2C42)
+val ChipDark = Color(0xFF242B34)
+val ChipInkDark = Color(0xFFB0B8C1)
+val AmberContainerDark = Color(0xFF332916)
+val AmberInkDark = Color(0xFFF0C070)
+val ErrorDark = Color(0xFFFF6B6B)
+val LineDark = Color(0xFF232A33)
+val OutlineDark = Color(0xFF646E7C)
+val SuccessDark = Color(0xFF2ED07E)
+val OnSuccessDark = Color(0xFF1B2027)
+val InverseSurfaceDark = Color(0xFFE9EDF2)
+val InverseOnSurfaceDark = Color(0xFF101418)
+val InversePrimaryDark = Color(0xFF1762D8)
+val InverseSuccessDark = Color(0xFF0A8049)
+
+// Material 스킴에 없는 시맨틱 컬러는 테마 헬퍼로 제공한다
+
+/** 완료 스와이프 바탕, 진단 APPLIED·PASS 도트 */
+@Composable
+fun successColor(): Color = if (isSystemInDarkTheme()) SuccessDark else SuccessLight
+
+/** 성공 면 위의 글자·아이콘 — 완료 스와이프의 체크·"완료" */
+@Composable
+fun onSuccessColor(): Color = if (isSystemInDarkTheme()) OnSuccessDark else OnSuccessLight
+
+/** 스낵바(inverseSurface) 위의 성공 체크 원 */
+@Composable
+fun inverseSuccessColor(): Color = if (isSystemInDarkTheme()) InverseSuccessDark else InverseSuccessLight
+```
+
+`ui/theme/Theme.kt`를 고친다.
+
+1. 첫 KDoc을 바꾼다.
+
+```kotlin
+/**
+ * 고정 브랜드 테마 (디자인 시스템 §2).
+ * 다이나믹 컬러를 제거하고 라이트/다크 모두 고정 팔레트를 쓴다 — 콘텐츠가 주인공,
+ * 크롬은 물러난다. 토큰 값은 Color.kt·CategoryColors.kt, 타입은 Type.kt, 형태는 Shape.kt, 간격·모션은 Spacing.kt·Motion.kt.
+ * 스킴은 ThemeContrastTest가 대비를 확인하도록 internal로 둔다.
+ */
+```
+
+2. `private val LightColors`를 `internal val LightColors`로, `private val DarkColors`를 `internal val DarkColors`로 바꾼다.
+3. `LightColors`의 `onPrimaryContainer = BlueLight,`를 `onPrimaryContainer = BlueTextLight,`로 바꾼다. `DarkColors`의 `onPrimaryContainer = BlueDark`는 그대로 둔다(다크는 이미 기준을 넘는다).
+4. `LightColors`의 마지막 `outlineVariant = LineLight,` 다음에 더한다.
+
+```kotlin
+    // 스낵바 (개편안 2 §1.2)
+    inverseSurface = InverseSurfaceLight,
+    inverseOnSurface = InverseOnSurfaceLight,
+    inversePrimary = InversePrimaryLight,
+```
+
+5. `DarkColors`의 마지막 `outlineVariant = LineDark,` 다음에 더한다.
+
+```kotlin
+    inverseSurface = InverseSurfaceDark,
+    inverseOnSurface = InverseOnSurfaceDark,
+    inversePrimary = InversePrimaryDark,
+```
+
+- [ ] **Step 4: 카테고리 색, 간격, 모션, 글자 추가 스타일, 미리보기 묶음을 더한다**
+
+`ui/theme/CategoryColors.kt`:
+
+```kotlin
+package com.recordofp.app.ui.theme
+
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.ui.graphics.Color
+
+/** 타일 한 쌍 — 바탕(tint)과 그 위의 아이콘·글자(ink) */
+@Immutable
+data class TileColors(val tint: Color, val ink: Color)
+
+/**
+ * 카테고리 10색 (디자인 시스템 §2.6, 개편안 2 §1.3). Material 슬롯이 아니라서 카탈로그 id로 찾는다.
+ * 도메인 카탈로그(TriggerCatalog)에는 색을 넣지 않는다. 색은 아이콘·이름과 함께 쓴다 — 색만으로 구분하지 않는다.
+ * ink는 tint 위에서 라이트 4.5:1, 다크 6:1을 넘는다 — ThemeContrastTest가 지킨다.
+ */
+object CategoryPalette {
+    private val light: Map<String, TileColors> = mapOf(
+        "convenience" to TileColors(Color(0xFFE5F6EC), Color(0xFF137444)),
+        "mart" to TileColors(Color(0xFFFFF0E2), Color(0xFFB4520A)),
+        "pharmacy" to TileColors(Color(0xFFFCEAF3), Color(0xFFB42A72)),
+        "bank" to TileColors(Color(0xFFECEEFC), Color(0xFF3A49B8)),
+        "post" to TileColors(Color(0xFFFDECE7), Color(0xFFB83A18)),
+        "fuel" to TileColors(Color(0xFFE2F4F4), Color(0xFF0C7276)),
+        "laundry" to TileColors(Color(0xFFF1EAFD), Color(0xFF6A3CBC)),
+        "cafe" to TileColors(Color(0xFFF4EDE6), Color(0xFF835532)),
+        "hospital" to TileColors(Color(0xFFE3F2F9), Color(0xFF0B6A8F)),
+        "subway" to TileColors(Color(0xFFEDF5DE), Color(0xFF4F7212)),
+    )
+
+    private val dark: Map<String, TileColors> = mapOf(
+        "convenience" to TileColors(Color(0xFF163024), Color(0xFF5CCB8C)),
+        "mart" to TileColors(Color(0xFF3A2614), Color(0xFFFF9F57)),
+        "pharmacy" to TileColors(Color(0xFF3A1A2D), Color(0xFFF27DBB)),
+        "bank" to TileColors(Color(0xFF1F2444), Color(0xFF9AA5F7)),
+        "post" to TileColors(Color(0xFF3B1F17), Color(0xFFFF8C69)),
+        "fuel" to TileColors(Color(0xFF123335), Color(0xFF52C7CC)),
+        "laundry" to TileColors(Color(0xFF2A1F42), Color(0xFFB99AF7)),
+        "cafe" to TileColors(Color(0xFF2F251D), Color(0xFFD9A67E)),
+        "hospital" to TileColors(Color(0xFF12303D), Color(0xFF5CC0E6)),
+        "subway" to TileColors(Color(0xFF243016), Color(0xFFB0D66A)),
+    )
+
+    /** 고유 색이 없으면(브랜드 프리셋, 카탈로그에 없는 id) null — 호출부가 칩 색을 쓴다 */
+    fun of(categoryId: String, dark: Boolean): TileColors? = (if (dark) this.dark else light)[categoryId]
+}
+
+/** 지금 테마(라이트·다크)의 카테고리 타일 색 */
+@Composable
+fun categoryTileColors(categoryId: String): TileColors? = CategoryPalette.of(categoryId, isSystemInDarkTheme())
+```
+
+`ui/theme/Spacing.kt`:
+
+```kotlin
+package com.recordofp.app.ui.theme
+
+import androidx.compose.ui.unit.dp
+
+/**
+ * 간격 단계 (디자인 시스템 §2.4, 개편안 2 §1.4). 화면 코드는 이 단계에 있는 값을 토큰으로 쓴다.
+ * 카드 사이 10, 칩 사이 6, 카드 안쪽 14처럼 단계 밖의 값은 그 컴포넌트 안에 둔다.
+ */
+object Spacing {
+    val xxs = 4.dp
+    val xs = 8.dp
+    val s = 12.dp
+    val m = 16.dp
+    val l = 20.dp
+    val xl = 24.dp
+    val xxl = 32.dp
+
+    /** 화면 좌우 여백 */
+    val screen = l
+}
+```
+
+`ui/theme/Motion.kt`:
+
+```kotlin
+package com.recordofp.app.ui.theme
+
+import androidx.compose.animation.core.Easing
+import androidx.compose.animation.core.FastOutSlowInEasing
+
+/** 모션 (디자인 시스템 §2.5, 개편안 2 §1.4) */
+object Motion {
+    /** 짧은 전환 — 칩 선택, 버튼 눌림 */
+    const val SHORT_MS = 150
+
+    /** 표준 — 카드 등장·제거, 스낵바 */
+    const val STANDARD_MS = 250
+
+    /** Material 표준 이징 */
+    val easing: Easing = FastOutSlowInEasing
+}
+```
+
+`ui/theme/Previews.kt`:
+
+```kotlin
+package com.recordofp.app.ui.theme
+
+import android.content.res.Configuration
+import androidx.compose.ui.tooling.preview.Preview
+
+/**
+ * 화면 미리보기 라이트·다크 두 벌 (디자인 시스템 §5). 미리보기 안에서는 `RecordOfPTheme { }`를 기본값으로 감싼다 —
+ * 기본값이 uiMode를 따르므로 successColor() 같은 헬퍼와 스킴이 같은 테마를 본다.
+ */
+@Preview(name = "라이트", showBackground = true)
+@Preview(name = "다크", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+annotation class LightDarkPreviews
+```
+
+`ui/theme/Type.kt` 끝에 더한다(같은 파일의 `private fun style(...)`을 쓴다).
+
+```kotlin
+
+/**
+ * Material 슬롯 밖의 글자 스타일 (디자인 시스템 §2.2 추가 스타일, 개편안 2 §2).
+ * 굵기만 바꿀 때는 슬롯 스타일의 copy(fontWeight = …)를 쓴다 — 크기를 새로 만들지 않는다.
+ */
+object AppTextStyles {
+    /** 판단에 쓰는 숫자 — 주변 보기 거리 22/26 Bold, tabular */
+    val numberLarge: TextStyle =
+        style(22, FontWeight.Bold, 26, letterSpacing = -0.02).copy(fontFeatureSettings = "tnum")
+
+    /** 빈 상태 제목 20/28 Bold */
+    val emptyTitle: TextStyle = style(20, FontWeight.Bold, 28, letterSpacing = -0.01)
+}
+```
+
+- [ ] **Step 5: 아이콘을 가져온다**
+
+`tools/design/material_symbols.py`:
+
+```python
+#!/usr/bin/env python3
+"""Material Symbols Rounded SVG를 Android VectorDrawable로 가져온다 (디자인 개편안 2 §4).
+
+다시 실행하면 같은 파일을 다시 만든다. 아이콘을 더하려면 ICONS에 한 줄 넣는다.
+사용: python3 -I tools/design/material_symbols.py   (저장소 루트에서)
+"""
+import re
+import sys
+import urllib.request
+from pathlib import Path
+
+# 고정 버전 — 바꾸면 모든 아이콘 모양이 함께 바뀐다
+VERSION = "0.47.0"
+URL = "https://cdn.jsdelivr.net/npm/@material-symbols/svg-400@{v}/rounded/{name}.svg"
+OUT = Path("android/app/src/main/res/drawable")
+
+# drawable 이름 → Material Symbols 이름
+ICONS = {
+    "ic_cat_convenience": "storefront",
+    "ic_cat_mart": "shopping_cart",
+    "ic_cat_pharmacy": "medication",
+    "ic_cat_bank": "account_balance",
+    "ic_cat_post": "local_post_office",
+    "ic_cat_fuel": "local_gas_station",
+    "ic_cat_laundry": "checkroom",
+    "ic_cat_cafe": "local_cafe",
+    "ic_cat_hospital": "local_hospital",
+    "ic_cat_subway": "subway",
+    "ic_trigger_brand": "shopping_bag",
+    "ic_trigger_search": "search",
+    "ic_trigger_place": "location_on",
+}
+
+# VectorPath: 원본 경로를 그대로 옮긴다(정밀도를 줄이면 모양이 바뀐다). 24dp 아이콘이라 성능 영향이 작다
+TEMPLATE = """<?xml version="1.0" encoding="utf-8"?>
+<!-- Material Symbols Rounded "{name}" (Apache License 2.0, Google). tools/design/material_symbols.py가 만든다 — 손으로 고치지 않는다 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <group android:translateY="960">
+        <path
+            android:fillColor="#FF000000"
+            android:pathData="{d}"
+            tools:ignore="VectorPath" />
+    </group>
+</vector>
+"""
+
+
+def main() -> int:
+    if not OUT.is_dir():
+        print(f"{OUT}가 없다 — 저장소 루트에서 실행한다", file=sys.stderr)
+        return 1
+    for drawable, name in ICONS.items():
+        with urllib.request.urlopen(URL.format(v=VERSION, name=name)) as res:
+            svg = res.read().decode("utf-8")
+        if 'viewBox="0 -960 960 960"' not in svg:
+            print(f"{name}: 예상과 다른 viewBox", file=sys.stderr)
+            return 1
+        paths = re.findall(r'<path d="([^"]+)"', svg)
+        if len(paths) != 1:
+            print(f"{name}: path가 {len(paths)}개", file=sys.stderr)
+            return 1
+        (OUT / f"{drawable}.xml").write_text(TEMPLATE.format(name=name, d=paths[0]), encoding="utf-8")
+        print(f"{drawable}.xml ← {name}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+```
+
+Run(저장소 루트): `python3 -I tools/design/material_symbols.py`
+Expected: `ic_cat_convenience.xml ← storefront`부터 `ic_trigger_place.xml ← location_on`까지 13줄. `android/app/src/main/res/drawable/`에 파일 13개가 생긴다. Material Symbols SVG는 `viewBox="0 -960 960 960"`이므로 템플릿이 `translateY="960"`으로 옮긴다. 아이콘 색은 쓰는 쪽 `Icon(tint = …)`이 입힌다.
+
+- [ ] **Step 6: 트리거 시각 매핑을 만든다**
+
+`ui/common/TriggerVisual.kt`:
+
+```kotlin
+package com.recordofp.app.ui.common
+
+import androidx.annotation.DrawableRes
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.recordofp.app.R
+import com.recordofp.app.domain.model.TriggerCatalog
+import com.recordofp.app.domain.model.TriggerSpec
+import com.recordofp.app.domain.model.TriggerType
+import com.recordofp.app.ui.theme.TileColors
+import com.recordofp.app.ui.theme.categoryTileColors
+
+/**
+ * 트리거를 화면에 그리는 방법 — 타일 색·아이콘·이름 (개편안 2 §1.3·§2·§4).
+ * 홈 카드, 에디터 칩, 주변 보기 그룹 머리가 함께 쓴다. 카탈로그의 이모지는 화면에서 쓰지 않는다(§4).
+ */
+sealed interface TriggerVisual {
+    /** 카테고리. 카탈로그에서 빠진 옛 id도 여기로 온다 — 고유 색 없이 검색 아이콘과 id 그대로 그린다 */
+    data class Category(val categoryId: String) : TriggerVisual
+
+    /** 카탈로그의 브랜드 프리셋(다이소·올리브영) — 브랜드 색(칩)과 쇼핑백 아이콘 */
+    data class BrandPreset(val categoryId: String) : TriggerVisual
+
+    /** 직접 입력한 브랜드 — 입력한 대소문자 그대로 보인다 */
+    data class BrandKeyword(val keyword: String) : TriggerVisual
+
+    /** 특정 지점 — 연블루 */
+    data class Place(val name: String) : TriggerVisual
+}
+
+/** 카탈로그 id → 카테고리 또는 브랜드 프리셋 */
+fun categoryVisual(categoryId: String): TriggerVisual =
+    if (TriggerCatalog.byId(categoryId)?.isBrandPreset == true) {
+        TriggerVisual.BrandPreset(categoryId)
+    } else {
+        TriggerVisual.Category(categoryId)
+    }
+
+fun TriggerSpec.visual(): TriggerVisual = when (type) {
+    TriggerType.CATEGORY -> categoryVisual(categoryId.orEmpty())
+    TriggerType.BRAND -> TriggerVisual.BrandKeyword(brandKeyword.orEmpty())
+    TriggerType.PLACE -> TriggerVisual.Place(placeName.orEmpty())
+}
+
+/** Material Symbols Rounded 아이콘 (개편안 2 §4, tools/design/material_symbols.py) */
+@DrawableRes
+fun TriggerVisual.iconRes(): Int = when (this) {
+    is TriggerVisual.Category -> when (categoryId) {
+        "convenience" -> R.drawable.ic_cat_convenience
+        "mart" -> R.drawable.ic_cat_mart
+        "pharmacy" -> R.drawable.ic_cat_pharmacy
+        "bank" -> R.drawable.ic_cat_bank
+        "post" -> R.drawable.ic_cat_post
+        "fuel" -> R.drawable.ic_cat_fuel
+        "laundry" -> R.drawable.ic_cat_laundry
+        "cafe" -> R.drawable.ic_cat_cafe
+        "hospital" -> R.drawable.ic_cat_hospital
+        "subway" -> R.drawable.ic_cat_subway
+        else -> R.drawable.ic_trigger_search // 카탈로그에서 빠진 옛 id
+    }
+    is TriggerVisual.BrandPreset -> R.drawable.ic_trigger_brand
+    is TriggerVisual.BrandKeyword -> R.drawable.ic_trigger_search
+    is TriggerVisual.Place -> R.drawable.ic_trigger_place
+}
+
+/** 화면에 보일 이름. 카탈로그에 없는 id는 id 그대로 — 다른 카테고리 이름으로 잘못 보이지 않게 */
+@Composable
+fun TriggerVisual.label(): String = when (this) {
+    is TriggerVisual.Category -> catalogLabel(categoryId)
+    is TriggerVisual.BrandPreset -> catalogLabel(categoryId)
+    is TriggerVisual.BrandKeyword -> keyword
+    is TriggerVisual.Place -> name
+}
+
+@Composable
+private fun catalogLabel(categoryId: String): String =
+    if (TriggerCatalog.byId(categoryId) != null) stringResource(catalogLabelRes(categoryId)) else categoryId
+
+/** 타일 색: 카테고리는 고유 색, 브랜드는 칩 색, 특정 지점은 연블루 (개편안 2 §1.3) */
+@Composable
+fun TriggerVisual.tileColors(): TileColors {
+    val scheme = MaterialTheme.colorScheme
+    val neutral = TileColors(scheme.secondaryContainer, scheme.onSecondaryContainer)
+    return when (this) {
+        is TriggerVisual.Category -> categoryTileColors(categoryId) ?: neutral
+        is TriggerVisual.BrandPreset, is TriggerVisual.BrandKeyword -> neutral
+        is TriggerVisual.Place -> TileColors(scheme.primaryContainer, scheme.onPrimaryContainer)
+    }
+}
+```
+
+- [ ] **Step 7: 거리 배지 숫자 색을 고친다**
+
+`ui/common/DistanceBadge.kt`에서 KDoc과 숫자 색을 바꾼다. `primary`는 연블루 위에서 4.18:1이라 기준에 못 미친다.
+
+```kotlin
+/**
+ * 거리 배지 — 연블루 pill + 블루 숫자, tabular-nums (개편안 §2).
+ * 숫자는 onPrimaryContainer — 연블루 위 4.5:1 (개편안 2 §1.1). 에디터 장소 검색 결과와 주변 보기 POI 행이 함께 쓴다.
+ */
+```
+
+`color = MaterialTheme.colorScheme.primary,`를 `color = MaterialTheme.colorScheme.onPrimaryContainer,`로 바꾼다.
+
+- [ ] **Step 8: 테스트 통과와 전체 검증을 확인한다**
+
+Run: `./gradlew testDebugUnitTest --tests "*.ThemeContrastTest" --tests "*.TriggerVisualTest"` → PASS(9개)
+Run: `./gradlew testDebugUnitTest lintDebug assembleDebug`
+Expected: 테스트 140개 통과, lint 오류 0·경고 25. 은행 아이콘처럼 경로가 긴 drawable의 `VectorPath` 경고는 템플릿의 `tools:ignore`가 막는다. 경고가 26이면 템플릿이 그대로인지 본다.
+
+- [ ] **Step 9: 디자인 시스템 1.2, CLAUDE.md, 개편안 상태를 고친다**
+
+토큰을 바꾼 커밋에서 디자인 시스템 문서를 함께 고친다(CLAUDE.md 디자인 규칙). `docs/design/design-system.md`:
+
+1. 머리말 표를 바꾼다(날짜는 커밋하는 날짜).
+
+```markdown
+| 상태 | 승인 — 현재 UI의 기준 |
+| 버전 | 1.2 |
+| 최종 수정 | <커밋하는 날짜> |
+| 구현 | Android `ui/theme/{Color,CategoryColors,Type,Shape,Spacing,Motion,Theme,Previews}.kt`, 아이콘 `res/drawable/ic_cat_*`·`ic_trigger_*` · iOS 미착수 |
+| 근거 | 디자인 개편안 `docs/superpowers/specs/2026-09-03-design-refresh-clean-minimal.md`, 개편안 2 `docs/superpowers/specs/2026-10-10-design-refresh-heydealer.md`(결정 기록)과 현재 코드 값 |
+```
+
+2. §1.3 첫 문단(`바탕을 해치지 않는 선에서 화면에 성격을 준다. 아래 항목은 방향이고, …`)을 바꾼다.
+
+```text
+바탕을 해치지 않는 선에서 화면에 성격을 준다. 실제 모양은 개편안 2(방향 B "카테고리 타일", 2026-10-10 승인)에서 정했다. 카드 왼쪽에 카테고리 색 타일을 두어 목록을 훑을 때 장소 종류가 먼저 보이게 한다.
+```
+
+   같은 절의 네 항목 끝에 각각 덧붙인다 — 숫자 강조: `(§2.2 추가 스타일 — 홈 개수 pill, 주변 보기 거리)`, 브랜드 그래픽: `(홈 빈 상태)`, 마이크로 인터랙션: `(§2.5)`, 카테고리 컬러 포인트: `(§2.6)`.
+
+3. §2.1의 표와 그 아래 두 줄을 바꾼다.
+
+```markdown
+| 역할 | Material 슬롯 | 라이트 | 다크 | 코드 이름 |
+|---|---|---|---|---|
+| 종이(화면 배경) | background | `#F7F8FA` | `#101418` | `Paper*` |
+| 카드 | surface | `#FFFFFF` | `#1B2027` | `Card*` |
+| 잉크(본문) | onSurface, onBackground | `#191F28` | `#E9EDF2` | `Ink*` |
+| 보조 글자 | onSurfaceVariant | `#636E7C` | `#8B95A1` | `SubInk*` |
+| 행동(블루) | primary | `#1B6EF3` | `#5B95F8` | `Blue*` |
+| 연블루 면 | primaryContainer | `#EAF1FE` | `#1E2C42` | `BlueContainer*` |
+| 블루 글자(연블루·카드·종이 위) | onPrimaryContainer | `#1762D8` | `#5B95F8` | `BlueTextLight` · 다크는 `BlueDark` |
+| 회색 pill 칩 | secondaryContainer, surfaceVariant | `#F2F4F6` | `#242B34` | `Chip*` |
+| 칩 글자 | onSecondaryContainer, secondary | `#4E5968` | `#B0B8C1` | `ChipInk*` |
+| 경고 면(보호 배너) | tertiaryContainer | `#FFF4E0` | `#332916` | `AmberContainer*` |
+| 경고 글자 | onTertiaryContainer | `#96660A` | `#F0C070` | `AmberInk*` |
+| 오류 | error | `#DC2E3C` | `#FF6B6B` | `Error*` |
+| 헤어라인 | outlineVariant | `#E5E8EB` | `#232A33` | `Line*` |
+| 테두리(입력 필드) | outline | `#878F9B` | `#646E7C` | `Outline*` |
+| 성공(완료) | — (`successColor()`) | `#0A8049` | `#2ED07E` | `Success*` |
+| 성공 면 위 글자 | — (`onSuccessColor()`) | `#FFFFFF` | `#1B2027` | `OnSuccess*` |
+| 스낵바 바탕 | inverseSurface | `#191F28` | `#E9EDF2` | `InverseSurface*` |
+| 스낵바 글자 | inverseOnSurface | `#F7F8FA` | `#101418` | `InverseOnSurface*` |
+| 스낵바 액션 | inversePrimary | `#9EC1FF` | `#1762D8` | `InversePrimary*` |
+| 스낵바 성공 원 | — (`inverseSuccessColor()`) | `#2ED07E` | `#0A8049` | `InverseSuccess*` |
+
+- 다크 블루는 채도를 낮췄다. 어두운 화면에서 눈부시지 않게 하기 위해서다.
+- 경고(앰버)와 오류(빨강)를 구분한다. 보호 상태가 꺼진 것은 경고다.
+- 글자는 WCAG 4.5:1, 테두리·아이콘은 3:1을 넘는다. 라이트의 보조 글자·블루 글자·오류·테두리·성공은 이 기준에 맞춰 보정했다(개편안 2 §1.1). `ThemeContrastTest`가 쓰이는 면 위의 대비를 확인한다.
+- `primary`는 종이 위 글자로 4.32:1이라 기준에 못 미친다. 블루 면 위 흰 글자(4.59:1)와 아이콘에만 쓰고, 종이·카드·연블루 위의 블루 글자(거리 숫자, 에디터 [저장]·[추가])는 `onPrimaryContainer`를 쓴다.
+```
+
+4. §2.2의 `숫자를 세로로 맞춰야 하는 곳(…)은 tabular-nums(…)를 쓴다.` 줄 다음에 더한다.
+
+```markdown
+
+Material 슬롯 밖의 스타일은 `AppTextStyles`(`Type.kt`)에 둔다.
+
+| 이름 | 크기/행간(sp) | 굵기 | 자간(em) | 쓰임 |
+|---|---|---|---|---|
+| `numberLarge` | 22 / 26 | Bold, tabular | -0.02 | 주변 보기 거리 숫자 |
+| `emptyTitle` | 20 / 28 | Bold | -0.01 | 빈 상태 제목 |
+
+굵기만 바꿀 때는 슬롯 스타일의 `copy(fontWeight = …)`를 쓴다(개수 pill·완료 글자 Bold, 칩 Medium·SemiBold). 크기를 새로 만들지 않는다.
+```
+
+5. §2.4의 본문(`화면 좌우 여백과 카드 그리드의 기준은 20dp다. …`)을 바꾼다.
+
+```markdown
+`ui/theme/Spacing.kt`의 단계를 쓴다.
+
+| 토큰 | 값 | 쓰임 |
+|---|---|---|
+| `xxs` | 4dp | 단계 칩 사이, 제목 위 |
+| `xs` | 8dp | 칩 사이, 섹션 안 줄 |
+| `s` | 12dp | 입력 사이, 배너 안 |
+| `m` | 16dp | 배너·필드 안쪽, 스낵바 좌우 |
+| `l` | 20dp | 화면 좌우 여백(`screen`), 주변 보기 그룹 사이 |
+| `xl` | 24dp | 화면 아래 여백 |
+| `xxl` | 32dp | 빈 상태 좌우 |
+
+단계 밖의 값(카드 사이 10, 카드 안쪽 14, 칩 패딩 9, 행 좌우 18 등)은 그 컴포넌트 안에 둔다. 온보딩·설정·진단 화면은 다음에 손댈 때 토큰으로 옮긴다.
+```
+
+6. §2.5의 본문(`토큰은 아직 없다. …`부터 끝까지)을 바꾼다.
+
+```markdown
+`ui/theme/Motion.kt`의 값을 쓴다. 이징은 Material 표준(`FastOutSlowInEasing`)이다.
+
+| 토큰 | 값 | 쓰임 |
+|---|---|---|
+| `SHORT_MS` | 150ms | 칩 선택 색 전환, 버튼 눌림 |
+| `STANDARD_MS` | 250ms | 홈 카드 등장·제거·재배열(`animateItem`) |
+
+스낵바는 Material `SnackbarHost`의 기본 전환을 쓴다. 스와이프 완료는 `SwipeToDismissBox`(시작→끝 한 방향)다.
+```
+
+7. §2.5 다음에 두 절을 새로 붙인다.
+
+```markdown
+### 2.6 카테고리 색
+
+카테고리마다 타일 바탕(tint)과 아이콘·글자(ink) 한 쌍을 둔다. ink는 tint 위에서 라이트 4.5:1, 다크 6:1을 넘는다. 색은 아이콘·이름과 함께 쓴다 — 색만으로 구분하지 않는다. 코드는 `CategoryPalette`(`ui/theme/CategoryColors.kt`)이고, 화면은 `TriggerVisual.tileColors()`(`ui/common`)로 쓴다. 도메인 카탈로그에는 색을 넣지 않는다.
+
+| 카테고리 | 라이트 tint | 라이트 ink | 다크 tint | 다크 ink |
+|---|---|---|---|---|
+| 편의점 | `#E5F6EC` | `#137444` | `#163024` | `#5CCB8C` |
+| 대형마트 | `#FFF0E2` | `#B4520A` | `#3A2614` | `#FF9F57` |
+| 약국 | `#FCEAF3` | `#B42A72` | `#3A1A2D` | `#F27DBB` |
+| 은행 | `#ECEEFC` | `#3A49B8` | `#1F2444` | `#9AA5F7` |
+| 우체국 | `#FDECE7` | `#B83A18` | `#3B1F17` | `#FF8C69` |
+| 주유소·충전소 | `#E2F4F4` | `#0C7276` | `#123335` | `#52C7CC` |
+| 세탁소 | `#F1EAFD` | `#6A3CBC` | `#2A1F42` | `#B99AF7` |
+| 카페 | `#F4EDE6` | `#835532` | `#2F251D` | `#D9A67E` |
+| 병원 | `#E3F2F9` | `#0B6A8F` | `#12303D` | `#5CC0E6` |
+| 지하철역 | `#EDF5DE` | `#4F7212` | `#243016` | `#B0D66A` |
+| 브랜드(프리셋·직접 입력)·카탈로그에 없는 id | secondaryContainer | onSecondaryContainer | 같음 | 같음 |
+| 특정 지점 | primaryContainer | onPrimaryContainer | 같음 | 같음 |
+
+### 2.7 아이콘
+
+카테고리·트리거 아이콘은 Material Symbols Rounded(Apache 2.0, 0.47.0 고정)를 VectorDrawable로 가져와 쓴다. `tools/design/material_symbols.py`의 `ICONS`에 한 줄 넣고 저장소 루트에서 `python3 -I tools/design/material_symbols.py`를 다시 실행한다. drawable을 손으로 고치지 않고, 아이콘 라이브러리를 더하지 않는다. P-핀 마크(`ic_pin_mark`, 알림용 `ic_stat_pin`)는 직접 그린 브랜드 그래픽이다.
+
+| 쓰임 | drawable | Material Symbols |
+|---|---|---|
+| 편의점 · 대형마트 · 약국 · 은행 · 우체국 | `ic_cat_convenience` · `ic_cat_mart` · `ic_cat_pharmacy` · `ic_cat_bank` · `ic_cat_post` | storefront · shopping_cart · medication · account_balance · local_post_office |
+| 주유소 · 세탁소 · 카페 · 병원 · 지하철역 | `ic_cat_fuel` · `ic_cat_laundry` · `ic_cat_cafe` · `ic_cat_hospital` · `ic_cat_subway` | local_gas_station · checkroom · local_cafe · local_hospital · subway |
+| 브랜드 프리셋 · 브랜드 직접 입력 · 특정 지점 | `ic_trigger_brand` · `ic_trigger_search` · `ic_trigger_place` | shopping_bag · search · location_on |
+
+화면은 `TriggerVisual.iconRes()`로 고른다. 카탈로그의 이모지(`TriggerCatalog.emoji`)는 화면에서 쓰지 않는다.
+```
+
+8. §5 전체를 바꾼다.
+
+```markdown
+## 5. 코드 규칙
+
+- 색·글꼴은 `MaterialTheme.colorScheme`·`MaterialTheme.typography`와 이 문서의 헬퍼로만 쓴다: `successColor()`·`onSuccessColor()`·`inverseSuccessColor()`, `TriggerVisual.tileColors()`(카테고리 색), `AppTextStyles`, `PillShape`, `tabularNums()`. 화면 코드에 `Color(0x…)`나 `.sp` 리터럴을 쓰지 않는다.
+- 간격은 §2.4의 `Spacing` 단계에 있는 값을 토큰으로 쓴다. 단계 밖의 값은 컴포넌트 안에 둔다.
+- 고치거나 새로 만드는 화면은 본체를 상태와 동작만 받는 `XxxContent`로 떼고, `@LightDarkPreviews`(라이트·다크 두 벌)와 큰 글꼴(`fontScale = 2f`) 미리보기를 둔다. 미리보기 안은 `RecordOfPTheme { }`를 기본값으로 감싼다.
+- 고정 높이 대신 `heightIn(min = …)`을 쓴다(큰 글꼴). 색은 아이콘·이름과 함께 쓴다 — 색만으로 구분하지 않는다.
+- 사용자에게 보이는 문자열은 ko·en 둘 다 넣는다(CLAUDE.md 작업 규칙).
+```
+
+9. 끝의 변경 이력 표 맨 위(1.1 행 위)에 한 행을 더한다.
+
+`| 1.2 | <커밋하는 날짜> | §1.3, §2.1, §2.2, §2.4, §2.5, §2.6, §2.7, §5 | 개편안 2 토큰 반영 — 라이트 대비 보정(보조 글자·블루 글자·오류·테두리·성공), 완료·스낵바 색, 카테고리 10색, 글자 추가 스타일, 간격·모션 토큰, Material Symbols 아이콘, 미리보기·간격 규칙 | 개편안 2 §1·§4(2026-10-10 승인), 보강 계획 Task 16 |`
+
+`CLAUDE.md`를 고친다.
+
+- "문서 목록"의 "디자인 개편안 2" 줄 끝 문장 `값은 묶음 D 구현 때 디자인 시스템으로 옮긴다.`를 아래로 바꾼다.
+
+```text
+토큰은 디자인 시스템 1.2로 옮겼고, 화면은 묶음 D(`feat/hardening-ui`)에서 바꾼다.
+```
+
+- "프로젝트 규칙 → 디자인"에서 `화면 코드에서 색·글꼴은 테마 토큰만 쓴다`로 시작하는 줄 전체를 아래로 바꾼다.
+
+```text
+- 화면 코드에서 색·글꼴은 테마 토큰만 쓴다(`Color(0x…)`·`.sp` 리터럴 금지). 간격은 `Spacing` 토큰을 쓰고, 고치는 화면은 본체를 `XxxContent`로 떼어 `@LightDarkPreviews`(라이트·다크)와 큰 글꼴 미리보기를 둔다(디자인 시스템 §5). 아이콘은 `tools/design/material_symbols.py`로 Material Symbols를 가져온다(라이브러리 추가 금지). 두 화면 이상에서 쓰는 컴포넌트는 `ui/common`으로 옮긴다.
+```
+
+`docs/superpowers/specs/2026-10-10-design-refresh-heydealer.md` 머리말의 `상태` 칸을 아래로, `최종 수정`을 커밋하는 날짜로 바꾼다(시점 기록이라 본문은 고치지 않는다).
+
+```text
+진행 중 — 묶음 D 구현 중(보강 계획 Task 16~20, `feat/hardening-ui`). 실기기 라이트·다크 스크린샷 확인 후 완료
+```
+
+- [ ] **Step 10: 커밋한다**
+
+```bash
+git add tools/design/material_symbols.py android/app/src/main/res/drawable/ic_cat_*.xml android/app/src/main/res/drawable/ic_trigger_*.xml \
+  android/app/src/main/java/com/recordofp/app/ui/theme/ \
+  android/app/src/main/java/com/recordofp/app/ui/common/TriggerVisual.kt \
+  android/app/src/main/java/com/recordofp/app/ui/common/DistanceBadge.kt \
+  android/app/src/test/java/com/recordofp/app/ui/theme/ThemeContrastTest.kt \
+  android/app/src/test/java/com/recordofp/app/ui/common/TriggerVisualTest.kt \
+  docs/design/design-system.md CLAUDE.md docs/superpowers/specs/2026-10-10-design-refresh-heydealer.md
+git commit -m "feat: 디자인 토큰 개편안 2 — 대비 보정·카테고리 색·간격·모션·아이콘" -m "라이트 보조 글자·블루 글자·오류·테두리·성공을 WCAG 대비에 맞추고, 완료·스낵바 색과 카테고리 10색,
+간격·모션·글자 추가 스타일, Material Symbols 아이콘과 트리거 시각 매핑을 더한다. 디자인 시스템 1.2. (개편안 2 §1·§4)"
+```
+
+---
 
 ### Task 12: 에디터 저장 가드 — 입력 중 브랜드 보존·이중 저장 방지·실패 안내
 
-원격 에디터에는 세 가지 문제가 있다. (a) 브랜드 입력란이 화면의 `remember`라서, 입력만 하고 [+]를 누르지 않은 채 저장하면 그 브랜드가 조용히 버려진다. 그 브랜드가 유일한 트리거면 저장 버튼이 꺼진 채로 남는다. (b) 저장을 연타하면 두 번 저장된다. 편집 모드의 upsert는 트랜잭션이 아니어서(`deleteByReminder` → `upsertAll`) 트리거가 중복될 수 있다. 삭제도 마찬가지다. (c) 저장이 실패하면 앱이 죽는다. 이 태스크는 입력 중 브랜드를 상태에 두고 저장할 때 함께 확정한다. 저장·삭제 중에는 다시 누를 수 없게 하고, 실패하면 문구로 알린다.
+원격 에디터에는 세 가지 문제가 있다. (a) 브랜드 입력란이 화면의 `remember`라서, 입력만 하고 [+]를 누르지 않은 채 저장하면 그 브랜드가 조용히 버려진다. 그 브랜드가 유일한 트리거면 저장 버튼이 꺼진 채로 남는다. (b) 저장을 연타하면 두 번 저장된다. 편집 모드의 upsert는 트랜잭션이 아니어서(`deleteByReminder` → `upsertAll`) 트리거가 중복될 수 있다. 삭제도 마찬가지다. (c) 저장이 실패하면 앱이 죽는다. 이 태스크는 입력 중 브랜드를 상태에 두고 저장할 때 함께 확정한다. 저장·삭제 중에는 다시 누를 수 없게 하고, 실패하면 문구로 알린다. 화면 모양은 Task 17이 개편안 2대로 다시 그린다 — 여기서는 동작에 필요한 만큼만 화면을 고친다. ko·en 문자열 키를 맞춰 보는 테스트도 더한다. 이 묶음의 거의 모든 태스크가 문자열을 더하기 때문이다.
 
 **Files:**
 - Modify: `android/app/src/main/java/com/recordofp/app/ui/editor/EditorViewModel.kt`
 - Modify: `android/app/src/main/java/com/recordofp/app/ui/editor/EditorScreen.kt`
 - Modify: `android/app/src/main/res/values/strings.xml`, `android/app/src/main/res/values-en/strings.xml`
 - Test: `android/app/src/test/java/com/recordofp/app/ui/editor/EditorViewModelTest.kt`
+- Test: `android/app/src/test/java/com/recordofp/app/ui/StringResourcesTest.kt` (생성)
 
 **Interfaces:**
 - Consumes: 원격 `EditorViewModel`(편집 모드·`searchJob` 포함)
-- Produces: `EditorUiState.brandInput`, `saving`, `saveFailed`, `fun withBrandInputCommitted(): EditorUiState`, `EditorViewModel.onBrandInputChange(v)`, `commitBrandInput()`. `addBrand(keyword)`는 지운다.
+- Produces: `EditorUiState.brandInput`, `saving`, `saveFailed`, `fun withBrandInputCommitted(): EditorUiState`, `EditorViewModel.onBrandInputChange(v)`, `commitBrandInput()`. `addBrand(keyword)`는 지운다. `StringResourcesTest`(ko·en 키 대조).
 
 - [ ] **Step 1: 페이크와 기존 테스트를 고친다**
 
@@ -2889,9 +3772,16 @@ geofenceId·RETRY 백오프 기존 불일치 정정. (§4.1, §4.4, §4.5, §5.3
     }
 ```
 
-`저장하면 선택이 트리거 스펙으로 매핑된다`의 `vm.addBrand(" GS25 ")`를 `vm.onBrandInputChange(" GS25 "); vm.commitBrandInput()`로 바꾼다.
+`저장하면 선택이 트리거 스펙으로 매핑된다`의 `vm.addBrand(" GS25 ")`를 두 줄로 바꾼다.
+
+```kotlin
+        vm.onBrandInputChange(" GS25 ")
+        vm.commitBrandInput()
+```
 
 - [ ] **Step 2: 새 실패 테스트를 쓴다**
+
+`EditorViewModelTest` 끝에 더한다.
 
 ```kotlin
     @Test
@@ -2903,6 +3793,17 @@ geofenceId·RETRY 백오프 기존 불일치 정정. (§4.1, §4.4, §4.5, §5.3
         vm.save()
         dispatcher.scheduler.advanceUntilIdle()
         assertEquals(listOf("이마트24"), repo.saved!!.triggers.map { it.brandKeyword })
+    }
+
+    @Test
+    fun `공백만 입력한 브랜드는 트리거로 세지 않는다`() = runTest {
+        val vm = vm()
+        vm.onTitleChange("휴지")
+        vm.onBrandInputChange("   ")
+        assertTrue(!vm.state.value.canSave)
+        vm.commitBrandInput()
+        assertEquals(emptyList<String>(), vm.state.value.brandKeywords)
+        assertEquals("", vm.state.value.brandInput)
     }
 
     @Test
@@ -2942,10 +3843,38 @@ geofenceId·RETRY 백오프 기존 불일치 정정. (§4.1, §4.4, §4.5, §5.3
     }
 ```
 
+`android/app/src/test/java/com/recordofp/app/ui/StringResourcesTest.kt`를 만든다. 지금 키는 이미 같으므로 **이 테스트는 처음부터 통과한다.** 이후 태스크가 문자열을 더하거나 지울 때 한쪽만 고치는 것을 막는 회귀 방지다.
+
+```kotlin
+package com.recordofp.app.ui
+
+import java.io.File
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+/** 사용자에게 보이는 문자열은 ko·en 둘 다 둔다 (CLAUDE.md 작업 규칙, 설계 §8). 단위 테스트는 android/app에서 돈다 */
+class StringResourcesTest {
+
+    private fun keys(path: String): Set<String> =
+        Regex("""<(string|plurals) name="([^"]+)"""")
+            .findAll(File(path).readText())
+            .map { it.groupValues[2] }
+            .toSet()
+
+    @Test
+    fun `ko와 en의 문자열 키가 같다`() {
+        val ko = keys("src/main/res/values/strings.xml")
+        val en = keys("src/main/res/values-en/strings.xml")
+        assertEquals("en에 없는 키", emptySet<String>(), ko - en)
+        assertEquals("ko에 없는 키", emptySet<String>(), en - ko)
+    }
+}
+```
+
 - [ ] **Step 3: 실패를 확인한다**
 
-Run: `./gradlew testDebugUnitTest --tests "*.EditorViewModelTest"`
-Expected: 컴파일 실패 — `onBrandInputChange`, `commitBrandInput`, `saveFailed`가 없다.
+Run: `./gradlew testDebugUnitTest --tests "*.EditorViewModelTest" --tests "*.StringResourcesTest"`
+Expected: 테스트 소스 컴파일 실패 — `onBrandInputChange`, `commitBrandInput`, `saveFailed`가 없다.
 
 - [ ] **Step 4: 상태와 뷰모델을 고친다**
 
@@ -3084,17 +4013,19 @@ data class EditorUiState(
             }
 ```
 
-하단 삭제 `TextButton`에 `enabled = !state.saving,`을 더한다.
+하단 삭제 `TextButton`에 `enabled = !state.saving,`을 더한다. (이 오류 문구와 입력 줄은 Task 17이 개편안 2 모양으로 다시 그린다.)
 
 - [ ] **Step 6: 문자열을 더한다**
+
+`editor_delete_confirm` 다음 줄에 넣는다.
 
 ko: `<string name="editor_save_failed">변경 내용을 저장하지 못했어요. 다시 시도해 주세요.</string>`
 en: `<string name="editor_save_failed">Couldn\'t save your changes. Please try again.</string>`
 
 - [ ] **Step 7: 테스트 통과와 전체 검증을 확인한다**
 
-Run: `./gradlew testDebugUnitTest --tests "*.EditorViewModelTest"` → PASS
-Run: `./gradlew testDebugUnitTest lintDebug assembleDebug` → 전부 통과, lint 오류 0
+Run: `./gradlew testDebugUnitTest --tests "*.EditorViewModelTest" --tests "*.StringResourcesTest"` → PASS
+Run: `./gradlew testDebugUnitTest lintDebug assembleDebug` → 테스트 146개 통과, lint 오류 0·경고 25
 
 - [ ] **Step 8: 커밋한다**
 
@@ -3102,27 +4033,951 @@ Run: `./gradlew testDebugUnitTest lintDebug assembleDebug` → 전부 통과, li
 git add android/app/src/main/java/com/recordofp/app/ui/editor/EditorViewModel.kt \
   android/app/src/main/java/com/recordofp/app/ui/editor/EditorScreen.kt \
   android/app/src/main/res/values/strings.xml android/app/src/main/res/values-en/strings.xml \
-  android/app/src/test/java/com/recordofp/app/ui/editor/EditorViewModelTest.kt
-git commit -m "fix: 에디터 저장 가드 - 입력 중 브랜드 보존·연타 방지·실패 안내" -m "확정하지 않은 브랜드도 저장되고, 저장·삭제를 연타해도 한 번만 처리되며, 실패하면 앱이 죽지 않고 문구로 알린다. (§4.1, 최종 리뷰 I6)"
+  android/app/src/test/java/com/recordofp/app/ui/editor/EditorViewModelTest.kt \
+  android/app/src/test/java/com/recordofp/app/ui/StringResourcesTest.kt
+git commit -m "fix: 에디터 저장 가드 - 입력 중 브랜드 보존·연타 방지·실패 안내" -m "확정하지 않은 브랜드도 저장되고, 저장·삭제를 연타해도 한 번만 처리되며, 실패하면 앱이 죽지 않고 문구로 알린다.
+ko·en 문자열 키를 맞춰 보는 테스트를 더한다. (§4.1, §8, 최종 리뷰 I6)"
+```
+
+---
+
+### Task 15: UI 마감 — 뒤로 버튼 설명, 키보드 가림, 뒤로 연타 가드, 정책 기본값 단일화
+
+> 실행 순서 3번(Task 12 다음). Task 17·19가 화면을 다시 그릴 때 여기서 넣은 `BackButton`과 `imePadding`을 그대로 들고 간다.
+
+이 태스크는 작은 결함 네 가지를 묶어 고친다. (1) 주변 보기·진단·설정의 뒤로 아이콘에 설명이 없어 TalkBack이 "라벨 없는 버튼"으로 읽는다. (2) edge-to-edge에서 에디터 아래쪽의 장소 검색란과 결과가 키보드에 가려질 수 있다. (3) 뒤로나 ✕를 연타하거나 저장 직후 ✕를 누르면 홈까지 꺼내져 빈 화면이 될 수 있다. (4) 알림 정책 기본값(4/10/22:00/08:00)이 `SettingsStore`에 세 번 리터럴로 중복돼 있어, `EngineParams`를 튜닝해도 앱에 반영되지 않는다(Global Constraint 위반).
+
+**Files:**
+- Create: `android/app/src/main/java/com/recordofp/app/ui/common/BackButton.kt`
+- Modify: `android/app/src/main/java/com/recordofp/app/ui/nearby/NearbyScreen.kt`, `ui/settings/DiagnosticsScreen.kt`, `ui/settings/SettingsScreen.kt`
+- Modify: `android/app/src/main/java/com/recordofp/app/ui/editor/EditorScreen.kt`
+- Modify: `android/app/src/main/AndroidManifest.xml`
+- Modify: `android/app/src/main/java/com/recordofp/app/ui/AppNavHost.kt`
+- Modify: `android/app/src/main/java/com/recordofp/app/data/repo/SettingsStore.kt`
+- Modify: `android/app/src/main/res/values/strings.xml`, `android/app/src/main/res/values-en/strings.xml`
+- Test: `android/app/src/test/java/com/recordofp/app/data/repo/NotificationPolicySettingsTest.kt` (생성)
+
+**Interfaces:**
+- Consumes: Task 12의 `EditorScreen`
+- Produces: `@Composable fun BackButton(onClick: () -> Unit)`(ui/common), `private fun NavController.popFrom(route: String)`
+
+- [ ] **Step 1: 기본값 회귀 테스트를 쓴다**
+
+`NotificationPolicySettingsTest.kt`를 만든다. 지금 값이 이미 `EngineParams`와 같으므로 **이 테스트는 처음부터 통과한다.** 목적은 리터럴을 지운 뒤에도 기본값이 그대로라는 회귀 방지다(동작을 바꾸지 않는 리팩터링).
+
+```kotlin
+package com.recordofp.app.data.repo
+
+import com.recordofp.app.domain.engine.EngineParams
+import java.time.Duration
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class NotificationPolicySettingsTest {
+
+    @Test
+    fun `기본 설정은 EngineParams의 §4·5 기본값을 그대로 쓴다`() {
+        val d = NotificationPolicySettings()
+        assertEquals(EngineParams.COOLDOWN_PER_ITEM_MS, Duration.ofHours(d.cooldownHours.toLong()).toMillis())
+        assertEquals(EngineParams.DAILY_CAP_TOTAL, d.dailyCapTotal)
+        assertEquals(EngineParams.QUIET_START_MINUTE, d.quietStartMinute)
+        assertEquals(EngineParams.QUIET_END_MINUTE, d.quietEndMinute)
+        assertTrue(d.quietEnabled)
+    }
+}
+```
+
+Run: `./gradlew testDebugUnitTest --tests "*.NotificationPolicySettingsTest"`
+Expected: PASS(리팩터링 전 기준선)
+
+- [ ] **Step 2: 기본값 리터럴을 EngineParams로 바꾼다**
+
+`SettingsStore.kt`의 데이터 클래스와 KDoc을 바꾼다(import `com.recordofp.app.domain.engine.EngineParams`, `java.time.Duration`).
+
+```kotlin
+/**
+ * 알림 정책 설정값 (스펙 §4.5) — §6.5 필터 체인 정책으로는 [com.recordofp.app.data.engine.StoreGatePolicyProvider]가 변환한다.
+ * 기본값은 EngineParams에서만 가져온다 — 리터럴 중복 금지 (§10.2, 최종 리뷰 M1)
+ */
+data class NotificationPolicySettings(
+    // 선택지 1/4/12/24 (§4.5)
+    val cooldownHours: Int = Duration.ofMillis(EngineParams.COOLDOWN_PER_ITEM_MS).toHours().toInt(),
+    // 선택지 5/10/20/0(0=무제한)
+    val dailyCapTotal: Int = EngineParams.DAILY_CAP_TOTAL,
+    val quietEnabled: Boolean = true,
+    val quietStartMinute: Int = EngineParams.QUIET_START_MINUTE,
+    val quietEndMinute: Int = EngineParams.QUIET_END_MINUTE,
+)
+```
+
+`DataStoreSettingsStore`의 `policy`와 `updatePolicy`(두 군데 리터럴 읽기)를 하나의 `read`로 합친다.
+
+```kotlin
+    private val defaults = NotificationPolicySettings()
+
+    private fun read(p: Preferences) = NotificationPolicySettings(
+        cooldownHours = p[cooldownKey] ?: defaults.cooldownHours,
+        dailyCapTotal = p[capKey] ?: defaults.dailyCapTotal,
+        quietEnabled = p[quietEnabledKey] ?: defaults.quietEnabled,
+        quietStartMinute = p[quietStartKey] ?: defaults.quietStartMinute,
+        quietEndMinute = p[quietEndKey] ?: defaults.quietEndMinute,
+    )
+
+    override val policy: Flow<NotificationPolicySettings> = dataStore.data.map { read(it) }
+
+    override suspend fun updatePolicy(transform: (NotificationPolicySettings) -> NotificationPolicySettings) {
+        dataStore.edit { p ->
+            val next = transform(read(p))
+            p[cooldownKey] = next.cooldownHours
+            p[capKey] = next.dailyCapTotal
+            p[quietEnabledKey] = next.quietEnabled
+            p[quietStartKey] = next.quietStartMinute
+            p[quietEndKey] = next.quietEndMinute
+        }
+    }
+```
+
+(`edit` 블록의 `p`는 `MutablePreferences`이고 `Preferences`의 하위 타입이므로 `read(p)`가 그대로 받는다.)
+
+Run: `./gradlew testDebugUnitTest --tests "*.NotificationPolicySettingsTest" --tests "*.StoreGatePolicyProviderTest"` → PASS
+
+- [ ] **Step 3: 뒤로 버튼에 설명을 단다**
+
+`ui/common/BackButton.kt`:
+
+```kotlin
+package com.recordofp.app.ui.common
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.recordofp.app.R
+
+/** 상단 바 뒤로 가기 — 하위 화면 공통 (§8 TalkBack 설명, 최종 리뷰 C2) */
+@Composable
+fun BackButton(onClick: () -> Unit) {
+    IconButton(onClick = onClick) {
+        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+    }
+}
+```
+
+`NearbyScreen.kt`, `DiagnosticsScreen.kt`, `SettingsScreen.kt`에서 아래 블록을 `navigationIcon = { BackButton(onClick = onBack) },` 한 줄로 바꾸고 import `com.recordofp.app.ui.common.BackButton`을 더한다.
+
+```kotlin
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    }
+                },
+```
+
+세 파일 모두에서 `import androidx.compose.material.icons.automirrored.filled.ArrowBack`을 지운다. `SettingsScreen.kt`는 `IconButton`을 더 쓰지 않으므로 `import androidx.compose.material3.IconButton`도 지운다(`NearbyScreen`·`DiagnosticsScreen`은 새로고침·내보내기 버튼에서 계속 쓴다).
+
+`action_refresh` 다음 줄에 문자열을 더한다. ko `<string name="action_back">뒤로</string>`, en `<string name="action_back">Back</string>`.
+
+- [ ] **Step 4: 에디터가 키보드 인셋을 받게 한다**
+
+`AndroidManifest.xml`의 MainActivity에 속성을 더한다.
+
+```xml
+        <!-- adjustResize: edge-to-edge에서 키보드 인셋을 Compose(imePadding)로 받는다 — 에디터 아래쪽 장소 검색란 (최종 리뷰 C2) -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+```
+
+`EditorScreen` 본문 `Column`의 modifier를 바꾼다(import `androidx.compose.foundation.layout.consumeWindowInsets`, `androidx.compose.foundation.layout.imePadding`).
+
+```kotlin
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                // 키보드가 아래쪽 장소 검색란·결과를 가리지 않게 — Scaffold가 이미 준 시스템 바 여백은 빼고 더한다
+                .consumeWindowInsets(padding)
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+```
+
+- [ ] **Step 5: 뒤로 연타 가드를 넣는다**
+
+`AppNavHost.kt` 파일 끝에 추가한다(import `androidx.navigation.NavController`).
+
+```kotlin
+/**
+ * 지금 화면이 route일 때만 뒤로 간다 — 뒤로·✕ 연타나 저장 직후 ✕가 시작 화면까지 꺼내 빈 화면이 되는 것을 막는다.
+ * 백 스택은 popBackStack 즉시 바뀌므로 두 번째 호출은 무시된다 (최종 리뷰 C2)
+ */
+private fun NavController.popFrom(route: String) {
+    if (currentDestination?.route == route) popBackStack()
+}
+```
+
+`MainGraph`의 네 군데를 바꾼다.
+- `EditorScreen(onDone = { navController.popBackStack() })` → `EditorScreen(onDone = { navController.popFrom(Routes.EDITOR) })`
+- `NearbyScreen(onBack = { navController.popBackStack() })` → `NearbyScreen(onBack = { navController.popFrom(Routes.NEARBY) })`
+- `SettingsScreen(... onBack = { navController.popBackStack() })` → `onBack = { navController.popFrom(Routes.SETTINGS) }`
+- `DiagnosticsScreen(onBack = { navController.popBackStack() })` → `DiagnosticsScreen(onBack = { navController.popFrom(Routes.DIAGNOSTICS) })`
+
+(`Routes.EDITOR`는 `"editor?reminderId={reminderId}"` 패턴이고, `currentDestination?.route`도 같은 패턴 문자열을 돌려주므로 비교가 성립한다.)
+
+- [ ] **Step 6: 전체 검증을 확인한다**
+
+Run: `./gradlew testDebugUnitTest lintDebug assembleDebug`
+Expected: 테스트 147개 통과, lint 오류 0·경고 25, 빌드 성공
+
+- [ ] **Step 7: 커밋한다**
+
+```bash
+git add android/app/src/main/java/com/recordofp/app/ui/common/BackButton.kt \
+  android/app/src/main/java/com/recordofp/app/ui/nearby/NearbyScreen.kt \
+  android/app/src/main/java/com/recordofp/app/ui/settings/DiagnosticsScreen.kt \
+  android/app/src/main/java/com/recordofp/app/ui/settings/SettingsScreen.kt \
+  android/app/src/main/java/com/recordofp/app/ui/editor/EditorScreen.kt \
+  android/app/src/main/AndroidManifest.xml \
+  android/app/src/main/java/com/recordofp/app/ui/AppNavHost.kt \
+  android/app/src/main/java/com/recordofp/app/data/repo/SettingsStore.kt \
+  android/app/src/main/res/values/strings.xml android/app/src/main/res/values-en/strings.xml \
+  android/app/src/test/java/com/recordofp/app/data/repo/NotificationPolicySettingsTest.kt
+git commit -m "fix: 뒤로 버튼 설명·키보드 가림·뒤로 연타 가드·정책 기본값 단일화" -m "TalkBack이 뒤로 버튼을 읽고, 키보드가 장소 검색란을 가리지 않으며, 연타해도 빈 화면이 되지 않는다.
+알림 정책 기본값은 EngineParams에서만 가져온다. (§4.5, §8, §10.2, 최종 리뷰 C2·M1)"
+```
+
+---
+
+### Task 17: 에디터 시각 — 카드 바탕 입력, 카테고리 색 칩, 브랜드 [추가]·안내, 저장 실패 면
+
+개편안 2 §2 에디터를 그린다. 입력 필드는 카드 바탕에 1dp 테두리(포커스 2dp 블루), 섹션 제목은 15 SemiBold 잉크다. 카테고리 칩은 선택 안 됨이면 카드 바탕에 카테고리 색 아이콘, 선택이면 카테고리 tint 바탕과 ink 테두리에 체크다. 브랜드는 [추가] 버튼과 "추가를 누르지 않아도 저장할 때 함께 추가돼요" 안내를 둔다. 고른 브랜드는 회색 칩, 지점은 연블루 칩이다. 저장 실패는 본문 맨 위 오류 면으로 알리고, 삭제는 아래 가운데 빨간 텍스트 버튼이다. 동작은 바꾸지 않는다(Task 12의 테스트가 그대로 통과해야 한다). 화면 본체를 `EditorContent`로 떼고 미리보기를 둔다.
+
+**Files:**
+- Modify: `tools/design/material_symbols.py`(아이콘 한 줄), Create(스크립트): `android/app/src/main/res/drawable/ic_alert_error.xml`
+- Modify: `android/app/src/main/java/com/recordofp/app/ui/editor/EditorViewModel.kt`(`EditorActions`)
+- Modify(전체 교체): `android/app/src/main/java/com/recordofp/app/ui/editor/EditorScreen.kt`
+- Create: `android/app/src/main/java/com/recordofp/app/ui/editor/EditorComponents.kt`, `EditorPreviews.kt`
+- Modify: `android/app/src/main/res/values/strings.xml`, `android/app/src/main/res/values-en/strings.xml`
+
+**Interfaces:**
+- Consumes: Task 16의 `TriggerVisual`·`categoryVisual`·`iconRes()`·`label()`·`tileColors()`, `Spacing`, `Motion`, `PillShape`, `LightDarkPreviews`; Task 12의 `EditorUiState.brandInput`·`saving`·`saveFailed`, `onBrandInputChange`·`commitBrandInput`; Task 15의 `consumeWindowInsets`·`imePadding` 본문
+- Produces: `interface EditorActions`(뷰모델이 구현), `@Composable fun EditorContent(state: EditorUiState, actions: EditorActions, onClose: () -> Unit)`; `EditorComponents.kt`의 `internal` 컴포넌트 `EditorSection`, `EditorField`, `CategoryChip`, `RemovableChip`, `AddBrandButton`, `SearchPlaceButton`, `SaveFailedNotice`, `PlaceResultCard`
+
+- [ ] **Step 1: 기준선을 확인한다**
+
+이 태스크는 동작을 바꾸지 않는 화면 작업이라 새 단위 테스트가 없다. 시작 전에 기준선을 확인한다.
+
+Run: `./gradlew testDebugUnitTest --tests "*.EditorViewModelTest"` → PASS
+
+- [ ] **Step 2: 뷰모델이 화면 동작 인터페이스를 구현하게 한다**
+
+`EditorViewModel.kt`의 `@HiltViewModel` 바로 위에 인터페이스를 더한다.
+
+```kotlin
+/** 에디터 화면이 부르는 동작 — 뷰모델이 구현하고, 미리보기는 빈 구현을 넘긴다 (디자인 시스템 §5) */
+interface EditorActions {
+    fun onTitleChange(v: String)
+    fun onMemoChange(v: String)
+    fun toggleCategory(id: String)
+    fun onBrandInputChange(v: String)
+    fun commitBrandInput()
+    fun removeBrand(keyword: String)
+    fun onPlaceQueryChange(v: String)
+    fun searchPlace()
+    fun pickPlace(place: PickedPlace)
+    fun clearPlace()
+    fun save()
+    fun delete()
+}
+```
+
+클래스 선언의 `) : ViewModel() {`를 `) : ViewModel(), EditorActions {`로 바꾸고, 위 12개 함수의 선언 앞에 `override`를 붙인다(`fun onTitleChange(v: String) = …` → `override fun onTitleChange(v: String) = …`, `fun save() {` → `override fun save() {` 등). 본문은 바꾸지 않는다.
+
+- [ ] **Step 3: 오류 아이콘을 가져온다**
+
+`tools/design/material_symbols.py`의 `ICONS`에서 `"ic_trigger_place": "location_on",` 다음 줄에 넣는다.
+
+```python
+    "ic_alert_error": "error",
+```
+
+Run(저장소 루트): `python3 -I tools/design/material_symbols.py` → 마지막 줄 `ic_alert_error.xml ← error`. 이미 있던 13개 파일은 같은 내용으로 다시 써진다(`git status`에 바뀐 것으로 나오지 않는다).
+
+- [ ] **Step 4: 문자열을 바꾼다**
+
+`editor_brand_example` 다음 줄에 넣는다.
+
+ko:
+
+```xml
+    <string name="editor_brand_add">추가</string>
+    <string name="editor_brand_pending_hint">추가를 누르지 않아도 저장할 때 함께 추가돼요</string>
+```
+
+en:
+
+```xml
+    <string name="editor_brand_add">Add</string>
+    <string name="editor_brand_pending_hint">Saved with the note even if you don\'t tap Add</string>
+```
+
+ko·en 양쪽에서 `action_add_brand` 줄을 지운다(+ 아이콘 버튼의 설명이었고, [추가] 글자 버튼으로 바뀌어 더 쓰지 않는다 — 남기면 lint `UnusedResources` 경고가 는다).
+
+- [ ] **Step 5: 에디터 컴포넌트를 만든다**
+
+`ui/editor/EditorComponents.kt`:
+
+```kotlin
+package com.recordofp.app.ui.editor
+
+import androidx.annotation.StringRes
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.recordofp.app.R
+import com.recordofp.app.domain.engine.PoiCandidate
+import com.recordofp.app.ui.common.DistanceBadge
+import com.recordofp.app.ui.common.TriggerVisual
+import com.recordofp.app.ui.common.iconRes
+import com.recordofp.app.ui.common.label
+import com.recordofp.app.ui.common.tileColors
+import com.recordofp.app.ui.theme.Motion
+import com.recordofp.app.ui.theme.PillShape
+import com.recordofp.app.ui.theme.Spacing
+import kotlin.math.roundToInt
+
+// 에디터 전용 컴포넌트 (개편안 2 §2 에디터). 크기 값은 컴포넌트 고유값이라 여기에 둔다.
+
+/** 섹션 — 제목 15 SemiBold 잉크 + 내용. 앞 블록과 24dp 떨어진다(바깥 간격 12 + 여기 12) */
+@Composable
+internal fun EditorSection(
+    @StringRes title: Int,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(Modifier.padding(top = Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+        Text(
+            stringResource(title),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.semantics { heading() },
+        )
+        content()
+    }
+}
+
+/**
+ * 입력 필드 — 카드 바탕, 1dp 테두리(포커스 2dp 블루), 12dp 라운드.
+ * 높이는 Material 텍스트 필드 최소 56dp를 따른다(개편안의 48~52dp보다 크다 — TalkBack 힌트·포커스 처리를 그대로 쓰기 위해).
+ */
+@Composable
+internal fun EditorField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    emphasized: Boolean = false,
+    singleLine: Boolean = false,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+) {
+    val scheme = MaterialTheme.colorScheme
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = { Text(placeholder) },
+        textStyle = if (emphasized) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
+        singleLine = singleLine,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        shape = MaterialTheme.shapes.small,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = scheme.surface,
+            unfocusedContainerColor = scheme.surface,
+            focusedBorderColor = scheme.primary,
+            unfocusedBorderColor = scheme.outline,
+            focusedPlaceholderColor = scheme.onSurfaceVariant,
+            unfocusedPlaceholderColor = scheme.onSurfaceVariant,
+            cursorColor = scheme.primary,
+        ),
+        modifier = modifier.fillMaxWidth(),
+    )
+}
+
+/**
+ * 카테고리 칩 36dp. 선택 안 됨 = 카드 + 1dp 헤어라인 + 카테고리 색 아이콘,
+ * 선택 = 카테고리 tint + 1.5dp ink 테두리 + 체크 + ink 글자. 색은 짧은 전환(150ms)으로 바뀐다 (개편안 2 §1.4·§2)
+ */
+@Composable
+internal fun CategoryChip(
+    visual: TriggerVisual,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val tile = visual.tileColors()
+    val scheme = MaterialTheme.colorScheme
+    val spec = tween<Color>(Motion.SHORT_MS, easing = Motion.easing)
+    val container by animateColorAsState(if (selected) tile.tint else scheme.surface, spec, label = "chipContainer")
+    val border by animateColorAsState(if (selected) tile.ink else scheme.outlineVariant, spec, label = "chipBorder")
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = {
+            Text(
+                visual.label(),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                ),
+            )
+        },
+        leadingIcon = {
+            if (selected) {
+                Icon(Icons.Filled.Check, contentDescription = null, tint = tile.ink, modifier = Modifier.size(16.dp))
+            } else {
+                Icon(painterResource(visual.iconRes()), contentDescription = null, tint = tile.ink, modifier = Modifier.size(16.dp))
+            }
+        },
+        shape = PillShape,
+        border = BorderStroke(if (selected) 1.5.dp else 1.dp, border),
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = container,
+            labelColor = scheme.onSurface,
+            selectedContainerColor = container,
+            selectedLabelColor = tile.ink,
+        ),
+        modifier = Modifier.heightIn(min = 36.dp),
+    )
+}
+
+/**
+ * 고른 브랜드·지점 칩 — 칩 전체를 누르면 뺀다(터치 영역 48dp). 브랜드는 회색 + 검색 아이콘,
+ * 지점은 연블루 + 핀 (개편안 2 §2). ✕의 설명("삭제")이 칩 이름과 합쳐져 TalkBack이 "GS25 삭제"로 읽는다.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun RemovableChip(visual: TriggerVisual, onRemove: () -> Unit) {
+    val tile = visual.tileColors()
+    InputChip(
+        selected = false,
+        onClick = onRemove,
+        label = {
+            Text(
+                visual.label(),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = if (visual is TriggerVisual.Place) FontWeight.SemiBold else FontWeight.Medium,
+                ),
+            )
+        },
+        leadingIcon = {
+            Icon(painterResource(visual.iconRes()), contentDescription = null, tint = tile.ink, modifier = Modifier.size(14.dp))
+        },
+        trailingIcon = {
+            Icon(
+                Icons.Filled.Close,
+                contentDescription = stringResource(R.string.action_remove),
+                tint = tile.ink,
+                modifier = Modifier.size(14.dp),
+            )
+        },
+        shape = PillShape,
+        border = null,
+        colors = InputChipDefaults.inputChipColors(containerColor = tile.tint, labelColor = tile.ink),
+    )
+}
+
+/** 브랜드 [추가] — 연블루 면 + 블루 글자, 입력란과 같은 높이 */
+@Composable
+internal fun AddBrandButton(enabled: Boolean, onClick: () -> Unit) {
+    FilledTonalButton(
+        onClick = onClick,
+        enabled = enabled,
+        shape = MaterialTheme.shapes.small,
+        colors = ButtonDefaults.filledTonalButtonColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ),
+        contentPadding = PaddingValues(horizontal = Spacing.m),
+        modifier = Modifier.heightIn(min = 56.dp),
+    ) {
+        Text(stringResource(R.string.editor_brand_add), style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+/** 장소 검색 버튼 — 회색 정사각, 입력란과 같은 높이 */
+@Composable
+internal fun SearchPlaceButton(onClick: () -> Unit) {
+    FilledIconButton(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.small,
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        modifier = Modifier.size(56.dp),
+    ) {
+        Icon(
+            painterResource(R.drawable.ic_trigger_search),
+            contentDescription = stringResource(R.string.editor_place_hint),
+            modifier = Modifier.size(24.dp),
+        )
+    }
+}
+
+/** 저장·삭제 실패 — 본문 맨 위 오류 면. 나타나면 TalkBack이 읽는다 */
+@Composable
+internal fun SaveFailedNotice() {
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics { liveRegion = LiveRegionMode.Polite },
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = Spacing.s),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Icon(painterResource(R.drawable.ic_alert_error), contentDescription = null, modifier = Modifier.size(20.dp))
+            Text(
+                stringResource(R.string.editor_save_failed),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+            )
+        }
+    }
+}
+
+/** 장소 검색 결과 카드 — 이름 + 거리 배지 */
+@Composable
+internal fun PlaceResultCard(candidate: PoiCandidate, onClick: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = Spacing.m, vertical = 13.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                candidate.name,
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.weight(1f, fill = false).padding(end = Spacing.s),
+            )
+            DistanceBadge(candidate.distanceM.roundToInt())
+        }
+    }
+}
+```
+
+- [ ] **Step 6: 에디터 화면을 다시 쓴다**
+
+`ui/editor/EditorScreen.kt` 전체를 바꾼다. 삭제 확인 대화상자는 화면 상태라 `EditorContent` 안에 둔다. 브랜드 입력란의 키보드 [완료]는 [추가]와 같고, 장소 입력란의 [검색]은 검색 버튼과 같다.
+
+```kotlin
+package com.recordofp.app.ui.editor
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.recordofp.app.R
+import com.recordofp.app.domain.model.TriggerCatalog
+import com.recordofp.app.ui.common.TriggerVisual
+import com.recordofp.app.ui.common.categoryVisual
+import com.recordofp.app.ui.theme.Spacing
+
+/**
+ * 제목 입력 → 트리거 선택(카테고리 칩 다중 선택 / 브랜드 입력 / 장소 검색) → 저장.
+ * "3탭 + 타이핑 이내" 목표 (설계 §4.1). 모양은 개편안 2 §2 에디터 — 카드 바탕 입력, 카테고리 색 칩, 브랜드 안내, 저장 실패 면.
+ */
+@Composable
+fun EditorScreen(
+    onDone: () -> Unit,
+    viewModel: EditorViewModel = hiltViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(state.saved) { if (state.saved) onDone() }
+    EditorContent(state = state, actions = viewModel, onClose = onDone)
+}
+
+/** 에디터 본체 — 상태와 동작만 받는다(미리보기는 EditorPreviews.kt) */
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@Composable
+fun EditorContent(
+    state: EditorUiState,
+    actions: EditorActions,
+    onClose: () -> Unit,
+) {
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text(stringResource(R.string.editor_delete)) },
+            text = { Text(stringResource(R.string.editor_delete_confirm)) },
+            confirmButton = {
+                TextButton(onClick = { showDeleteConfirm = false; actions.delete() }) {
+                    Text(stringResource(android.R.string.ok), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        )
+    }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = onClose) {
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(android.R.string.cancel))
+                    }
+                },
+                title = {
+                    Text(stringResource(if (state.editingId != null) R.string.editor_title_edit else R.string.title_editor))
+                },
+                actions = {
+                    // 종이 위 블루 글자는 onPrimaryContainer — primary는 종이 위 4.5:1이 안 된다 (개편안 2 §1.1)
+                    TextButton(
+                        onClick = actions::save,
+                        enabled = state.canSave,
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onPrimaryContainer),
+                    ) {
+                        Text(stringResource(R.string.editor_save), style = MaterialTheme.typography.labelLarge)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                // 키보드가 아래쪽 장소 검색란·결과를 가리지 않게 — Scaffold가 이미 준 시스템 바 여백은 빼고 더한다
+                .consumeWindowInsets(padding)
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.xs, bottom = Spacing.xl),
+            verticalArrangement = Arrangement.spacedBy(Spacing.s),
+        ) {
+            // 저장·삭제 실패 — 입력은 그대로 남아 있으니 다시 시도하면 된다 (최종 리뷰 I6)
+            if (state.saveFailed) SaveFailedNotice()
+            EditorField(
+                value = state.title,
+                onValueChange = actions::onTitleChange,
+                placeholder = stringResource(R.string.editor_title_hint),
+                emphasized = true,
+            )
+            EditorField(
+                value = state.memo,
+                onValueChange = actions::onMemoChange,
+                placeholder = stringResource(R.string.editor_memo_hint),
+            )
+
+            EditorSection(R.string.editor_section_category) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                ) {
+                    TriggerCatalog.entries.forEach { entry ->
+                        CategoryChip(
+                            visual = categoryVisual(entry.id),
+                            selected = entry.id in state.selectedCategoryIds,
+                            onClick = { actions.toggleCategory(entry.id) },
+                        )
+                    }
+                }
+            }
+
+            EditorSection(R.string.editor_section_brand) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                ) {
+                    EditorField(
+                        value = state.brandInput,
+                        onValueChange = actions::onBrandInputChange,
+                        placeholder = stringResource(R.string.editor_brand_example),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { actions.commitBrandInput() }),
+                        modifier = Modifier.weight(1f),
+                    )
+                    AddBrandButton(enabled = state.brandInput.isNotBlank(), onClick = actions::commitBrandInput)
+                }
+                if (state.brandInput.isNotBlank()) {
+                    // [추가]를 누르지 않아도 저장할 때 확정된다는 것을 입력하는 동안 알려 준다 (개편안 2 §3)
+                    Text(
+                        stringResource(R.string.editor_brand_pending_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (state.brandKeywords.isNotEmpty()) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                    ) {
+                        state.brandKeywords.forEach { keyword ->
+                            RemovableChip(
+                                visual = TriggerVisual.BrandKeyword(keyword),
+                                onRemove = { actions.removeBrand(keyword) },
+                            )
+                        }
+                    }
+                }
+            }
+
+            EditorSection(R.string.editor_section_place) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                ) {
+                    EditorField(
+                        value = state.placeQuery,
+                        onValueChange = actions::onPlaceQueryChange,
+                        placeholder = stringResource(R.string.editor_place_hint),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { actions.searchPlace() }),
+                        modifier = Modifier.weight(1f),
+                    )
+                    SearchPlaceButton(onClick = actions::searchPlace)
+                }
+                state.placeSearchError?.let { error ->
+                    // F4: 원인별 안내 — 401(서비스)을 "네트워크 확인"으로 오인시키지 않는다
+                    Text(
+                        stringResource(
+                            when (error) {
+                                PlaceSearchError.NO_LOCATION -> R.string.nearby_no_location
+                                PlaceSearchError.NETWORK -> R.string.editor_place_error_network
+                                PlaceSearchError.SERVICE -> R.string.editor_place_error_service
+                            },
+                        ),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                state.placeResults.forEach { candidate ->
+                    PlaceResultCard(
+                        candidate = candidate,
+                        onClick = { actions.pickPlace(PickedPlace(candidate.name, candidate.id, candidate.point)) },
+                    )
+                }
+                state.place?.let { place ->
+                    RemovableChip(visual = TriggerVisual.Place(place.name), onRemove = actions::clearPlace)
+                }
+            }
+
+            if (state.editingId != null) {
+                // 삭제는 저장과 동선을 분리해 맨 아래 가운데 빨간 텍스트 버튼으로 (개편안 2 §2)
+                Box(Modifier.fillMaxWidth().padding(top = Spacing.xs), contentAlignment = Alignment.Center) {
+                    TextButton(
+                        onClick = { showDeleteConfirm = true },
+                        enabled = !state.saving,
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    ) {
+                        Text(stringResource(R.string.editor_delete), style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+- [ ] **Step 7: 미리보기를 둔다**
+
+`ui/editor/EditorPreviews.kt`:
+
+```kotlin
+package com.recordofp.app.ui.editor
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
+import com.recordofp.app.domain.model.GeoPoint
+import com.recordofp.app.ui.theme.LightDarkPreviews
+import com.recordofp.app.ui.theme.RecordOfPTheme
+
+// 에디터 미리보기 — 라이트·다크 두 벌과 큰 글꼴 (디자인 시스템 §5, 개편안 2 목업 "에디터")
+
+private object NoopEditorActions : EditorActions {
+    override fun onTitleChange(v: String) {}
+    override fun onMemoChange(v: String) {}
+    override fun toggleCategory(id: String) {}
+    override fun onBrandInputChange(v: String) {}
+    override fun commitBrandInput() {}
+    override fun removeBrand(keyword: String) {}
+    override fun onPlaceQueryChange(v: String) {}
+    override fun searchPlace() {}
+    override fun pickPlace(place: PickedPlace) {}
+    override fun clearPlace() {}
+    override fun save() {}
+    override fun delete() {}
+}
+
+private val newRecord = EditorUiState(
+    title = "건전지 사기",
+    selectedCategoryIds = setOf("convenience"),
+    brandKeywords = listOf("이마트24"),
+    brandInput = "GS25",
+)
+
+private val editFailed = EditorUiState(
+    editingId = 7,
+    title = "셔츠 맡기기",
+    memo = "흰 셔츠 2장",
+    selectedCategoryIds = setOf("laundry"),
+    place = PickedPlace("크린토피아 역삼점", "k1", GeoPoint(37.5, 127.03)),
+    saveFailed = true,
+)
+
+@LightDarkPreviews
+@Composable
+private fun EditorNewPreview() {
+    RecordOfPTheme { EditorContent(state = newRecord, actions = NoopEditorActions, onClose = {}) }
+}
+
+@LightDarkPreviews
+@Composable
+private fun EditorEditFailedPreview() {
+    RecordOfPTheme { EditorContent(state = editFailed, actions = NoopEditorActions, onClose = {}) }
+}
+
+@Preview(name = "큰 글꼴", showBackground = true, fontScale = 2f)
+@Composable
+private fun EditorLargeFontPreview() {
+    RecordOfPTheme { EditorContent(state = newRecord, actions = NoopEditorActions, onClose = {}) }
+}
+```
+
+- [ ] **Step 8: 전체 검증을 확인한다**
+
+Run: `./gradlew testDebugUnitTest lintDebug assembleDebug`
+Expected: 테스트 147개 통과(새 테스트 없음, `StringResourcesTest`가 ko·en 키를 맞춰 본다), lint 오류 0·경고 25, 빌드 성공
+
+Android Studio에서 `EditorPreviews.kt`의 미리보기(새 기록·수정 저장 실패 × 라이트·다크, 큰 글꼴)를 열어 개편안 2 목업 "에디터"와 비교한다. 큰 글꼴에서 칩·버튼 글자가 잘리지 않아야 한다.
+
+- [ ] **Step 9: 커밋한다**
+
+```bash
+git add tools/design/material_symbols.py android/app/src/main/res/drawable/ic_alert_error.xml \
+  android/app/src/main/java/com/recordofp/app/ui/editor/ \
+  android/app/src/main/res/values/strings.xml android/app/src/main/res/values-en/strings.xml
+git commit -m "feat: 에디터 개편안 2 — 카테고리 색 칩·카드 입력·브랜드 안내·저장 실패 면" -m "입력은 카드 바탕에 테두리, 카테고리 칩은 카테고리 색과 체크, 브랜드는 [추가]와 저장 시 함께 추가된다는 안내,
+저장 실패는 본문 위 오류 면으로 알린다. 화면 본체를 EditorContent로 떼고 라이트·다크·큰 글꼴 미리보기를 둔다. (개편안 2 §2·§3, 디자인 시스템 §5)"
 ```
 
 ---
 
 ### Task 13: 홈 보호 배너 — 꺼진 것을 이름으로 알리고 고칠 곳으로
 
-> 묶음 B 인계: 빠른 설정으로 기기 위치를 켜는 경우도 스냅샷을 다시 읽는다 — "묶음 B 인계" 절 참고.
+> 묶음 B 인계를 여기서 처리한다: 빠른 설정(알림창)에서 기기 위치를 켜면 액티비티가 멈추지 않아 `LifecycleResumeEffect`가 돌지 않는다. 그래서 배너·대시보드와 보호 복구 재배치(F1)가 다음 화면 이동까지 늦어진다. 재개된 동안 `LocationManager.MODE_CHANGED_ACTION`도 받아 스냅샷을 다시 읽는다(홈·설정).
 
-원격 배너는 "알림이 꺼질 수 있는 상태예요 / 설정에서 확인" 한 줄이고, 누르면 앱 안 설정으로 간다. 무엇이 꺼졌는지, '항상 허용'이 왜 필요한지, 어떻게 켜는지 알려 주지 않는다(§4.2 4단계 업셀, §4.3 "왜 알림이 안 오지?"). 이 태스크는 꺼진 것 하나를 우선순위대로 골라 이름으로 알린다(알림 → 정확한 위치 → 항상 허용 → 기기 위치). 버튼은 그것을 고칠 시스템 화면을 바로 연다. '항상 허용'에는 단계 안내를 덧붙인다. 원격의 앰버 톤과 F1 보고(`reportProtection`)는 그대로 둔다.
+원격 배너는 "알림이 꺼질 수 있는 상태예요 / 설정에서 확인" 한 줄이고, 누르면 앱 안 설정으로 간다. 무엇이 꺼졌는지, '항상 허용'이 왜 필요한지, 어떻게 켜는지 알려 주지 않는다(§4.2 4단계 업셀, §4.3 "왜 알림이 안 오지?"). 이 태스크는 꺼진 것 하나를 우선순위대로 골라 이름으로 알린다(알림 → 정확한 위치 → 항상 허용 → 기기 위치). [설정 열기]는 그것을 고칠 시스템 화면을 바로 연다. 모양은 개편안 2 §2 보호 배너다 — 앰버 면, 36dp 원 아이콘, 제목·본문, '항상 허용'의 단계 칩(설정 → 권한 → 위치 → 항상 허용, 마지막만 강조), 오른쪽 아래 [설정 열기] pill. F1 보고(`reportProtection`)는 그대로 둔다.
 
 **Files:**
+- Modify: `tools/design/material_symbols.py`(아이콘 세 줄), Create(스크립트): `android/app/src/main/res/drawable/ic_banner_notifications_off.xml`, `ic_banner_precise.xml`, `ic_banner_location_off.xml`
 - Modify: `android/app/src/main/java/com/recordofp/app/ui/permissions/PermissionStatus.kt`
+- Create: `android/app/src/main/java/com/recordofp/app/ui/permissions/RememberPermissionSnapshot.kt`
+- Create: `android/app/src/main/java/com/recordofp/app/ui/home/ProtectionBanner.kt`
 - Modify: `android/app/src/main/java/com/recordofp/app/ui/home/HomeScreen.kt`
+- Modify: `android/app/src/main/java/com/recordofp/app/ui/settings/SettingsScreen.kt`
 - Modify: `android/app/src/main/res/values/strings.xml`, `android/app/src/main/res/values-en/strings.xml`
 - Test: `android/app/src/test/java/com/recordofp/app/ui/permissions/PermissionSnapshotTest.kt`
 
 **Interfaces:**
-- Consumes: Task 6의 `PermissionSnapshot.locationServicesOn`, `appNotificationSettingsIntent`, `locationSourceSettingsIntent`, `appDetailsSettingsIntent`, `Context.openSettings`
-- Produces: `enum class ProtectionIssue { NOTIFICATIONS_OFF, PRECISE_LOCATION_OFF, BACKGROUND_LOCATION_OFF, LOCATION_SERVICES_OFF }`, `val PermissionSnapshot.topIssue: ProtectionIssue?`
+- Consumes: Task 6의 `PermissionSnapshot.locationServicesOn`, `readPermissionSnapshot`, `appNotificationSettingsIntent`, `locationSourceSettingsIntent`, `appDetailsSettingsIntent`, `Context.openSettings`; Task 16의 `Spacing`, `PillShape`, `LightDarkPreviews`, `R.drawable.ic_trigger_place`
+- Produces: `enum class ProtectionIssue { NOTIFICATIONS_OFF, PRECISE_LOCATION_OFF, BACKGROUND_LOCATION_OFF, LOCATION_SERVICES_OFF }`, `val PermissionSnapshot.topIssue: ProtectionIssue?`, `@Composable fun rememberPermissionSnapshot(onRead: (PermissionSnapshot) -> Unit = {}): PermissionSnapshot`, `@Composable fun ProtectionBanner(issue: ProtectionIssue, modifier: Modifier = Modifier)`
 
 - [ ] **Step 1: 실패 테스트를 쓴다**
 
@@ -3187,66 +5042,329 @@ Expected: 컴파일 실패 — `topIssue`, `ProtectionIssue`가 없다.
 enum class ProtectionIssue { NOTIFICATIONS_OFF, PRECISE_LOCATION_OFF, BACKGROUND_LOCATION_OFF, LOCATION_SERVICES_OFF }
 ```
 
-- [ ] **Step 4: 홈 배너를 바꾼다**
+Run: `./gradlew testDebugUnitTest --tests "*.PermissionSnapshotTest"` → PASS
 
-`HomeScreen`의 `if (!snapshot.fullyProtected) { Card(onClick = onSettingsClick, ...) { ... } }` 블록 전체를 `snapshot.topIssue?.let { issue -> ProtectionBanner(issue) }`로 바꾼다. `LifecycleResumeEffect` 안의 `viewModel.reportProtection(snapshot.fullyProtected)`는 그대로 둔다. 파일에 컴포저블을 더한다.
+- [ ] **Step 4: 스냅샷을 재개 중에도 다시 읽게 한다 (묶음 B 인계)**
+
+`ui/permissions/RememberPermissionSnapshot.kt`:
 
 ```kotlin
+package com.recordofp.app.ui.permissions
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.location.LocationManager
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LifecycleResumeEffect
+
 /**
- * 근처 알림을 막고 있는 것 하나를 이름으로 알리고 고칠 곳으로 바로 보낸다 (§4.2 4단계 업셀, §4.3, 최종 리뷰 I3).
- * 여럿이면 우선순위가 높은 하나만 — 고치고 돌아오면(onResume) 다음 것이 보인다. 앰버 톤: 경고이지 오류가 아니다 (개편안 §2).
+ * 화면이 보이는 동안의 보호 상태 (§4.3). 재개(onResume)할 때 다시 읽고, 재개된 동안 기기 위치 토글이 바뀌어도 다시 읽는다 —
+ * 빠른 설정(알림창)에서 위치를 켜면 액티비티가 멈추지 않아 onResume이 돌지 않기 때문이다 (묶음 B 인계).
+ * 다시 읽을 때마다 onRead를 부른다 — 보호 복구 전이 보고(F1)에 쓴다.
  */
 @Composable
-private fun ProtectionBanner(issue: ProtectionIssue) {
+fun rememberPermissionSnapshot(onRead: (PermissionSnapshot) -> Unit = {}): PermissionSnapshot {
     val context = LocalContext.current
-    val (titleRes, bodyRes) = when (issue) {
-        ProtectionIssue.NOTIFICATIONS_OFF -> R.string.banner_notifications_title to R.string.banner_notifications_body
-        ProtectionIssue.PRECISE_LOCATION_OFF -> R.string.banner_precise_title to R.string.banner_precise_body
-        ProtectionIssue.BACKGROUND_LOCATION_OFF -> R.string.banner_background_title to R.string.banner_background_body
-        ProtectionIssue.LOCATION_SERVICES_OFF -> R.string.banner_location_off_title to R.string.banner_location_off_body
-    }
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-        ),
-    ) {
-        Column(
-            Modifier.padding(start = 16.dp, top = 12.dp, end = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(stringResource(titleRes), style = MaterialTheme.typography.titleSmall)
-            Text(stringResource(bodyRes), style = MaterialTheme.typography.bodySmall)
-            if (issue == ProtectionIssue.BACKGROUND_LOCATION_OFF) {
-                // A11+ "항상 허용"은 시스템 설정에서만 켤 수 있다 — 단계를 적어 준다 (§4.2)
-                Text(stringResource(R.string.banner_background_steps), style = MaterialTheme.typography.labelLarge)
-            }
-            TextButton(
-                onClick = {
-                    context.openSettings(
-                        when (issue) {
-                            ProtectionIssue.NOTIFICATIONS_OFF -> appNotificationSettingsIntent(context)
-                            ProtectionIssue.PRECISE_LOCATION_OFF,
-                            ProtectionIssue.BACKGROUND_LOCATION_OFF,
-                            -> appDetailsSettingsIntent(context)
-                            ProtectionIssue.LOCATION_SERVICES_OFF -> locationSourceSettingsIntent()
-                        },
-                    )
-                },
-                modifier = Modifier.align(Alignment.End).heightIn(min = 48.dp),
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onTertiaryContainer),
-            ) { Text(stringResource(R.string.banner_action_open_settings)) }
+    var snapshot by remember { mutableStateOf(readPermissionSnapshot(context)) }
+    val currentOnRead by rememberUpdatedState(onRead)
+    LifecycleResumeEffect(context) {
+        fun refresh() {
+            snapshot = readPermissionSnapshot(context)
+            currentOnRead(snapshot)
         }
+        refresh()
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(c: Context, intent: Intent) = refresh()
+        }
+        // 시스템 방송이라 내보내지 않아도 받는다
+        ContextCompat.registerReceiver(
+            context, receiver, IntentFilter(LocationManager.MODE_CHANGED_ACTION), ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        onPauseOrDispose { context.unregisterReceiver(receiver) }
     }
+    return snapshot
 }
 ```
 
-import에 `androidx.compose.foundation.layout.heightIn`, `androidx.compose.material3.ButtonDefaults`, `androidx.compose.material3.TextButton`, `com.recordofp.app.ui.permissions.ProtectionIssue`, `com.recordofp.app.ui.permissions.appDetailsSettingsIntent`, `com.recordofp.app.ui.permissions.appNotificationSettingsIntent`, `com.recordofp.app.ui.permissions.locationSourceSettingsIntent`, `com.recordofp.app.ui.permissions.openSettings`를 더한다.
+`SettingsScreen`의 아래 블록을 바꾼다.
 
-- [ ] **Step 5: 문자열을 바꾼다**
+```kotlin
+    var snapshot by remember { mutableStateOf(readPermissionSnapshot(context)) }
+    LifecycleResumeEffect(Unit) { // 시스템 설정에서 돌아오면 갱신
+        snapshot = readPermissionSnapshot(context)
+        viewModel.reportProtection(snapshot.fullyProtected) // 보호 복구 전이 → 재배치 (F1)
+        onPauseOrDispose { }
+    }
+```
 
-ko·en 양쪽에서 `banner_protection_title`, `banner_protection_action`을 지우고 아래를 더한다.
+↓
+
+```kotlin
+    // 시스템 설정·빠른 설정에서 돌아오면 갱신하고, 보호 복구 전이면 재배치한다 (F1)
+    val snapshot = rememberPermissionSnapshot(onRead = { viewModel.reportProtection(it.fullyProtected) })
+```
+
+`SettingsScreen.kt` import에서 `androidx.lifecycle.compose.LifecycleResumeEffect`를 지우고, `com.recordofp.app.ui.permissions.readPermissionSnapshot`을 `com.recordofp.app.ui.permissions.rememberPermissionSnapshot`으로 바꾼다(`remember`·`mutableStateOf`·`setValue`는 방해금지 시각 선택에서 계속 쓴다).
+
+- [ ] **Step 5: 배너 아이콘을 가져온다**
+
+`tools/design/material_symbols.py`의 `ICONS`에서 `"ic_alert_error": "error",` 다음 줄에 넣는다. '항상 허용'은 핀 아이콘(`ic_trigger_place`)을 함께 쓴다.
+
+```python
+    "ic_banner_notifications_off": "notifications_off",
+    "ic_banner_precise": "my_location",
+    "ic_banner_location_off": "location_off",
+```
+
+Run(저장소 루트): `python3 -I tools/design/material_symbols.py` → 마지막 세 줄이 `ic_banner_notifications_off.xml ← notifications_off`, `ic_banner_precise.xml ← my_location`, `ic_banner_location_off.xml ← location_off`
+
+- [ ] **Step 6: 배너를 만든다**
+
+`ui/home/ProtectionBanner.kt`:
+
+```kotlin
+package com.recordofp.app.ui.home
+
+import android.content.Context
+import android.content.Intent
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.recordofp.app.R
+import com.recordofp.app.ui.permissions.ProtectionIssue
+import com.recordofp.app.ui.permissions.appDetailsSettingsIntent
+import com.recordofp.app.ui.permissions.appNotificationSettingsIntent
+import com.recordofp.app.ui.permissions.locationSourceSettingsIntent
+import com.recordofp.app.ui.permissions.openSettings
+import com.recordofp.app.ui.theme.LightDarkPreviews
+import com.recordofp.app.ui.theme.PillShape
+import com.recordofp.app.ui.theme.RecordOfPTheme
+import com.recordofp.app.ui.theme.Spacing
+
+/**
+ * 근처 알림을 막고 있는 것 하나를 이름으로 알리고 고칠 곳으로 바로 보낸다 (§4.2 4단계 업셀, §4.3, 최종 리뷰 I3).
+ * 여럿이면 우선순위가 높은 하나만 — 고치고 돌아오면 다음 것이 보인다. 앰버 면: 경고이지 오류가 아니다.
+ * 모양은 개편안 2 §2 보호 배너 — 36dp 원 아이콘, 제목·본문, '항상 허용' 단계 칩, [설정 열기] pill.
+ */
+@Composable
+fun ProtectionBanner(issue: ProtectionIssue, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val scheme = MaterialTheme.colorScheme
+    val hasSteps = issue == ProtectionIssue.BACKGROUND_LOCATION_OFF
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = scheme.tertiaryContainer,
+        contentColor = scheme.onTertiaryContainer,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier.padding(Spacing.m),
+            verticalArrangement = Arrangement.spacedBy(if (hasSteps) Spacing.s else 10.dp),
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.Top) {
+                Box(
+                    modifier = Modifier.size(36.dp).background(scheme.onTertiaryContainer, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painterResource(issue.iconRes()),
+                        contentDescription = null,
+                        tint = scheme.tertiaryContainer,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(stringResource(issue.titleRes()), style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(issue.bodyRes()), style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            // A11+ "항상 허용"은 시스템 설정에서만 켤 수 있다 — 단계를 적어 준다 (§4.2)
+            if (hasSteps) BackgroundLocationSteps()
+            Button(
+                onClick = { context.openSettings(issue.settingsIntent(context)) },
+                shape = PillShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = scheme.onTertiaryContainer,
+                    contentColor = scheme.surface,
+                ),
+                contentPadding = PaddingValues(horizontal = Spacing.m),
+                modifier = Modifier.align(Alignment.End),
+            ) {
+                Text(stringResource(R.string.banner_action_open_settings), style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    }
+}
+
+/** 설정 → 권한 → 위치 → 항상 허용. 마지막 칩만 앰버 바탕. TalkBack은 한 줄로 읽는다 */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun BackgroundLocationSteps() {
+    val scheme = MaterialTheme.colorScheme
+    val steps = listOf(
+        R.string.banner_background_step_settings,
+        R.string.banner_background_step_permissions,
+        R.string.banner_background_step_location,
+        R.string.banner_background_step_always,
+    )
+    FlowRow(
+        // 원 아이콘(36) + 간격(12) 만큼 들여 제목과 줄을 맞춘다
+        modifier = Modifier.padding(start = 48.dp).semantics(mergeDescendants = true) {},
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xxs),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xxs),
+    ) {
+        steps.forEachIndexed { index, res ->
+            val last = index == steps.lastIndex
+            Surface(
+                shape = PillShape,
+                color = if (last) scheme.onTertiaryContainer else scheme.surface,
+                contentColor = if (last) scheme.surface else scheme.onTertiaryContainer,
+            ) {
+                Text(
+                    stringResource(res),
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = if (last) FontWeight.Bold else FontWeight.SemiBold,
+                    ),
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = Spacing.xxs),
+                )
+            }
+            if (!last) {
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(12.dp).align(Alignment.CenterVertically),
+                )
+            }
+        }
+    }
+}
+
+@DrawableRes
+private fun ProtectionIssue.iconRes(): Int = when (this) {
+    ProtectionIssue.NOTIFICATIONS_OFF -> R.drawable.ic_banner_notifications_off
+    ProtectionIssue.PRECISE_LOCATION_OFF -> R.drawable.ic_banner_precise
+    ProtectionIssue.BACKGROUND_LOCATION_OFF -> R.drawable.ic_trigger_place
+    ProtectionIssue.LOCATION_SERVICES_OFF -> R.drawable.ic_banner_location_off
+}
+
+@StringRes
+private fun ProtectionIssue.titleRes(): Int = when (this) {
+    ProtectionIssue.NOTIFICATIONS_OFF -> R.string.banner_notifications_title
+    ProtectionIssue.PRECISE_LOCATION_OFF -> R.string.banner_precise_title
+    ProtectionIssue.BACKGROUND_LOCATION_OFF -> R.string.banner_background_title
+    ProtectionIssue.LOCATION_SERVICES_OFF -> R.string.banner_location_off_title
+}
+
+@StringRes
+private fun ProtectionIssue.bodyRes(): Int = when (this) {
+    ProtectionIssue.NOTIFICATIONS_OFF -> R.string.banner_notifications_body
+    ProtectionIssue.PRECISE_LOCATION_OFF -> R.string.banner_precise_body
+    ProtectionIssue.BACKGROUND_LOCATION_OFF -> R.string.banner_background_body
+    ProtectionIssue.LOCATION_SERVICES_OFF -> R.string.banner_location_off_body
+}
+
+/** 고칠 시스템 화면 — 없는 제조사 빌드에서는 openSettings가 앱 상세 설정으로 대신 연다 */
+private fun ProtectionIssue.settingsIntent(context: Context): Intent = when (this) {
+    ProtectionIssue.NOTIFICATIONS_OFF -> appNotificationSettingsIntent(context)
+    ProtectionIssue.PRECISE_LOCATION_OFF, ProtectionIssue.BACKGROUND_LOCATION_OFF -> appDetailsSettingsIntent(context)
+    ProtectionIssue.LOCATION_SERVICES_OFF -> locationSourceSettingsIntent()
+}
+
+@LightDarkPreviews
+@Composable
+private fun ProtectionBannerPreview() {
+    RecordOfPTheme {
+        Column(
+            modifier = Modifier.background(MaterialTheme.colorScheme.background).padding(Spacing.screen),
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+        ) {
+            ProtectionIssue.entries.forEach { ProtectionBanner(it) }
+        }
+    }
+}
+
+@Preview(name = "큰 글꼴", showBackground = true, fontScale = 2f)
+@Composable
+private fun ProtectionBannerLargeFontPreview() {
+    RecordOfPTheme { ProtectionBanner(ProtectionIssue.BACKGROUND_LOCATION_OFF) }
+}
+```
+
+- [ ] **Step 7: 홈에 배너를 단다**
+
+`HomeScreen`의 `Scaffold` 내용 첫머리 블록을 바꾼다.
+
+```kotlin
+        val context = LocalContext.current
+        var snapshot by remember { mutableStateOf(readPermissionSnapshot(context)) }
+        LifecycleResumeEffect(Unit) { // 설정에서 돌아오면 갱신
+            snapshot = readPermissionSnapshot(context)
+            viewModel.reportProtection(snapshot.fullyProtected) // 보호 복구 전이 → 재배치 (F1)
+            onPauseOrDispose { }
+        }
+```
+
+↓
+
+```kotlin
+        // 설정·빠른 설정에서 돌아오면 갱신하고, 보호 복구 전이면 재배치한다 (F1)
+        val snapshot = rememberPermissionSnapshot(onRead = { viewModel.reportProtection(it.fullyProtected) })
+```
+
+`if (!snapshot.fullyProtected) { Card(onClick = onSettingsClick, …) { … } }` 블록 전체를 바꾼다.
+
+```kotlin
+            snapshot.topIssue?.let { issue ->
+                ProtectionBanner(
+                    issue = issue,
+                    modifier = Modifier.padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m, bottom = Spacing.xxs),
+                )
+            }
+```
+
+`HomeScreen.kt` import에서 `androidx.compose.ui.platform.LocalContext`, `androidx.lifecycle.compose.LifecycleResumeEffect`, `com.recordofp.app.ui.permissions.readPermissionSnapshot`, `androidx.compose.runtime.mutableStateOf`, `androidx.compose.runtime.remember`, `androidx.compose.runtime.setValue`를 지우고 `com.recordofp.app.ui.permissions.rememberPermissionSnapshot`, `com.recordofp.app.ui.theme.Spacing`을 더한다(`Card`·`CardDefaults`는 기록 카드가 계속 쓴다).
+
+- [ ] **Step 8: 문자열을 바꾼다**
+
+ko·en 양쪽에서 `banner_protection_title`, `banner_protection_action`을 지우고 그 자리에 넣는다.
 
 ko:
 
@@ -3257,7 +5375,10 @@ ko:
     <string name="banner_precise_body">근처 가게를 찾으려면 위치 권한을 허용하고 \'정확한 위치 사용\'을 켜 주세요.</string>
     <string name="banner_background_title">앱을 닫아도 알려드리려면</string>
     <string name="banner_background_body">근처를 지날 때 알려드리려면 위치 권한을 \'항상 허용\'으로 바꿔 주세요.</string>
-    <string name="banner_background_steps">설정 → 권한 → 위치 → 항상 허용</string>
+    <string name="banner_background_step_settings">설정</string>
+    <string name="banner_background_step_permissions">권한</string>
+    <string name="banner_background_step_location">위치</string>
+    <string name="banner_background_step_always">항상 허용</string>
     <string name="banner_location_off_title">기기 위치가 꺼져 있어요</string>
     <string name="banner_location_off_body">기기의 위치를 켜야 근처 알림이 동작해요.</string>
     <string name="banner_action_open_settings">설정 열기</string>
@@ -3272,43 +5393,54 @@ en:
     <string name="banner_precise_body">To find stores near you, allow location access and turn on \'Use precise location\'.</string>
     <string name="banner_background_title">Get reminders even when the app is closed</string>
     <string name="banner_background_body">To remind you as you pass by, change location access to \'Allow all the time\'.</string>
-    <string name="banner_background_steps">Settings → Permissions → Location → Allow all the time</string>
+    <string name="banner_background_step_settings">Settings</string>
+    <string name="banner_background_step_permissions">Permissions</string>
+    <string name="banner_background_step_location">Location</string>
+    <string name="banner_background_step_always">Allow all the time</string>
     <string name="banner_location_off_title">Location is turned off</string>
     <string name="banner_location_off_body">Turn on your device\'s location so nearby alerts can work.</string>
     <string name="banner_action_open_settings">Open settings</string>
 ```
 
-- [ ] **Step 6: 테스트 통과와 전체 검증을 확인한다**
+- [ ] **Step 9: 테스트 통과와 전체 검증을 확인한다**
 
 Run: `./gradlew testDebugUnitTest --tests "*.PermissionSnapshotTest"` → PASS
-Run: `./gradlew testDebugUnitTest lintDebug assembleDebug` → 전부 통과, lint 오류 0
+Run: `./gradlew testDebugUnitTest lintDebug assembleDebug` → 테스트 150개 통과, lint 오류 0·경고 25
 
-- [ ] **Step 7: 커밋한다**
+`ProtectionBanner.kt`의 미리보기(네 종류 × 라이트·다크, '항상 허용' 큰 글꼴)를 개편안 2 목업 "보호 배너"와 비교한다.
+
+- [ ] **Step 10: 커밋한다**
 
 ```bash
-git add android/app/src/main/java/com/recordofp/app/ui/permissions/PermissionStatus.kt \
+git add tools/design/material_symbols.py android/app/src/main/res/drawable/ic_banner_*.xml \
+  android/app/src/main/java/com/recordofp/app/ui/permissions/PermissionStatus.kt \
+  android/app/src/main/java/com/recordofp/app/ui/permissions/RememberPermissionSnapshot.kt \
+  android/app/src/main/java/com/recordofp/app/ui/home/ProtectionBanner.kt \
   android/app/src/main/java/com/recordofp/app/ui/home/HomeScreen.kt \
+  android/app/src/main/java/com/recordofp/app/ui/settings/SettingsScreen.kt \
   android/app/src/main/res/values/strings.xml android/app/src/main/res/values-en/strings.xml \
   android/app/src/test/java/com/recordofp/app/ui/permissions/PermissionSnapshotTest.kt
-git commit -m "feat: 홈 보호 배너를 구체적으로 - 항상 허용 업셀과 설정 바로 열기" -m "꺼진 것 하나를 우선순위대로 이름으로 알리고 고칠 시스템 화면을 바로 연다. '항상 허용'에는 단계 안내를 단다. (§4.2, §4.3, 최종 리뷰 I3)"
+git commit -m "feat: 홈 보호 배너를 구체적으로 - 항상 허용 업셀과 설정 바로 열기" -m "꺼진 것 하나를 우선순위대로 이름으로 알리고 고칠 시스템 화면을 바로 연다. '항상 허용'에는 단계 칩을 단다.
+빠른 설정에서 기기 위치를 바꿔도 화면이 보이는 동안 바로 다시 읽는다. (§4.2, §4.3, 최종 리뷰 I3, 묶음 B 인계, 개편안 2 §2)"
 ```
 
 ---
 
 ### Task 14: 완료 실행 취소와 TalkBack 완료
 
-완료를 되돌릴 방법이 없다. 스와이프는 양방향 모두 완료로 처리되어 실수하기 쉽다. 스와이프를 못 하는 TalkBack 사용자는 완료할 수 없다(§8). 이 태스크는 완료한 뒤 [실행 취소] 스낵바를 띄우고, 스와이프는 한 방향만 허용하고, 카드에 TalkBack 사용자 지정 동작 "완료"를 단다. 로컬 구현에서 나온 N1 결함(실행 취소 뒤 행이 스와이프된 상태로 남고, 완료가 두 번 불림)을 막기 위해 두 가지를 함께 넣는다. 행 키를 `id:updatedAt`으로 해서 되살아난 행이 새 스와이프 상태를 받게 하고, 완료는 확정된 상태 변화(`LaunchedEffect`)에서 한 번만 부른다.
+완료를 되돌릴 방법이 없다. 스와이프는 양방향 모두 완료로 처리되어 실수하기 쉽다. 스와이프를 못 하는 TalkBack 사용자는 완료할 수 없다(§8). 이 태스크는 완료한 뒤 [실행 취소] 스낵바를 띄우고, 스와이프는 한 방향만 허용하고, 카드에 TalkBack 사용자 지정 동작 "완료"를 단다. 로컬 구현에서 나온 N1 결함(실행 취소 뒤 행이 스와이프된 상태로 남고, 완료가 두 번 불림)을 막기 위해 두 가지를 함께 넣는다. 행 키를 `id:updatedAt`으로 해서 되살아난 행이 새 스와이프 상태를 받게 하고, 완료는 확정된 상태 변화(`LaunchedEffect`)에서 한 번만 부른다. 모양은 개편안 2 §2다 — 스와이프 뒤는 성공 면에 32dp 원 체크와 "완료", 스낵바는 inverse 면에 성공 체크 원과 [실행 취소]. 떠 있는 동안 FAB은 Scaffold가 스낵바 위로 올린다.
 
 **Files:**
 - Modify: `android/app/src/main/java/com/recordofp/app/data/repo/ReminderRepository.kt`
 - Modify: `android/app/src/main/java/com/recordofp/app/ui/home/HomeViewModel.kt`
 - Modify: `android/app/src/main/java/com/recordofp/app/ui/home/HomeScreen.kt`
+- Create: `android/app/src/main/java/com/recordofp/app/ui/home/UndoSnackbar.kt`
 - Modify: `android/app/src/main/res/values/strings.xml`, `android/app/src/main/res/values-en/strings.xml`
 - Test: `RoomReminderRepositoryTest.kt`, `HomeViewModelTest.kt`, 페이크 4곳(`ReseedServiceTest`, `EditorViewModelTest`, `NearbyViewModelTest`, `HomeViewModelTest`)
 
 **Interfaces:**
-- Consumes: Task 13의 `HomeScreen`(배너)
-- Produces: `suspend fun ReminderRepository.reactivate(id: Long)`, `HomeViewModel.reactivate(id)`
+- Consumes: Task 13의 `HomeScreen`(배너), Task 16의 `successColor()`·`onSuccessColor()`·`inverseSuccessColor()`, `Spacing`, `LightDarkPreviews`
+- Produces: `suspend fun ReminderRepository.reactivate(id: Long)`, `HomeViewModel.reactivate(id)`, `@Composable fun UndoSnackbar(message: String, actionLabel: String, onAction: () -> Unit, modifier: Modifier = Modifier)`
 
 - [ ] **Step 1: 실패 테스트를 쓴다**
 
@@ -3349,7 +5481,7 @@ git commit -m "feat: 홈 보호 배너를 구체적으로 - 항상 허용 업셀
     }
 ```
 
-나머지 페이크 3곳(`ReseedServiceTest.FakeReminders`, `EditorViewModelTest.FakeRepo`, `NearbyViewModelTest.FakeRepo`)에 `override suspend fun reactivate(id: Long) {}`를 더한다.
+나머지 페이크 3곳(`ReseedServiceTest.FakeReminders`, `EditorViewModelTest.FakeRepo`, `NearbyViewModelTest.FakeRepo`)의 `override suspend fun complete(id: Long) {}` 다음 줄에 `override suspend fun reactivate(id: Long) {}`를 더한다.
 
 - [ ] **Step 2: 실패를 확인한다**
 
@@ -3381,9 +5513,97 @@ Expected: 컴파일 실패 — `reactivate`가 인터페이스에 없다.
     fun reactivate(id: Long) = viewModelScope.launch { repository.reactivate(id) }
 ```
 
-- [ ] **Step 4: 홈 화면에 실행 취소와 TalkBack 동작을 넣는다**
+Run: `./gradlew testDebugUnitTest --tests "*.RoomReminderRepositoryTest" --tests "*.HomeViewModelTest"` → PASS
 
-`HomeScreen` 함수 첫머리(`val items by ...` 다음)에 추가한다.
+- [ ] **Step 4: 실행 취소 스낵바를 만든다**
+
+`ui/home/UndoSnackbar.kt`:
+
+```kotlin
+package com.recordofp.app.ui.home
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.recordofp.app.ui.theme.LightDarkPreviews
+import com.recordofp.app.ui.theme.RecordOfPTheme
+import com.recordofp.app.ui.theme.Spacing
+import com.recordofp.app.ui.theme.inverseSuccessColor
+
+/**
+ * 완료 뒤 [실행 취소] 스낵바 — inverse 면 16dp 라운드, 성공 체크 원, 블루 액션 (개편안 2 §1.2·§2).
+ * SnackbarHost 안에서 그린다 — 호스트가 TalkBack 안내(liveRegion)와 접근성 표시 시간을 맡는다.
+ */
+@Composable
+fun UndoSnackbar(
+    message: String,
+    actionLabel: String,
+    onAction: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = scheme.inverseSurface,
+        contentColor = scheme.inverseOnSurface,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.heightIn(min = 56.dp).padding(start = Spacing.m, end = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                modifier = Modifier.size(24.dp).background(inverseSuccessColor(), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Filled.Check, contentDescription = null, tint = scheme.inverseSurface, modifier = Modifier.size(16.dp))
+            }
+            Text(
+                message,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(
+                onClick = onAction,
+                colors = ButtonDefaults.textButtonColors(contentColor = scheme.inversePrimary),
+            ) {
+                Text(actionLabel, style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    }
+}
+
+@LightDarkPreviews
+@Composable
+private fun UndoSnackbarPreview() {
+    RecordOfPTheme { UndoSnackbar(message = "완료했어요", actionLabel = "실행 취소", onAction = {}) }
+}
+```
+
+- [ ] **Step 5: 홈 화면에 실행 취소와 TalkBack 동작을 넣는다**
+
+`HomeScreen` 함수의 `val items by ...` 다음에 추가한다.
 
 ```kotlin
     val snackbarHostState = remember { SnackbarHostState() }
@@ -3403,7 +5623,22 @@ Expected: 컴파일 실패 — `reactivate`가 인터페이스에 없다.
     }
 ```
 
-`Scaffold(...)`에 `snackbarHost = { SnackbarHost(snackbarHostState) },`를 더한다. `LazyColumn`의 `items`를 바꾼다.
+`Scaffold(` 안 `containerColor = …` 다음에 추가한다.
+
+```kotlin
+        // 떠 있는 동안 FAB은 Scaffold가 스낵바 위로 올린다 (개편안 2 §2)
+        snackbarHost = {
+            SnackbarHost(snackbarHostState, Modifier.padding(horizontal = Spacing.m, vertical = Spacing.xs)) { data ->
+                UndoSnackbar(
+                    message = data.visuals.message,
+                    actionLabel = data.visuals.actionLabel.orEmpty(),
+                    onAction = data::performAction,
+                )
+            }
+        },
+```
+
+`LazyColumn`의 `items`를 바꾼다.
 
 ```kotlin
                     // 키에 updatedAt을 넣는다 — 실행 취소로 되살아난 행이 스와이프된 옛 상태를 물려받지 않게 (N1)
@@ -3417,7 +5652,7 @@ Expected: 컴파일 실패 — `reactivate`가 인터페이스에 없다.
                     }
 ```
 
-`ReminderRow`를 교체한다.
+`ReminderRow`를 교체하고, 바로 아래에 스와이프 뒤 배경을 더한다(카드 내용은 Task 18이 다시 그린다).
 
 ```kotlin
 @Composable
@@ -3440,26 +5675,7 @@ private fun ReminderRow(
         modifier = modifier,
         // 시작→끝 방향만 — 실행 취소 스낵바와 짝을 이루는 한 가지 제스처 (최종 리뷰 I5)
         enableDismissFromEndToStart = false,
-        backgroundContent = {
-            // 완료 스와이프: 초록 배경 + 체크 (개편안 §2)
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(successColor())
-                    .padding(horizontal = 20.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.surface)
-                    Text(
-                        stringResource(R.string.home_completed),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.surface,
-                    )
-                }
-            }
-        },
+        backgroundContent = { CompleteSwipeBackground() },
     ) {
         Card(
             onClick = onClick,
@@ -3480,26 +5696,57 @@ private fun ReminderRow(
         }
     }
 }
+
+/** 완료 스와이프 뒤 — 성공 면, 32dp 원 체크, "완료" (개편안 2 §2) */
+@Composable
+private fun CompleteSwipeBackground() {
+    val success = successColor()
+    val onSuccess = onSuccessColor()
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .clip(MaterialTheme.shapes.medium)
+            .background(success)
+            .padding(horizontal = 22.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            modifier = Modifier.size(32.dp).background(onSuccess, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Filled.Check, contentDescription = null, tint = success, modifier = Modifier.size(20.dp))
+        }
+        Text(
+            stringResource(R.string.action_complete),
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+            color = onSuccess,
+        )
+    }
+}
 ```
 
-import에 `androidx.compose.runtime.LaunchedEffect`, `androidx.compose.runtime.rememberCoroutineScope`, `androidx.compose.material3.SnackbarDuration`, `androidx.compose.material3.SnackbarHost`, `androidx.compose.material3.SnackbarHostState`, `androidx.compose.material3.SnackbarResult`, `androidx.compose.ui.semantics.CustomAccessibilityAction`, `androidx.compose.ui.semantics.customActions`, `androidx.compose.ui.semantics.semantics`, `kotlinx.coroutines.launch`를 더한다.
+import에 `androidx.compose.foundation.layout.size`, `androidx.compose.foundation.shape.CircleShape`, `androidx.compose.material3.SnackbarDuration`, `androidx.compose.material3.SnackbarHost`, `androidx.compose.material3.SnackbarHostState`, `androidx.compose.material3.SnackbarResult`, `androidx.compose.runtime.LaunchedEffect`, `androidx.compose.runtime.remember`, `androidx.compose.runtime.rememberCoroutineScope`, `androidx.compose.ui.semantics.CustomAccessibilityAction`, `androidx.compose.ui.semantics.customActions`, `androidx.compose.ui.semantics.semantics`, `androidx.compose.ui.text.font.FontWeight`, `com.recordofp.app.ui.theme.onSuccessColor`, `kotlinx.coroutines.launch`를 더한다.
 
-- [ ] **Step 5: 문자열을 더한다**
+- [ ] **Step 6: 문자열을 더한다**
+
+`action_mute_today` 다음 줄에 넣는다.
 
 ko: `<string name="action_undo">실행 취소</string>`
 en: `<string name="action_undo">Undo</string>`
 
-- [ ] **Step 6: 테스트 통과와 전체 검증을 확인한다**
+- [ ] **Step 7: 테스트 통과와 전체 검증을 확인한다**
 
 Run: `./gradlew testDebugUnitTest --tests "*.RoomReminderRepositoryTest" --tests "*.HomeViewModelTest"` → PASS
-Run: `./gradlew testDebugUnitTest lintDebug assembleDebug` → 전부 통과, lint 오류 0
+Run: `./gradlew testDebugUnitTest lintDebug assembleDebug` → 테스트 152개 통과, lint 오류 0·경고 25
 
-- [ ] **Step 7: 커밋한다**
+- [ ] **Step 8: 커밋한다**
 
 ```bash
 git add android/app/src/main/java/com/recordofp/app/data/repo/ReminderRepository.kt \
   android/app/src/main/java/com/recordofp/app/ui/home/HomeViewModel.kt \
   android/app/src/main/java/com/recordofp/app/ui/home/HomeScreen.kt \
+  android/app/src/main/java/com/recordofp/app/ui/home/UndoSnackbar.kt \
   android/app/src/main/res/values/strings.xml android/app/src/main/res/values-en/strings.xml \
   android/app/src/test/java/com/recordofp/app/data/repo/RoomReminderRepositoryTest.kt \
   android/app/src/test/java/com/recordofp/app/ui/home/HomeViewModelTest.kt \
@@ -3507,222 +5754,1413 @@ git add android/app/src/main/java/com/recordofp/app/data/repo/ReminderRepository
   android/app/src/test/java/com/recordofp/app/ui/nearby/NearbyViewModelTest.kt \
   android/app/src/test/java/com/recordofp/app/data/engine/ReseedServiceTest.kt
 git commit -m "feat: 완료 실행 취소 스낵바와 TalkBack 완료 동작" -m "완료를 되돌릴 수 있고, 스와이프는 한 방향만 받으며, TalkBack 사용자도 카드 동작으로 완료한다.
-행 키에 updatedAt을 넣고 완료를 확정 상태에서 한 번만 불러 실행 취소 뒤 행이 끼지 않는다. (§4.1, §8, 최종 리뷰 I5·I7)"
+행 키에 updatedAt을 넣고 완료를 확정 상태에서 한 번만 불러 실행 취소 뒤 행이 끼지 않는다.
+스와이프 뒤·스낵바는 개편안 2 모양(성공 면 원 체크, inverse 스낵바). (§4.1, §8, 최종 리뷰 I5·I7, 개편안 2 §2)"
 ```
 
 ---
 
-### Task 15: UI 마감 — 뒤로 버튼 설명, 키보드 가림, 뒤로 연타 가드, 정책 기본값 단일화
+### Task 18: 홈 카드·개수 pill·빈 상태 — 방향 B "카테고리 타일"
 
-이 태스크는 작은 결함 네 가지를 묶어 고친다. (1) 주변 보기·진단·설정의 뒤로 아이콘에 설명이 없어 TalkBack이 "라벨 없는 버튼"으로 읽는다. (2) edge-to-edge에서 에디터 아래쪽의 장소 검색란과 결과가 키보드에 가려질 수 있다. (3) 뒤로나 ✕를 연타하거나 저장 직후 ✕를 누르면 홈까지 꺼내져 빈 화면이 될 수 있다. (4) 알림 정책 기본값(4/10/22:00/08:00)이 `SettingsStore`에 세 번 리터럴로 중복돼 있어, `EngineParams`를 튜닝해도 앱에 반영되지 않는다(Global Constraint 위반).
+개편안 2의 핵심 결정(방향 B)을 홈에 그린다. 기록 카드는 왼쪽 48dp 트리거 타일 + 제목 + 트리거 이름을 " · "로 이은 줄이고, 회색 트리거 칩 줄은 없앤다. 타일은 대표 트리거 하나를 따른다 — 카테고리가 있으면 첫 카테고리, 없으면 특정 지점, 그것도 없으면 첫 브랜드(프리셋 포함). 큰 타이틀 옆에 개수 pill을 두고(0개면 숨김), 빈 상태는 연블루 원 안의 P-핀과 둘레의 카테고리 타일 셋, 제목과 두 줄 본문이다. 카드 등장·제거는 표준 모션(250ms)이다. 홈 본체를 `HomeContent`로 떼고 미리보기를 둔다. 기록 한 줄(`ReminderRow`, Task 14의 스와이프·TalkBack 포함)은 `ReminderCard.kt`로 옮긴다.
 
 **Files:**
-- Create: `android/app/src/main/java/com/recordofp/app/ui/common/BackButton.kt`
-- Modify: `android/app/src/main/java/com/recordofp/app/ui/nearby/NearbyScreen.kt`, `ui/settings/DiagnosticsScreen.kt`, `ui/settings/SettingsScreen.kt`
-- Modify: `android/app/src/main/java/com/recordofp/app/ui/editor/EditorScreen.kt`
-- Modify: `android/app/src/main/AndroidManifest.xml`
-- Modify: `android/app/src/main/java/com/recordofp/app/ui/AppNavHost.kt`
-- Modify: `android/app/src/main/java/com/recordofp/app/data/repo/SettingsStore.kt`
+- Create: `android/app/src/main/java/com/recordofp/app/ui/common/TriggerTile.kt`
+- Create: `android/app/src/main/java/com/recordofp/app/ui/home/ReminderCard.kt`, `HomeEmptyState.kt`, `HomePreviews.kt`
+- Modify(전체 교체): `android/app/src/main/java/com/recordofp/app/ui/home/HomeScreen.kt`
 - Modify: `android/app/src/main/res/values/strings.xml`, `android/app/src/main/res/values-en/strings.xml`
-- Test: `android/app/src/test/java/com/recordofp/app/data/repo/NotificationPolicySettingsTest.kt` (생성)
+- Test: `android/app/src/test/java/com/recordofp/app/ui/home/ReminderCardTest.kt` (생성)
 
 **Interfaces:**
-- Consumes: Task 12의 `EditorScreen`
-- Produces: `@Composable fun BackButton(onClick: () -> Unit)`, `private fun NavController.popFrom(route: String)`
+- Consumes: Task 16의 `TriggerVisual`·`visual()`·`categoryVisual`·`iconRes()`·`label()`·`tileColors()`, `Spacing`, `Motion`, `AppTextStyles.emptyTitle`, `PillShape`, `LightDarkPreviews`, `onSuccessColor()`; Task 13의 `ProtectionBanner`, `ProtectionIssue`, `rememberPermissionSnapshot`; Task 14의 `UndoSnackbar`, `HomeViewModel.reactivate`, `ReminderRow`·`CompleteSwipeBackground`(옮긴다)
+- Produces: `@Composable fun TriggerTile(visual: TriggerVisual, size: Dp, cornerRadius: Dp, iconSize: Dp, modifier: Modifier = Modifier)`(ui/common), `internal fun List<TriggerSpec>.leadVisual(): TriggerVisual?`, `internal fun ReminderRow(item, onComplete, onClick, modifier)`, `internal fun HomeEmptyState(modifier)`, `@Composable fun HomeContent(items: List<Reminder>, issue: ProtectionIssue?, snackbarHostState: SnackbarHostState, onAddClick, onItemClick: (Long) -> Unit, onNearbyClick, onSettingsClick, onComplete: (Long) -> Unit)`
 
-- [ ] **Step 1: 기본값 회귀 테스트를 쓴다**
+- [ ] **Step 1: 실패 테스트를 쓴다**
 
-`NotificationPolicySettingsTest.kt`를 만든다. 지금 값이 이미 `EngineParams`와 같으므로 **이 테스트는 처음부터 통과한다.** 목적은 리터럴을 지운 뒤에도 기본값이 그대로라는 회귀 방지다(동작을 바꾸지 않는 리팩터링).
+`android/app/src/test/java/com/recordofp/app/ui/home/ReminderCardTest.kt`:
 
 ```kotlin
-package com.recordofp.app.data.repo
+package com.recordofp.app.ui.home
 
-import com.recordofp.app.domain.engine.EngineParams
-import java.time.Duration
+import com.recordofp.app.domain.model.TriggerSpec
+import com.recordofp.app.domain.model.TriggerType
+import com.recordofp.app.ui.common.TriggerVisual
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNull
 import org.junit.Test
 
-class NotificationPolicySettingsTest {
+class ReminderCardTest {
+
+    private val brand = TriggerSpec(type = TriggerType.BRAND, brandKeyword = "GS25")
+    private val daiso = TriggerSpec(type = TriggerType.CATEGORY, categoryId = "daiso")
+    private val laundry = TriggerSpec(type = TriggerType.CATEGORY, categoryId = "laundry")
+    private val place = TriggerSpec(type = TriggerType.PLACE, placeName = "크린토피아 역삼점")
 
     @Test
-    fun `기본 설정은 EngineParams의 §4·5 기본값을 그대로 쓴다`() {
-        val d = NotificationPolicySettings()
-        assertEquals(EngineParams.COOLDOWN_PER_ITEM_MS, Duration.ofHours(d.cooldownHours.toLong()).toMillis())
-        assertEquals(EngineParams.DAILY_CAP_TOTAL, d.dailyCapTotal)
-        assertEquals(EngineParams.QUIET_START_MINUTE, d.quietStartMinute)
-        assertEquals(EngineParams.QUIET_END_MINUTE, d.quietEndMinute)
-        assertTrue(d.quietEnabled)
+    fun `카드 타일은 카테고리가 있으면 첫 카테고리를 따른다`() {
+        assertEquals(TriggerVisual.Category("laundry"), listOf(brand, place, laundry).leadVisual())
+    }
+
+    @Test
+    fun `카테고리가 없으면 특정 지점, 그것도 없으면 첫 브랜드를 따른다 - 프리셋은 브랜드다`() {
+        assertEquals(TriggerVisual.Place("크린토피아 역삼점"), listOf(daiso, brand, place).leadVisual())
+        assertEquals(TriggerVisual.BrandPreset("daiso"), listOf(daiso, brand).leadVisual())
+        assertEquals(TriggerVisual.BrandKeyword("GS25"), listOf(brand, daiso).leadVisual())
+    }
+
+    @Test
+    fun `트리거가 없으면 타일이 없다`() {
+        assertNull(emptyList<TriggerSpec>().leadVisual())
     }
 }
 ```
 
-Run: `./gradlew testDebugUnitTest --tests "*.NotificationPolicySettingsTest"`
-Expected: PASS(리팩터링 전 기준선)
+- [ ] **Step 2: 실패를 확인한다**
 
-- [ ] **Step 2: 기본값 리터럴을 EngineParams로 바꾼다**
+Run: `./gradlew testDebugUnitTest --tests "*.ReminderCardTest"`
+Expected: 컴파일 실패 — `leadVisual`이 없다.
 
-`SettingsStore.kt`의 데이터 클래스를 바꾼다(import `com.recordofp.app.domain.engine.EngineParams`, `java.time.Duration`).
+- [ ] **Step 3: 트리거 타일을 만든다**
 
-```kotlin
-/** 알림 정책 설정값 (스펙 §4.5). 기본값은 EngineParams에서만 가져온다 — 리터럴 중복 금지 (§10.2, 최종 리뷰 M1) */
-data class NotificationPolicySettings(
-    // 선택지 1/4/12/24 (§4.5)
-    val cooldownHours: Int = Duration.ofMillis(EngineParams.COOLDOWN_PER_ITEM_MS).toHours().toInt(),
-    // 선택지 5/10/20/0(0=무제한)
-    val dailyCapTotal: Int = EngineParams.DAILY_CAP_TOTAL,
-    val quietEnabled: Boolean = true,
-    val quietStartMinute: Int = EngineParams.QUIET_START_MINUTE,
-    val quietEndMinute: Int = EngineParams.QUIET_END_MINUTE,
-)
-```
-
-`DataStoreSettingsStore`의 두 군데 리터럴 읽기를 하나의 `read`로 합친다.
-
-```kotlin
-    private val defaults = NotificationPolicySettings()
-
-    private fun read(p: Preferences) = NotificationPolicySettings(
-        cooldownHours = p[cooldownKey] ?: defaults.cooldownHours,
-        dailyCapTotal = p[capKey] ?: defaults.dailyCapTotal,
-        quietEnabled = p[quietEnabledKey] ?: defaults.quietEnabled,
-        quietStartMinute = p[quietStartKey] ?: defaults.quietStartMinute,
-        quietEndMinute = p[quietEndKey] ?: defaults.quietEndMinute,
-    )
-
-    override val policy: Flow<NotificationPolicySettings> = dataStore.data.map { read(it) }
-
-    override suspend fun updatePolicy(transform: (NotificationPolicySettings) -> NotificationPolicySettings) {
-        dataStore.edit { p ->
-            val next = transform(read(p))
-            p[cooldownKey] = next.cooldownHours
-            p[capKey] = next.dailyCapTotal
-            p[quietEnabledKey] = next.quietEnabled
-            p[quietStartKey] = next.quietStartMinute
-            p[quietEndKey] = next.quietEndMinute
-        }
-    }
-```
-
-(`edit` 블록의 `p`는 `MutablePreferences`이고 `Preferences`의 하위 타입이므로 `read(p)`가 그대로 받는다.)
-
-Run: `./gradlew testDebugUnitTest --tests "*.NotificationPolicySettingsTest" --tests "*.StoreGatePolicyProviderTest"` → PASS
-
-- [ ] **Step 3: 뒤로 버튼에 설명을 단다**
-
-`ui/common/BackButton.kt`:
+`ui/common/TriggerTile.kt`(홈 카드·빈 상태·주변 보기가 함께 쓴다):
 
 ```kotlin
 package com.recordofp.app.ui.common
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
-import com.recordofp.app.R
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 
-/** 상단 바 뒤로 가기 — 하위 화면 공통 (§8 TalkBack 설명, 최종 리뷰 C2) */
+/**
+ * 트리거 타일 — 둥근 사각 tint 위에 ink 아이콘 (개편안 2 §2). 장식이라 설명이 없다 — 이름은 옆 글자가 말한다.
+ * 크기: 홈 카드 48/16/24, 빈 상태 44/14/22, 주변 보기 그룹 머리 32/10/18 (타일/모서리/아이콘 dp)
+ */
 @Composable
-fun BackButton(onClick: () -> Unit) {
-    IconButton(onClick = onClick) {
-        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+fun TriggerTile(
+    visual: TriggerVisual,
+    size: Dp,
+    cornerRadius: Dp,
+    iconSize: Dp,
+    modifier: Modifier = Modifier,
+) {
+    val colors = visual.tileColors()
+    Box(
+        modifier = modifier.size(size).background(colors.tint, RoundedCornerShape(cornerRadius)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painterResource(visual.iconRes()),
+            contentDescription = null,
+            tint = colors.ink,
+            modifier = Modifier.size(iconSize),
+        )
     }
 }
 ```
 
-`NearbyScreen.kt`, `DiagnosticsScreen.kt`, `SettingsScreen.kt`의 `navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null) } }`를 `navigationIcon = { BackButton(onClick = onBack) }`로 바꾼다(import `com.recordofp.app.ui.common.BackButton`). 각 파일에서 쓰이지 않게 된 `ArrowBack`·`IconButton`·`Icon` import만 지운다(다른 곳에서 쓰이면 남긴다. 컴파일 경고로 확인한다).
+- [ ] **Step 4: 기록 카드를 만든다**
 
-문자열 ko `<string name="action_back">뒤로</string>`, en `<string name="action_back">Back</string>`.
-
-- [ ] **Step 4: 에디터가 키보드 인셋을 받게 한다**
-
-`AndroidManifest.xml`의 MainActivity에 속성을 더한다.
-
-```xml
-        <!-- adjustResize: edge-to-edge에서 키보드 인셋을 Compose(imePadding)로 받는다 — 에디터 아래쪽 장소 검색란 (최종 리뷰 C2) -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:windowSoftInputMode="adjustResize">
-```
-
-`EditorScreen` 본문 `Column`의 modifier를 바꾼다(import `androidx.compose.foundation.layout.consumeWindowInsets`, `androidx.compose.foundation.layout.imePadding`).
+`ui/home/ReminderCard.kt`. `ReminderRow`와 `CompleteSwipeBackground`는 Task 14에서 `HomeScreen.kt`에 넣은 것을 옮겨 오고, 카드 내용만 새로 그린다.
 
 ```kotlin
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                // 키보드가 아래쪽 장소 검색란·결과를 가리지 않게 — Scaffold가 이미 준 시스템 바 여백은 빼고 더한다
-                .consumeWindowInsets(padding)
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
-```
+package com.recordofp.app.ui.home
 
-- [ ] **Step 5: 뒤로 연타 가드를 넣는다**
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.recordofp.app.R
+import com.recordofp.app.domain.model.Reminder
+import com.recordofp.app.domain.model.TriggerSpec
+import com.recordofp.app.ui.common.TriggerTile
+import com.recordofp.app.ui.common.TriggerVisual
+import com.recordofp.app.ui.common.label
+import com.recordofp.app.ui.common.visual
+import com.recordofp.app.ui.theme.Spacing
+import com.recordofp.app.ui.theme.onSuccessColor
+import com.recordofp.app.ui.theme.successColor
 
-`AppNavHost.kt` 파일 끝에 추가한다(import `androidx.navigation.NavController`).
+/** 카드 타일이 따를 트리거: 카테고리 → 특정 지점 → 브랜드(프리셋 포함) 순으로 첫 것 (개편안 2 §2 기록 카드) */
+internal fun List<TriggerSpec>.leadVisual(): TriggerVisual? {
+    val visuals = map { it.visual() }
+    return visuals.firstOrNull { it is TriggerVisual.Category }
+        ?: visuals.firstOrNull { it is TriggerVisual.Place }
+        ?: visuals.firstOrNull()
+}
 
-```kotlin
 /**
- * 지금 화면이 route일 때만 뒤로 간다 — 뒤로·✕ 연타나 저장 직후 ✕가 시작 화면까지 꺼내 빈 화면이 되는 것을 막는다.
- * 백 스택은 popBackStack 즉시 바뀌므로 두 번째 호출은 무시된다 (최종 리뷰 C2)
+ * 기록 한 줄 — 시작→끝 스와이프로 완료하고, TalkBack은 카드의 사용자 지정 동작으로 완료한다 (§4.1, §8).
+ * 카드: 왼쪽 48dp 트리거 타일 + 제목 + 트리거 이름을 " · "로 이은 줄 (개편안 2 §2)
  */
-private fun NavController.popFrom(route: String) {
-    if (currentDestination?.route == route) popBackStack()
+@Composable
+internal fun ReminderRow(
+    item: Reminder,
+    onComplete: () -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // 부수효과는 확정된 상태 변화에서 한 번만 — confirmValueChange는 같은 스와이프에 여러 번 불릴 수 있다 (N1)
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { it == SwipeToDismissBoxValue.StartToEnd },
+    )
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue == SwipeToDismissBoxValue.StartToEnd) onComplete()
+    }
+    val completeLabel = stringResource(R.string.action_complete)
+    SwipeToDismissBox(
+        state = dismissState,
+        modifier = modifier,
+        // 시작→끝 방향만 — 실행 취소 스낵바와 짝을 이루는 한 가지 제스처 (최종 리뷰 I5)
+        enableDismissFromEndToStart = false,
+        backgroundContent = { CompleteSwipeBackground() },
+    ) {
+        Card(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                // 스와이프를 못 하는 TalkBack 사용자도 완료할 수 있게 사용자 지정 동작을 단다 (§8, 최종 리뷰 I7)
+                .semantics {
+                    customActions = listOf(CustomAccessibilityAction(completeLabel) { onComplete(); true })
+                },
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        ) {
+            ReminderCardContent(item)
+        }
+    }
+}
+
+@Composable
+private fun ReminderCardContent(item: Reminder) {
+    Row(
+        modifier = Modifier.padding(start = 14.dp, end = Spacing.m, top = 14.dp, bottom = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        item.triggers.leadVisual()?.let { TriggerTile(it, size = 48.dp, cornerRadius = 16.dp, iconSize = 24.dp) }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                item.title,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (item.triggers.isNotEmpty()) {
+                Text(
+                    item.triggers.map { it.visual().label() }.joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+/** 완료 스와이프 뒤 — 성공 면, 32dp 원 체크, "완료" (개편안 2 §2) */
+@Composable
+private fun CompleteSwipeBackground() {
+    val success = successColor()
+    val onSuccess = onSuccessColor()
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .clip(MaterialTheme.shapes.medium)
+            .background(success)
+            .padding(horizontal = 22.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            modifier = Modifier.size(32.dp).background(onSuccess, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Filled.Check, contentDescription = null, tint = success, modifier = Modifier.size(20.dp))
+        }
+        Text(
+            stringResource(R.string.action_complete),
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+            color = onSuccess,
+        )
+    }
 }
 ```
 
-`MainGraph`의 네 군데를 바꾼다.
-- `EditorScreen(onDone = { navController.popBackStack() })` → `EditorScreen(onDone = { navController.popFrom(Routes.EDITOR) })`
-- `NearbyScreen(onBack = { navController.popBackStack() })` → `NearbyScreen(onBack = { navController.popFrom(Routes.NEARBY) })`
-- `SettingsScreen(... onBack = { navController.popBackStack() })` → `onBack = { navController.popFrom(Routes.SETTINGS) }`
-- `DiagnosticsScreen(onBack = { navController.popBackStack() })` → `DiagnosticsScreen(onBack = { navController.popFrom(Routes.DIAGNOSTICS) })`
+Run: `./gradlew testDebugUnitTest --tests "*.ReminderCardTest"` → PASS
 
-(`Routes.EDITOR`는 `"editor?reminderId={reminderId}"` 패턴이고, `currentDestination?.route`도 같은 패턴 문자열을 돌려주므로 비교가 성립한다.)
+- [ ] **Step 5: 빈 상태를 만든다**
 
-- [ ] **Step 6: 전체 검증을 확인한다**
+`ui/home/HomeEmptyState.kt`(위치·각도는 개편안 2 목업 "홈 — 빈 상태"의 값이다):
+
+```kotlin
+package com.recordofp.app.ui.home
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import com.recordofp.app.R
+import com.recordofp.app.ui.common.TriggerTile
+import com.recordofp.app.ui.common.categoryVisual
+import com.recordofp.app.ui.theme.AppTextStyles
+import com.recordofp.app.ui.theme.Spacing
+
+/** 빈 상태 — 연블루 원 안의 P-핀, 둘레에 카테고리 타일 셋, 제목과 두 줄 본문 (개편안 2 §2, 디자인 시스템 §1.3 브랜드 그래픽) */
+@Composable
+internal fun HomeEmptyState(modifier: Modifier = Modifier) {
+    Column(
+        // 아래 여백은 FAB를 피해 그래픽을 조금 위로 올린다
+        modifier = modifier.padding(start = Spacing.xxl, end = Spacing.xxl, bottom = 120.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterVertically),
+    ) {
+        EmptyGraphic()
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+        ) {
+            Text(stringResource(R.string.home_empty_title), style = AppTextStyles.emptyTitle, textAlign = TextAlign.Center)
+            Text(
+                stringResource(R.string.home_empty_body),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+/** 장식 그래픽 — TalkBack은 건너뛴다 */
+@Composable
+private fun EmptyGraphic() {
+    Box(Modifier.size(width = 220.dp, height = 196.dp).clearAndSetSemantics {}) {
+        Box(
+            modifier = Modifier
+                .offset(x = 42.dp, y = 20.dp)
+                .size(136.dp)
+                .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painterResource(R.drawable.ic_pin_mark),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(84.dp),
+            )
+        }
+        TriggerTile(
+            categoryVisual("convenience"), size = 44.dp, cornerRadius = 14.dp, iconSize = 22.dp,
+            modifier = Modifier.offset(x = 0.dp, y = 8.dp).rotate(-8f),
+        )
+        TriggerTile(
+            categoryVisual("pharmacy"), size = 44.dp, cornerRadius = 14.dp, iconSize = 22.dp,
+            modifier = Modifier.align(Alignment.TopEnd).offset(x = (-2).dp, y = 52.dp).rotate(10f),
+        )
+        TriggerTile(
+            categoryVisual("cafe"), size = 44.dp, cornerRadius = 14.dp, iconSize = 22.dp,
+            modifier = Modifier.align(Alignment.BottomStart).offset(x = 22.dp, y = (-6).dp).rotate(6f),
+        )
+    }
+}
+```
+
+- [ ] **Step 6: 홈 화면을 다시 쓴다**
+
+`ui/home/HomeScreen.kt` 전체를 바꾼다. Task 14의 `ReminderRow`·`CompleteSwipeBackground`와 회색 칩(`TriggerChips`·`chipLabel`)은 이 파일에서 사라진다(앞의 둘은 `ReminderCard.kt`로 옮겼고, 칩은 없앤다).
+
+```kotlin
+package com.recordofp.app.ui.home
+
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.recordofp.app.R
+import com.recordofp.app.domain.model.Reminder
+import com.recordofp.app.ui.common.tabularNums
+import com.recordofp.app.ui.permissions.ProtectionIssue
+import com.recordofp.app.ui.permissions.rememberPermissionSnapshot
+import com.recordofp.app.ui.theme.Motion
+import com.recordofp.app.ui.theme.PillShape
+import com.recordofp.app.ui.theme.Spacing
+import kotlinx.coroutines.launch
+
+/**
+ * 활성 항목 목록과 완료 (설계 §4.1). 모양은 개편안 2 §2 홈 — 큰 타이틀 옆 개수 pill, 보호 배너,
+ * 카테고리 타일 카드, 빈 상태 그래픽, 완료 스와이프와 [실행 취소] 스낵바, 확장 FAB "＋ 기록".
+ */
+@Composable
+fun HomeScreen(
+    onAddClick: () -> Unit,
+    onItemClick: (Long) -> Unit,
+    onNearbyClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    viewModel: HomeViewModel = hiltViewModel(),
+) {
+    val items by viewModel.items.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val completedMessage = stringResource(R.string.home_completed)
+    val undoLabel = stringResource(R.string.action_undo)
+    // 완료는 되돌릴 수 있어야 한다 — 스와이프·TalkBack 완료 뒤 [실행 취소] 스낵바 (§4.1 처리, 최종 리뷰 I5)
+    val completeWithUndo: (Long) -> Unit = { id ->
+        viewModel.complete(id)
+        scope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss() // 연속 완료면 마지막 것만
+            val result = snackbarHostState.showSnackbar(
+                message = completedMessage, actionLabel = undoLabel, duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) viewModel.reactivate(id)
+        }
+    }
+    // 설정·빠른 설정에서 돌아오면 갱신하고, 보호 복구 전이면 재배치한다 (F1)
+    val snapshot = rememberPermissionSnapshot(onRead = { viewModel.reportProtection(it.fullyProtected) })
+    HomeContent(
+        items = items,
+        issue = snapshot.topIssue,
+        snackbarHostState = snackbarHostState,
+        onAddClick = onAddClick,
+        onItemClick = onItemClick,
+        onNearbyClick = onNearbyClick,
+        onSettingsClick = onSettingsClick,
+        onComplete = completeWithUndo,
+    )
+}
+
+/** 홈 본체 — 상태와 동작만 받는다(미리보기는 HomePreviews.kt) */
+@Composable
+fun HomeContent(
+    items: List<Reminder>,
+    issue: ProtectionIssue?,
+    snackbarHostState: SnackbarHostState,
+    onAddClick: () -> Unit,
+    onItemClick: (Long) -> Unit,
+    onNearbyClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onComplete: (Long) -> Unit,
+) {
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        // 떠 있는 동안 FAB은 Scaffold가 스낵바 위로 올린다 (개편안 2 §2)
+        snackbarHost = {
+            SnackbarHost(snackbarHostState, Modifier.padding(horizontal = Spacing.m, vertical = Spacing.xs)) { data ->
+                UndoSnackbar(
+                    message = data.visuals.message,
+                    actionLabel = data.visuals.actionLabel.orEmpty(),
+                    onAction = data::performAction,
+                )
+            }
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = onAddClick,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                text = { Text(stringResource(R.string.home_fab)) },
+            )
+        },
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            // 앱바 없이 종이 위에 바로 — 오른쪽 위 아이콘, 큰 타이틀 (개편안 §2)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.xs),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                IconButton(onClick = onNearbyClick) {
+                    Icon(Icons.Outlined.Place, stringResource(R.string.title_nearby))
+                }
+                IconButton(onClick = onSettingsClick) {
+                    Icon(Icons.Outlined.Settings, stringResource(R.string.title_settings))
+                }
+            }
+            HomeTitle(count = items.size)
+            issue?.let {
+                ProtectionBanner(
+                    issue = it,
+                    modifier = Modifier.padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m),
+                )
+            }
+            if (items.isEmpty()) {
+                HomeEmptyState(Modifier.fillMaxSize())
+            } else {
+                val motion = tween<Float>(Motion.STANDARD_MS, easing = Motion.easing)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = Spacing.screen,
+                        end = Spacing.screen,
+                        top = if (issue == null) Spacing.m else Spacing.s,
+                        bottom = 100.dp, // 확장 FAB(56) 아래로 마지막 카드가 숨지 않게
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    // 키에 updatedAt을 넣는다 — 실행 취소로 되살아난 행이 스와이프된 옛 상태를 물려받지 않게 (N1)
+                    items(items, key = { "${it.id}:${it.updatedAt}" }) { item ->
+                        ReminderRow(
+                            item = item,
+                            onComplete = { onComplete(item.id) },
+                            onClick = { onItemClick(item.id) },
+                            // 등장·제거·재배열은 표준 모션 (개편안 2 §1.4)
+                            modifier = Modifier.animateItem(
+                                fadeInSpec = motion,
+                                placementSpec = tween(Motion.STANDARD_MS, easing = Motion.easing),
+                                fadeOutSpec = motion,
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** 큰 타이틀 + 개수 pill. 0개면 pill을 숨긴다 (개편안 2 §2, 디자인 시스템 §1.3 숫자 강조) */
+@Composable
+private fun HomeTitle(count: Int) {
+    Row(
+        modifier = Modifier.padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.xxs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.title_home),
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.semantics { heading() },
+        )
+        if (count > 0) CountPill(count)
+    }
+}
+
+@Composable
+private fun CountPill(count: Int) {
+    val description = pluralStringResource(R.plurals.home_count, count, count)
+    Box(
+        modifier = Modifier
+            .heightIn(min = 28.dp)
+            .widthIn(min = 28.dp)
+            .background(MaterialTheme.colorScheme.onSurface, PillShape)
+            .padding(horizontal = 9.dp)
+            // TalkBack은 숫자만이 아니라 "5개"로 읽는다
+            .clearAndSetSemantics { contentDescription = description },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            count.toString(),
+            style = tabularNums(MaterialTheme.typography.titleSmall).copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.background,
+        )
+    }
+}
+```
+
+- [ ] **Step 7: 문자열을 바꾼다**
+
+ko·en 양쪽에서 `home_empty` 줄을 지우고 그 자리에 넣는다.
+
+ko:
+
+```xml
+    <string name="home_empty_title">아직 기록이 없어요</string>
+    <string name="home_empty_body">생각난 순간, 여기에 적어두세요.\n근처를 지날 때 알려드릴게요.</string>
+    <plurals name="home_count">
+        <item quantity="other">%d개</item>
+    </plurals>
+```
+
+en(앱 영어 용어 "note"에 맞춘다 — "구현에서 개편안 2와 다른 점" 5):
+
+```xml
+    <string name="home_empty_title">No notes yet</string>
+    <string name="home_empty_body">Jot it down the moment it comes to mind.\nWe\'ll remind you when you pass by.</string>
+    <plurals name="home_count">
+        <item quantity="one">%d note</item>
+        <item quantity="other">%d notes</item>
+    </plurals>
+```
+
+(`home_count`는 개수 pill의 TalkBack 설명이다 — 숫자만 읽지 않고 "5개"로 읽는다.)
+
+- [ ] **Step 8: 미리보기를 둔다**
+
+`ui/home/HomePreviews.kt`(목록+'항상 허용' 배너, 빈 상태, 긴 제목·많은 트리거의 큰 글꼴):
+
+```kotlin
+package com.recordofp.app.ui.home
+
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.tooling.preview.Preview
+import com.recordofp.app.domain.model.Reminder
+import com.recordofp.app.domain.model.TriggerSpec
+import com.recordofp.app.domain.model.TriggerType
+import com.recordofp.app.ui.permissions.ProtectionIssue
+import com.recordofp.app.ui.theme.LightDarkPreviews
+import com.recordofp.app.ui.theme.RecordOfPTheme
+
+// 홈 미리보기 — 라이트·다크 두 벌과 큰 글꼴 (디자인 시스템 §5, 개편안 2 목업 "홈")
+
+private fun reminder(id: Long, title: String, vararg triggers: TriggerSpec) =
+    Reminder(id = id, title = title, createdAt = 0, updatedAt = 0, triggers = triggers.toList())
+
+private fun category(id: String) = TriggerSpec(type = TriggerType.CATEGORY, categoryId = id)
+private fun place(name: String) = TriggerSpec(type = TriggerType.PLACE, placeName = name)
+
+private val sample = listOf(
+    reminder(1, "건전지 사기", category("convenience")),
+    reminder(2, "감기약 사기", category("pharmacy")),
+    reminder(3, "셔츠 맡기기", category("laundry"), place("크린토피아 역삼점")),
+    reminder(4, "택배 찾기", place("역삼동 무인택배함")),
+    reminder(5, "수납함 사기", category("daiso")),
+)
+
+/** 긴 제목·트리거가 많은 카드 — 제목 두 줄, 트리거 줄 한 줄에서 말줄임 */
+private val crowded = reminder(
+    6, "주말 집들이 선물로 디퓨저와 향초, 예쁜 컵 두 개를 한꺼번에 사기",
+    category("mart"), category("convenience"), category("cafe"), category("daiso"),
+    TriggerSpec(type = TriggerType.BRAND, brandKeyword = "GS25"),
+)
+
+@Composable
+private fun Home(items: List<Reminder>, issue: ProtectionIssue?) {
+    RecordOfPTheme {
+        HomeContent(
+            items = items,
+            issue = issue,
+            snackbarHostState = remember { SnackbarHostState() },
+            onAddClick = {},
+            onItemClick = {},
+            onNearbyClick = {},
+            onSettingsClick = {},
+            onComplete = {},
+        )
+    }
+}
+
+@LightDarkPreviews
+@Composable
+private fun HomeListPreview() = Home(sample, ProtectionIssue.BACKGROUND_LOCATION_OFF)
+
+@LightDarkPreviews
+@Composable
+private fun HomeEmptyPreview() = Home(emptyList(), issue = null)
+
+@Preview(name = "큰 글꼴", showBackground = true, fontScale = 2f)
+@Composable
+private fun HomeLargeFontPreview() = Home(listOf(crowded) + sample.take(2), issue = null)
+```
+
+- [ ] **Step 9: 전체 검증을 확인한다**
 
 Run: `./gradlew testDebugUnitTest lintDebug assembleDebug`
-Expected: 테스트 전부 통과, lint 오류 0, 빌드 성공
+Expected: 테스트 155개 통과, lint 오류 0·경고 25, 빌드 성공
 
-- [ ] **Step 7: 커밋한다**
+`HomePreviews.kt`의 미리보기를 개편안 2 목업 "홈 — 목록과 보호 배너", "홈 — 빈 상태"와 비교한다. 큰 글꼴에서 제목은 두 줄, 트리거 줄은 한 줄에서 말줄임되고 개수 pill이 잘리지 않아야 한다.
+
+- [ ] **Step 10: 커밋한다**
 
 ```bash
-git add android/app/src/main/java/com/recordofp/app/ui/common/BackButton.kt \
-  android/app/src/main/java/com/recordofp/app/ui/nearby/NearbyScreen.kt \
-  android/app/src/main/java/com/recordofp/app/ui/settings/DiagnosticsScreen.kt \
-  android/app/src/main/java/com/recordofp/app/ui/settings/SettingsScreen.kt \
-  android/app/src/main/java/com/recordofp/app/ui/editor/EditorScreen.kt \
-  android/app/src/main/AndroidManifest.xml \
-  android/app/src/main/java/com/recordofp/app/ui/AppNavHost.kt \
-  android/app/src/main/java/com/recordofp/app/data/repo/SettingsStore.kt \
+git add android/app/src/main/java/com/recordofp/app/ui/common/TriggerTile.kt \
+  android/app/src/main/java/com/recordofp/app/ui/home/ \
   android/app/src/main/res/values/strings.xml android/app/src/main/res/values-en/strings.xml \
-  android/app/src/test/java/com/recordofp/app/data/repo/NotificationPolicySettingsTest.kt
-git commit -m "fix: 뒤로 버튼 설명·키보드 가림·뒤로 연타 가드·정책 기본값 단일화" -m "TalkBack이 뒤로 버튼을 읽고, 키보드가 장소 검색란을 가리지 않으며, 연타해도 빈 화면이 되지 않는다.
-알림 정책 기본값은 EngineParams에서만 가져온다. (§4.5, §8, §10.2, 최종 리뷰 C2·M1)"
+  android/app/src/test/java/com/recordofp/app/ui/home/ReminderCardTest.kt
+git commit -m "feat: 홈 개편안 2 — 카테고리 타일 카드·개수 pill·빈 상태" -m "카드 왼쪽에 대표 트리거 타일(카테고리 → 특정 지점 → 브랜드)을 두고 트리거 이름을 한 줄로 잇는다.
+큰 타이틀 옆 개수 pill, P-핀과 카테고리 타일의 빈 상태, 표준 모션의 카드 등장·제거. 홈 본체를 HomeContent로 떼고 미리보기를 둔다. (개편안 2 §1.4·§2, 디자인 시스템 §1.3)"
+```
+
+---
+
+### Task 19: 주변 보기 — 그룹 타일, 지점 카드, 큰 거리 숫자
+
+개편안 2 §2 주변 보기를 그린다. 그룹 머리는 32dp 트리거 타일 + 이름(`titleMedium`) + 오른쪽 "N곳"이다. 그룹마다 카드 하나에 지점 행을 헤어라인으로 나눈다. 행은 64dp — 장소 이름과 "카카오맵에서 보기", 오른쪽에 거리 숫자(22 Bold tabular, 블루 글자)와 작은 단위다. 1km를 넘으면 숫자를 보조 글자색으로 낮춘다. 지금 그룹 머리는 이모지와 matchKey를 그대로 써서, 브랜드가 소문자("gs25")로 보인다. 뷰모델이 그룹마다 그릴 트리거(`TriggerVisual`)를 함께 내게 해 입력한 대소문자를 살린다. 화면 본체를 `NearbyContent`로 떼고 미리보기를 둔다.
+
+**Files:**
+- Modify: `android/app/src/main/java/com/recordofp/app/ui/nearby/NearbyViewModel.kt`
+- Modify: `android/app/src/main/java/com/recordofp/app/ui/common/DistanceBadge.kt`
+- Modify(전체 교체): `android/app/src/main/java/com/recordofp/app/ui/nearby/NearbyScreen.kt`
+- Create: `android/app/src/main/java/com/recordofp/app/ui/nearby/NearbyPreviews.kt`
+- Modify: `android/app/src/main/res/values/strings.xml`, `android/app/src/main/res/values-en/strings.xml`
+- Test: `android/app/src/test/java/com/recordofp/app/ui/nearby/NearbyViewModelTest.kt`, `android/app/src/test/java/com/recordofp/app/ui/common/DistanceFormatTest.kt` (생성)
+
+**Interfaces:**
+- Consumes: Task 16의 `TriggerVisual`·`categoryVisual`·`label()`, `AppTextStyles.numberLarge`, `Spacing`, `LightDarkPreviews`; Task 18의 `TriggerTile`; Task 15의 `BackButton`
+- Produces: `data class NearbyGroup(val matchKey: String, val visual: TriggerVisual, val pois: List<PoiCandidate>)`, `fun distanceParts(distanceM: Int): Pair<String, String>`, `fun isFarDistance(distanceM: Int): Boolean`, `@Composable fun NearbyContent(state: NearbyUiState, onBack: () -> Unit, onRefresh: () -> Unit, onPoiClick: (PoiCandidate) -> Unit)`
+
+- [ ] **Step 1: 실패 테스트를 쓴다**
+
+`NearbyViewModelTest`에 import `com.recordofp.app.ui.common.TriggerVisual`을 더하고 테스트를 추가한다.
+
+```kotlin
+    @Test
+    fun `그룹은 머리에 그릴 트리거를 함께 낸다 - 브랜드는 입력한 대소문자 그대로`() = runTest {
+        val vm = vm(
+            listOf(
+                TriggerSpec(id = 1, reminderId = 1, type = TriggerType.BRAND, brandKeyword = "GS25"),
+                TriggerSpec(id = 2, reminderId = 1, type = TriggerType.CATEGORY, categoryId = "daiso"),
+                TriggerSpec(id = 3, reminderId = 1, type = TriggerType.CATEGORY, categoryId = "pharmacy"),
+                TriggerSpec(
+                    id = 4, reminderId = 1, type = TriggerType.PLACE,
+                    placeName = "회사 우체국", placePoint = GeoPoint(37.509, 127.0),
+                ),
+            ),
+            location = GeoPoint(37.5, 127.0),
+        )
+        vm.load()
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val visuals = vm.state.value.groups.associate { it.matchKey to it.visual }
+        assertEquals(TriggerVisual.BrandKeyword("GS25"), visuals["brand:gs25"])
+        assertEquals(TriggerVisual.BrandPreset("daiso"), visuals["cat:daiso"])
+        assertEquals(TriggerVisual.Category("pharmacy"), visuals["cat:pharmacy"])
+        assertEquals(TriggerVisual.Place("회사 우체국"), visuals["place:4"])
+    }
+```
+
+`android/app/src/test/java/com/recordofp/app/ui/common/DistanceFormatTest.kt`:
+
+```kotlin
+package com.recordofp.app.ui.common
+
+import java.util.Locale
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class DistanceFormatTest {
+
+    @Test
+    fun `1km 미만은 m, 이상은 km 한 자리로 나눈다`() {
+        assertEquals("999" to "m", distanceParts(999))
+        assertEquals("1.0" to "km", distanceParts(1000))
+        assertEquals("1.1" to "km", distanceParts(1100))
+        assertEquals("180m", formatDistance(180))
+        assertEquals("2.4km", formatDistance(2400))
+    }
+
+    @Test
+    fun `1km를 넘어야 멀다`() {
+        assertFalse(isFarDistance(1000))
+        assertTrue(isFarDistance(1001))
+    }
+
+    @Test
+    fun `기기 언어가 쉼표 소수점이어도 점으로 쓴다`() {
+        val saved = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.GERMANY)
+            assertEquals("1.1" to "km", distanceParts(1100))
+        } finally {
+            Locale.setDefault(saved)
+        }
+    }
+}
+```
+
+- [ ] **Step 2: 실패를 확인한다**
+
+Run: `./gradlew testDebugUnitTest --tests "*.NearbyViewModelTest" --tests "*.DistanceFormatTest"`
+Expected: 컴파일 실패 — `NearbyGroup.visual`, `distanceParts`, `isFarDistance`가 없다.
+
+- [ ] **Step 3: 그룹에 그릴 트리거를 싣는다**
+
+`NearbyViewModel.kt`를 고친다(import `com.recordofp.app.ui.common.TriggerVisual`, `com.recordofp.app.ui.common.categoryVisual`).
+
+```kotlin
+/** 주변 보기 그룹 — 트리거 하나(matchKey)와 그 근처 지점들. visual은 그룹 머리에 그릴 타일·이름 (개편안 2 §2) */
+data class NearbyGroup(val matchKey: String, val visual: TriggerVisual, val pois: List<PoiCandidate>)
+```
+
+`load()` 안의 두 군데를 바꾼다.
+
+```kotlin
+                        if (pois.isEmpty()) null else NearbyGroup(req.matchKey, req.visual(), pois)
+```
+
+```kotlin
+                    is PlaceRequest -> NearbyGroup(
+                        req.matchKey,
+                        TriggerVisual.Place(req.name.orEmpty()),
+                        listOf(
+```
+
+파일 끝에 더한다.
+
+```kotlin
+
+/** 그룹 머리에 그릴 트리거 — 브랜드는 matchKey(소문자)가 아니라 입력한 검색어 그대로 보인다 */
+private fun QueryRequest.visual(): TriggerVisual =
+    if (matchKey.startsWith("cat:")) categoryVisual(matchKey.removePrefix("cat:")) else TriggerVisual.BrandKeyword(query)
+```
+
+(`TriggerResolver`는 카테고리 요청의 `query`에 카카오 코드(CS2 등)를, 브랜드 요청에는 앞뒤 공백만 뺀 입력 그대로를 싣는다. 그래서 카테고리는 matchKey에서 id를, 브랜드는 `query`를 쓴다.)
+
+- [ ] **Step 4: 거리를 숫자와 단위로 나눈다**
+
+`ui/common/DistanceBadge.kt`를 고친다(import `java.util.Locale`). KDoc 둘째 줄을 `숫자는 onPrimaryContainer — 연블루 위 4.5:1 (개편안 2 §1.1). 에디터 장소 검색 결과가 쓴다.`로 바꾼다(주변 보기는 이제 큰 숫자를 쓴다). `formatDistance`를 바꾸고 두 함수를 더한다.
+
+```kotlin
+/** 999m까지는 m, 그 위는 km 한 자리 — 배지 폭을 짧게 유지한다 */
+fun formatDistance(distanceM: Int): String = distanceParts(distanceM).let { (number, unit) -> number + unit }
+
+/**
+ * 거리를 숫자와 단위로 나눈다 — 주변 보기는 숫자를 크게, 단위를 작게 그린다 (개편안 2 §2).
+ * 소수점은 기기 언어와 상관없이 점으로 쓴다(앱 문자열은 ko·en뿐이다).
+ */
+fun distanceParts(distanceM: Int): Pair<String, String> =
+    if (distanceM < 1000) "$distanceM" to "m" else "%.1f".format(Locale.ROOT, distanceM / 1000.0) to "km"
+
+/** 1km를 넘으면 걸어서 들르기엔 멀다 — 주변 보기는 숫자를 보조 글자색으로 낮춘다 (개편안 2 §2) */
+fun isFarDistance(distanceM: Int): Boolean = distanceM > FAR_DISTANCE_M
+
+private const val FAR_DISTANCE_M = 1000
+```
+
+Run: `./gradlew testDebugUnitTest --tests "*.NearbyViewModelTest" --tests "*.DistanceFormatTest"` → PASS
+
+- [ ] **Step 5: 문자열을 더한다**
+
+`nearby_open_map` 다음 줄에 넣는다.
+
+ko:
+
+```xml
+    <plurals name="nearby_place_count">
+        <item quantity="other">%d곳</item>
+    </plurals>
+```
+
+en:
+
+```xml
+    <plurals name="nearby_place_count">
+        <item quantity="one">%d place</item>
+        <item quantity="other">%d places</item>
+    </plurals>
+```
+
+- [ ] **Step 6: 주변 보기 화면을 다시 쓴다**
+
+`ui/nearby/NearbyScreen.kt` 전체를 바꾼다. 그룹 머리의 이모지(`TriggerCatalog.emoji`)와 `DistanceBadge`는 더 쓰지 않는다.
+
+```kotlin
+package com.recordofp.app.ui.nearby
+
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.recordofp.app.R
+import com.recordofp.app.domain.engine.PoiCandidate
+import com.recordofp.app.ui.common.BackButton
+import com.recordofp.app.ui.common.TriggerTile
+import com.recordofp.app.ui.common.distanceParts
+import com.recordofp.app.ui.common.isFarDistance
+import com.recordofp.app.ui.common.label
+import com.recordofp.app.ui.theme.AppTextStyles
+import com.recordofp.app.ui.theme.Spacing
+import kotlin.math.roundToInt
+
+/**
+ * 백그라운드 권한 없이도(위치 '사용 중'만으로) 앱을 열면 지금 주변에서 처리할 수 있는 일이
+ * 보이는 화면 — 열화 모드의 핵심 (설계 §3.1, §4.2). 지도 SDK는 v1.1 — 카카오맵 앱 딥링크로
+ * 대체한다(§3.2). 모양은 개편안 2 §2 주변 보기 — 그룹 머리 타일, 그룹당 카드 하나, 큰 거리 숫자.
+ */
+@Composable
+fun NearbyScreen(
+    onBack: () -> Unit = {},
+    viewModel: NearbyViewModel = hiltViewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    LaunchedEffect(Unit) { viewModel.load() }
+    NearbyContent(
+        state = state,
+        onBack = onBack,
+        onRefresh = viewModel::load,
+        onPoiClick = { openInKakaoMap(context, it) },
+    )
+}
+
+/** 주변 보기 본체 — 상태와 동작만 받는다(미리보기는 NearbyPreviews.kt) */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NearbyContent(
+    state: NearbyUiState,
+    onBack: () -> Unit,
+    onRefresh: () -> Unit,
+    onPoiClick: (PoiCandidate) -> Unit,
+) {
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                navigationIcon = { BackButton(onClick = onBack) },
+                title = { Text(stringResource(R.string.title_nearby)) },
+                actions = {
+                    IconButton(onClick = onRefresh) {
+                        Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.action_refresh))
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+            )
+        },
+    ) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding)) {
+            when {
+                state.loading -> CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.align(Alignment.Center),
+                )
+                state.locationUnavailable -> CenteredNote(stringResource(R.string.nearby_no_location))
+                state.groups.isEmpty() -> CenteredNote(stringResource(R.string.nearby_empty))
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = Spacing.screen, end = Spacing.screen, top = Spacing.xs, bottom = Spacing.xl,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.l),
+                ) {
+                    items(state.groups, key = { it.matchKey }) { group ->
+                        NearbyGroupSection(group = group, onPoiClick = onPoiClick)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.CenteredNote(text: String) {
+    Text(
+        text,
+        textAlign = TextAlign.Center,
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.align(Alignment.Center).padding(Spacing.xl),
+    )
+}
+
+/** 그룹 — 머리(32dp 타일 + 이름 + "N곳") 아래 카드 하나에 지점 행을 헤어라인으로 나눈다 */
+@Composable
+private fun NearbyGroupSection(group: NearbyGroup, onPoiClick: (PoiCandidate) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        Row(
+            modifier = Modifier.semantics(mergeDescendants = true) { heading() },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            TriggerTile(group.visual, size = 32.dp, cornerRadius = 10.dp, iconSize = 18.dp)
+            Text(group.visual.label(), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(
+                pluralStringResource(R.plurals.nearby_place_count, group.pois.size, group.pois.size),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surface) {
+            Column {
+                group.pois.forEachIndexed { index, poi ->
+                    if (index > 0) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 18.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                    }
+                    NearbyPoiRow(poi = poi, onClick = { onPoiClick(poi) })
+                }
+            }
+        }
+    }
+}
+
+/** 지점 행 64dp — 이름 + "카카오맵에서 보기", 오른쪽에 거리 숫자 22 Bold + 단위. 1km를 넘으면 숫자를 보조 글자색으로 */
+@Composable
+private fun NearbyPoiRow(poi: PoiCandidate, onClick: () -> Unit) {
+    val distanceM = poi.distanceM.roundToInt()
+    val (number, unit) = distanceParts(distanceM)
+    val numberColor = if (isFarDistance(distanceM)) {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    }
+    val openMapLabel = stringResource(R.string.nearby_open_map)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+            .clickable(onClickLabel = openMapLabel, onClick = onClick)
+            .padding(horizontal = 18.dp, vertical = Spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(poi.name, style = MaterialTheme.typography.titleSmall)
+            Text(openMapLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Row {
+            Text(number, style = AppTextStyles.numberLarge, color = numberColor, modifier = Modifier.alignByBaseline())
+            Text(
+                unit,
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                color = numberColor,
+                modifier = Modifier.alignByBaseline().padding(start = 1.dp),
+            )
+        }
+    }
+}
+
+/** 카카오맵 앱으로 지점 위치를 연다. 미설치 등으로 실패하면 웹 지도로 대체한다 (설계 §3.2) */
+private fun openInKakaoMap(context: Context, poi: PoiCandidate) {
+    val uri = "kakaomap://look?p=${poi.point.lat},${poi.point.lng}"
+    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri))) }
+        .onFailure { // 카카오맵 미설치 → 웹 지도
+            context.startActivity(
+                Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("https://map.kakao.com/link/map/${Uri.encode(poi.name)},${poi.point.lat},${poi.point.lng}"),
+                ),
+            )
+        }
+}
+```
+
+- [ ] **Step 7: 미리보기를 둔다**
+
+`ui/nearby/NearbyPreviews.kt`(목록 — 1.1km 다이소 행은 보조색, 위치 없음, 큰 글꼴):
+
+```kotlin
+package com.recordofp.app.ui.nearby
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
+import com.recordofp.app.domain.engine.PoiCandidate
+import com.recordofp.app.domain.model.GeoPoint
+import com.recordofp.app.ui.common.TriggerVisual
+import com.recordofp.app.ui.theme.LightDarkPreviews
+import com.recordofp.app.ui.theme.RecordOfPTheme
+
+// 주변 보기 미리보기 — 라이트·다크 두 벌과 큰 글꼴 (디자인 시스템 §5, 개편안 2 목업 "주변 보기")
+
+private fun poi(name: String, distanceM: Double) = PoiCandidate(name, name, GeoPoint(37.5, 127.03), distanceM)
+
+private val groups = listOf(
+    NearbyGroup(
+        "cat:convenience", TriggerVisual.Category("convenience"),
+        listOf(poi("CU 역삼점", 180.0), poi("GS25 역삼힐스점", 240.0), poi("세븐일레븐 역삼중앙점", 410.0)),
+    ),
+    NearbyGroup("cat:pharmacy", TriggerVisual.Category("pharmacy"), listOf(poi("온누리약국", 650.0), poi("역삼365약국", 720.0))),
+    NearbyGroup("cat:daiso", TriggerVisual.BrandPreset("daiso"), listOf(poi("다이소 역삼점", 1100.0))),
+)
+
+@Composable
+private fun Nearby(state: NearbyUiState) {
+    RecordOfPTheme { NearbyContent(state = state, onBack = {}, onRefresh = {}, onPoiClick = {}) }
+}
+
+@LightDarkPreviews
+@Composable
+private fun NearbyListPreview() = Nearby(NearbyUiState(loading = false, groups = groups))
+
+@LightDarkPreviews
+@Composable
+private fun NearbyNoLocationPreview() = Nearby(NearbyUiState(loading = false, locationUnavailable = true))
+
+@Preview(name = "큰 글꼴", showBackground = true, fontScale = 2f)
+@Composable
+private fun NearbyLargeFontPreview() = Nearby(NearbyUiState(loading = false, groups = groups.take(1)))
+```
+
+- [ ] **Step 8: 전체 검증을 확인한다**
+
+Run: `./gradlew testDebugUnitTest lintDebug assembleDebug`
+Expected: 테스트 159개 통과, lint 오류 0·경고 25, 빌드 성공
+
+미리보기를 개편안 2 목업 "주변 보기"와 비교한다.
+
+- [ ] **Step 9: 커밋한다**
+
+```bash
+git add android/app/src/main/java/com/recordofp/app/ui/nearby/ \
+  android/app/src/main/java/com/recordofp/app/ui/common/DistanceBadge.kt \
+  android/app/src/main/res/values/strings.xml android/app/src/main/res/values-en/strings.xml \
+  android/app/src/test/java/com/recordofp/app/ui/nearby/NearbyViewModelTest.kt \
+  android/app/src/test/java/com/recordofp/app/ui/common/DistanceFormatTest.kt
+git commit -m "feat: 주변 보기 개편안 2 — 그룹 타일·지점 카드·큰 거리 숫자" -m "그룹 머리에 트리거 타일과 'N곳', 그룹마다 카드 하나에 지점 행, 거리 숫자를 크게(1km를 넘으면 보조색) 보인다.
+브랜드 그룹은 입력한 대소문자 그대로, 소수점은 기기 언어와 상관없이 점으로 쓴다. 본체를 NearbyContent로 떼고 미리보기를 둔다. (§3.1, 개편안 2 §2)"
+```
+
+---
+
+### Task 20: 근처 알림 — 제목의 이모지를 빼고 브랜드 블루를 입힌다 (+ 묶음 D 문서 마감)
+
+개편안 2 §2·§3 근처 알림. 알림은 시스템 템플릿을 그대로 쓰므로 바꿀 것은 둘이다. 제목 앞의 📍를 뺀다(작은 아이콘 P-핀과 강조색이 이미 "근처 알림"임을 알린다). `setColor`로 작은 아이콘·앱 이름에 브랜드 블루를 입힌다. platform은 `ui/theme`을 import하지 않으므로 강조색은 색 리소스로 둔다. 여러 항목 알림(InboxStyle 목록, [오늘 그만])은 Task 11 그대로다. 묶음 D가 바꾼 동작과 모양을 설계 문서·디자인 시스템에 반영하는 문서 단계도 이 태스크에 둔다.
+
+**Files:**
+- Modify: `android/app/src/main/res/values/strings.xml`, `android/app/src/main/res/values-en/strings.xml`
+- Modify: `android/app/src/main/res/values/colors.xml`, `android/app/src/main/res/values-night/colors.xml`
+- Modify: `android/app/src/main/java/com/recordofp/app/platform/notify/NearbyNotifier.kt`
+- Test: `android/app/src/test/java/com/recordofp/app/ui/StringResourcesTest.kt`
+- Modify(문서 단계): `docs/design/design-system.md`(1.3), `docs/superpowers/specs/2026-08-31-record-of-p-design.md`(1.4), `CLAUDE.md`, 이 계획의 머리말
+
+**Interfaces:**
+- Consumes: Task 12의 `StringResourcesTest`, Task 11의 `NearbyNotifier.show(group)`
+- Produces: 색 리소스 `R.color.notification_accent`(라이트 `#1B6EF3`, 다크 `#5B95F8`)
+
+- [ ] **Step 1: 실패 테스트를 쓴다**
+
+`StringResourcesTest`에 import `org.junit.Assert.assertTrue`를 더하고 테스트를 추가한다.
+
+```kotlin
+    @Test
+    fun `근처 알림 제목에는 이모지가 없다`() {
+        // 개편안 2 §3 — 작은 아이콘(P-핀)과 강조색이 이미 "근처 알림"임을 알린다
+        for (path in listOf("src/main/res/values/strings.xml", "src/main/res/values-en/strings.xml")) {
+            val text = File(path).readText()
+            for (key in listOf("notif_nearby_title", "notif_nearby_title_dist")) {
+                val value = Regex("""<string name="$key">([^<]*)</string>""").find(text)!!.groupValues[1]
+                assertTrue("$path $key = $value", value.codePoints().noneMatch { it >= 0x1F000 })
+            }
+        }
+    }
+```
+
+- [ ] **Step 2: 실패를 확인한다**
+
+Run: `./gradlew testDebugUnitTest --tests "*.StringResourcesTest"`
+Expected: FAIL — `notif_nearby_title = 📍 %1$s 근처예요`
+
+- [ ] **Step 3: 제목에서 이모지를 뺀다**
+
+ko:
+
+```xml
+    <string name="notif_nearby_title">%1$s 근처예요</string>
+    <string name="notif_nearby_title_dist">%1$s 근처예요 (약 %2$dm)</string>
+```
+
+en:
+
+```xml
+    <string name="notif_nearby_title">Near %1$s</string>
+    <string name="notif_nearby_title_dist">Near %1$s (~%2$dm)</string>
+```
+
+Run: `./gradlew testDebugUnitTest --tests "*.StringResourcesTest"` → PASS
+
+- [ ] **Step 4: 알림에 브랜드 블루를 입힌다**
+
+`res/values/colors.xml`의 `</resources>` 앞에 넣는다.
+
+```xml
+    <!-- 근처 알림 강조색(setColor) = primary. platform은 ui/theme을 쓰지 않으므로 리소스로 둔다 (개편안 2 §2) -->
+    <color name="notification_accent">#1B6EF3</color>
+```
+
+`res/values-night/colors.xml`의 `</resources>` 앞에 넣는다.
+
+```xml
+    <!-- 근처 알림 강조색 다크 = 다크 primary -->
+    <color name="notification_accent">#5B95F8</color>
+```
+
+`NearbyNotifier.show()`의 `.setSmallIcon(R.drawable.ic_stat_pin)` 다음 줄에 넣는다(import `androidx.core.content.ContextCompat`).
+
+```kotlin
+            // 작은 아이콘·앱 이름에 브랜드 블루 — 제목의 이모지 대신 앱을 알아보게 한다 (개편안 2 §2)
+            .setColor(ContextCompat.getColor(context, R.color.notification_accent))
+```
+
+- [ ] **Step 5: 전체 검증을 확인한다**
+
+Run: `./gradlew testDebugUnitTest lintDebug assembleDebug`
+Expected: 테스트 160개 통과, lint 오류 0·경고 25, 빌드 성공
+
+- [ ] **Step 6: 커밋한다**
+
+```bash
+git add android/app/src/main/res/values/strings.xml android/app/src/main/res/values-en/strings.xml \
+  android/app/src/main/res/values/colors.xml android/app/src/main/res/values-night/colors.xml \
+  android/app/src/main/java/com/recordofp/app/platform/notify/NearbyNotifier.kt \
+  android/app/src/test/java/com/recordofp/app/ui/StringResourcesTest.kt
+git commit -m "feat: 근처 알림 제목의 이모지를 빼고 브랜드 블루를 입힌다" -m "작은 아이콘 P-핀과 강조색(setColor)으로 앱을 알아보게 하고, 제목은 장소 이름으로 시작한다. (§4.1, 개편안 2 §2·§3)"
+```
+
+- [ ] **Step 7: 설계 문서 1.4, 디자인 시스템 1.3, CLAUDE.md, 계획 머리말을 갱신하고 커밋한다 (묶음 D 전체 반영)**
+
+설계 문서와 디자인 시스템은 살아있는 문서다(CLAUDE.md 문서 규칙). 묶음 D(Task 12~20)가 바꾼 동작과 모양을 반영한다. 설계 문서의 §번호는 바꾸지 않는다.
+
+`docs/superpowers/specs/2026-08-31-record-of-p-design.md`:
+
+1. §4.1 1번(`1. **기록**: …마찰이 낮아야 "생각난 순간 기록" 습관이 생긴다.`) 끝에 이어 쓴다.
+
+```text
+ 브랜드는 입력만 하고 [추가]를 누르지 않아도 저장할 때 함께 추가된다. 저장을 연타해도 한 번만 저장되고, 저장이 실패하면 입력을 그대로 둔 채 알린다.
+```
+
+2. §4.1 2번의 `"📍 CU 역삼점 근처예요 (약 80m) · '건전지 사기' 외 1건"`을 `"CU 역삼점 근처예요 (약 80m) · '건전지 사기' 외 1건"(작은 아이콘 P-핀과 브랜드 블루로 앱을 알아본다)`으로 바꾼다.
+
+3. §4.1 3번 전체를 바꾼다.
+
+```text
+3. **처리**: 알림에서 즉시 완료 처리하거나, 앱에서 시작→끝 스와이프로 완료한다(TalkBack은 카드의 "완료" 동작). 완료하면 [실행 취소] 스낵바가 잠시 뜬다. 완료 항목은 보관함으로.
+```
+
+4. §4.2 표 아래 첫 항목(`- Android 11+에서 백그라운드 위치는 시스템 설정에서만 부여 가능 → 업셀 카드는 설정 화면 딥링크 + 단계별 안내 이미지로 구성한다.`)을 바꾼다.
+
+```text
+- Android 11+에서 백그라운드 위치는 시스템 설정에서만 부여 가능 → 업셀은 홈 보호 배너로 한다: [설정 열기](앱 상세 설정 딥링크)와 단계 칩(설정 → 권한 → 위치 → 항상 허용).
+```
+
+5. §4.3 문단의 `배터리 최적화 예외를 뺀 항목 중 하나라도 꺼지면 홈 상단에 배너로 노출한다(배터리 예외는 권장 사항이라 배너에 넣지 않는다).` 다음에 이어 쓴다.
+
+```text
+ 배너는 꺼진 것 하나를 우선순위(알림 → 정확한 위치 → 항상 허용 → 기기 위치)대로 골라 이름으로 알리고, 그것을 고칠 시스템 화면을 바로 연다. 빠른 설정에서 기기 위치를 켜고 끄는 것도 화면이 보이는 동안 바로 반영한다.
+```
+
+6. §8 둘째 항목(`- TalkBack 콘텐츠 설명, 48dp 터치 타깃, 폰트 스케일 대응(모든 텍스트 sp).`) 끝에 이어 쓴다.
+
+```text
+ 스와이프 동작(완료)은 사용자 지정 동작으로도 제공한다. 색은 아이콘·이름과 함께 쓰고(색만으로 구분하지 않는다), 글자 대비는 WCAG 4.5:1을 넘긴다(디자인 시스템 §2.1).
+```
+
+7. 머리말 표: `| 버전 | 1.3 |` → `| 버전 | 1.4 |`, `최종 수정`을 커밋하는 날짜로 바꾼다.
+8. 끝의 변경 이력 표에 한 행을 더한다(날짜는 커밋하는 날짜).
+
+```text
+| 1.4 | <날짜> | §4.1, §4.2, §4.3, §8 | 에디터 저장 가드(입력 중 브랜드 보존·연타 방지·실패 안내), 근처 알림 제목의 이모지 제거와 브랜드 블루, 한 방향 스와이프 완료와 [실행 취소]·TalkBack 완료, 보호 배너(꺼진 것 하나·설정 바로 열기·단계 칩·빠른 설정 반영), 색 대비와 색만으로 구분하지 않기 | 보강 계획 묶음 D(T12~T20), 디자인 개편안 2, 최종 리뷰 I3·I5·I6·I7, 묶음 B 인계 |
+```
+
+`docs/design/design-system.md`:
+
+1. 머리말 표: `| 버전 | 1.2 |` → `| 버전 | 1.3 |`, `최종 수정`을 커밋하는 날짜로 바꾼다. `구현` 칸의 아이콘 부분을 아래로 바꾼다.
+
+```text
+아이콘 `res/drawable/ic_cat_*`·`ic_trigger_*`·`ic_banner_*`·`ic_alert_error`
+```
+2. §2.1 아래 항목들 끝에 한 줄을 더한다.
+
+```text
+- 근처 알림 강조색(`setColor`)은 `res/values{,-night}/colors.xml`의 `notification_accent`다. primary와 같은 값이고, platform 코드가 `ui/theme`을 쓰지 않도록 리소스로 둔다.
+```
+
+3. §2.7 표 끝에 두 행을 더한다.
+
+```text
+| 보호 배너: 알림 꺼짐 · 정확한 위치 · 기기 위치 꺼짐 ('항상 허용'은 `ic_trigger_place`) | `ic_banner_notifications_off` · `ic_banner_precise` · `ic_banner_location_off` | notifications_off · my_location · location_off |
+| 저장 실패 | `ic_alert_error` | error |
+```
+
+4. §3 첫 줄(화면마다 private으로 두고 쓰는 것이 많다로 시작하는 문장)은 그대로 두고, 표 전체를 바꾼다.
+
+```text
+| 컴포넌트 | 위치 | 쓰임 |
+|---|---|---|
+| 트리거 시각 `TriggerVisual` · 트리거 타일 `TriggerTile` | `ui/common` | 트리거 → 타일 색·아이콘·이름. 타일은 홈 카드 48dp, 빈 상태 44dp, 주변 보기 그룹 머리 32dp |
+| 기록 카드 `ReminderRow` | home(`ReminderCard.kt`) | 대표 트리거 타일(카테고리 → 특정 지점 → 브랜드) + 제목(두 줄) + 트리거 이름 줄(한 줄). 시작→끝 스와이프 완료(성공 면·원 체크), TalkBack 사용자 지정 동작 "완료" |
+| 개수 pill | home | 큰 타이틀 옆, 잉크 바탕·종이 글자 15 Bold tabular. 0개면 숨김, TalkBack은 "N개" |
+| 빈 상태 `HomeEmptyState` | home | 연블루 원 안 P-핀 + 카테고리 타일 셋(편의점·약국·카페), 제목 20 Bold + 본문 두 줄 |
+| 보호 배너 `ProtectionBanner` | home | 앰버 면 20dp, 36dp 원 아이콘, 제목·본문, '항상 허용' 단계 칩(마지막만 강조), [설정 열기] pill |
+| 실행 취소 스낵바 `UndoSnackbar` | home | inverse 면 16dp, 성공 체크 원, [실행 취소](inversePrimary) |
+| 확장 FAB "＋ 기록" | home | 새 기록. 스낵바가 뜨면 위로 올라간다 |
+| 거리 배지 `DistanceBadge` | `ui/common` | 에디터 장소 결과 — 연블루 pill + onPrimaryContainer 숫자, 999m 넘으면 km 한 자리 |
+| 주변 보기 그룹 `NearbyGroupSection` · 지점 행 `NearbyPoiRow` | nearby | 32dp 타일 + 이름 + "N곳", 그룹마다 카드 하나에 헤어라인 행(64dp). 거리 숫자 22 Bold(1km 넘으면 보조색) + 단위 |
+| TopAppBar · 뒤로 `BackButton` | editor, settings, nearby, diagnostics · `ui/common` | 상태바 인셋을 처리하는 상단 바. 에디터는 ✕ · 제목 · 저장(onPrimaryContainer), 나머지는 뒤로(TalkBack "뒤로") · 제목 |
+| 에디터 `EditorSection` · `EditorField` · `CategoryChip` · `RemovableChip` · `AddBrandButton` · `SearchPlaceButton` · `SaveFailedNotice` · `PlaceResultCard` | editor(`EditorComponents.kt`) | 섹션 제목 15 SemiBold, 카드 바탕 입력(1dp 테두리·포커스 2dp 블루, 56dp), 카테고리 칩(선택 = tint + ink 테두리 + 체크), 브랜드 [추가]·안내, 고른 브랜드(회색)·지점(연블루) 칩, 저장 실패 오류 면 |
+| 섹션 레이블 `SectionLabel` | settings | labelMedium. 에디터는 섹션 제목으로 바뀌어 설정에만 남았다 |
+| 그룹 카드 `GroupCard` · 상태 pill `StatusPill` | settings | 보호 상태, 알림 정책, 문제 해결 묶음. pill은 "켜짐"/"꺼짐" |
+| 진단 행 `DiagnosticsRow` | diagnostics | 결과별 8dp 컬러 도트: APPLIED·PASS 성공색, BLOCK·FAILED·ERROR 오류색, 나머지(STOOD_DOWN·STALE 등) 테두리 회색 |
+| 핀 그래픽 `PinMarkGraphic` · 왜 카드 `WhyCard` · 페이지 도트 `PageDots` · 하단 버튼 `PrimaryButton` | onboarding | 단계별 권한 안내 |
+```
+
+5. 끝의 변경 이력 표 맨 위에 한 행을 더한다.
+
+```text
+| 1.3 | <날짜> | §2.1, §2.7, §3 | 개편안 2 컴포넌트 반영 — 카테고리 타일 기록 카드·개수 pill·빈 상태, 보호 배너, 실행 취소 스낵바, 에디터 컴포넌트, 주변 보기 그룹·행, 트리거 타일·뒤로 버튼 공통화, 알림 강조색, 배너·오류 아이콘 | 개편안 2 §2, 보강 계획 Task 13·14·17~20 |
+```
+
+`CLAUDE.md`:
+
+- "문서 목록"의 "디자인 개편안 2" 줄 끝 문장(Task 16에서 고친 "토큰은 디자인 시스템 1.2로 옮겼고, 화면은 묶음 D(…)에서 바꾼다.")을 바꾼다.
+
+```text
+토큰과 컴포넌트는 디자인 시스템 1.2·1.3으로 옮겼다(묶음 D). 실기기 라이트·다크 스크린샷 확인이 남았다.
+```
+
+- "두 개의 핵심 파이프라인"의 2번(이벤트) 줄에서 `펜스 단위로 묶어 알림 1건 발행(알림 id도 펜스 기준).`을 아래로 바꾼다.
+
+```text
+펜스 단위로 묶어 알림 1건 발행(알림 id도 펜스 기준, 강조색은 `R.color.notification_accent`).
+```
+
+이 계획 파일 머리말의 `상태`를 바꾼다.
+
+```text
+진행 중 — 묶음 A·B·C 병합(PR #3·#4·#5), 묶음 D(Task 12~20) 구현 완료(`feat/hardening-ui`, 최종 리뷰 전)
+```
+
+```bash
+git add docs/superpowers/specs/2026-08-31-record-of-p-design.md docs/design/design-system.md CLAUDE.md \
+  docs/superpowers/plans/2026-10-03-v1-hardening-port.md
+git commit -m "docs: 설계 문서 1.4·디자인 시스템 1.3 — 묶음 D 반영" -m "에디터 저장 가드, 알림 제목·강조색, 한 방향 스와이프와 실행 취소, 보호 배너, 접근성(사용자 지정 동작·색 대비).
+개편안 2 컴포넌트를 디자인 시스템 §3에 옮긴다. (§4.1, §4.2, §4.3, §8)"
 ```
 
 ---
 
 ## 마무리 — 사용자 기기 확인 목록
 
-각 묶음 PR 본문에는 아래 목록 중 그 묶음과 관련된 항목 번호를 적는다. 네 묶음이 모두 병합되면 사용자가 실기기에서 한꺼번에 확인한다. `tools/device/e2e.sh`(macOS는 `ADB=~/Library/Android/sdk/platform-tools/adb`)와 진단 화면(설정 → 문제 해결)을 쓴다. 확인한 결과는 `docs/superpowers/notes/`에 2차 검증 노트로 남긴다.
+각 묶음 PR 본문에는 아래 목록 중 그 묶음과 관련된 항목 번호를 적는다(묶음 D는 4·8~12·16~20). 네 묶음이 모두 병합되면 사용자가 실기기에서 한꺼번에 확인한다. `tools/device/e2e.sh`(macOS는 `ADB=~/Library/Android/sdk/platform-tools/adb`)와 진단 화면(설정 → 문제 해결)을 쓴다. 확인한 결과는 `docs/superpowers/notes/`에 2차 검증 노트로 남긴다.
 
 1. **재부팅**: `adb reboot` → 잠금 해제 → 진단에 `BOOT → APPLIED`가 남고 note가 `full-resync`인지 확인한다.
 2. **위치 껐다 켜기**: 기기 위치를 끄면 진단에 `FENCE_LOST`가 생기고, 홈 배너는 "기기 위치가 꺼져 있어요"가 된다. 위치를 켜는 것만으로는 재배치가 바로 돌지 않는다. 다시 켠 뒤 앱을 열면 `APP_OPEN → APPLIED`(full-resync)가, 열지 않으면 백오프 재시도(15분·30분·1시간…) 때 `FENCE_LOST → APPLIED`(full-resync)가 남는다.
 3. **부팅 직후 오프라인**: 비행기 모드로 재부팅 → `BOOT → FAILED`, note가 `restored-from-mirror`로 시작하는지 확인한다. 네트워크를 켜면 재시도 후 APPLIED가 된다.
-4. **'항상 허용' 해제와 재허용**: 해제하면 진단에 `STOOD_DOWN · ACCESS_BACKGROUND_LOCATION`이 남고, 홈 배너가 단계 안내를 담은 업셀 카드가 된다. [설정 열기]로 다시 허용하고 돌아오면 곧바로 `APP_OPEN → APPLIED`가 남는다.
+4. **'항상 허용' 해제와 재허용**: 해제하면 진단에 `STOOD_DOWN · ACCESS_BACKGROUND_LOCATION`이 남고, 홈 배너가 단계 칩(설정 → 권한 → 위치 → 항상 허용)을 담은 업셀 카드가 된다. [설정 열기]로 다시 허용하고 돌아오면 곧바로 `APP_OPEN → APPLIED`가 남는다.
 5. **근처 알림 채널만 끄기**: 알림을 길게 눌러 채널을 끄면 대시보드의 알림 행이 꺼짐이 된다. 이벤트가 오면 `BLOCK_NOTIFICATIONS_OFF`가 남고, 하루 상한은 줄지 않는다.
 6. **같은 항목이 두 펜스에 걸릴 때**: (a) 한 가게를 PLACE로도, 카테고리로도 걸어 두고 그 가게에 가면 PLACE 진입 알림이 한 번 뜨고, 1분 남짓 뒤의 카테고리 DWELL은 진단에 `BLOCK_ITEM_COOLDOWN`으로 남는다. (b) 같은 카테고리 지점 두 곳의 120m 원이 겹치는 자리에 1분 넘게 머물면 알림은 한 번(가까운 지점 이름)이고, 두 DWELL이 한 이벤트로 오면 `BLOCK_SAME_EVENT`, 따로 오면 `BLOCK_ITEM_COOLDOWN`이 남는다.
 7. **여러 항목 알림**: 펼치면 모든 제목이 보이고, [오늘 그만]을 누르면 묶음 전체가 다음 날 05:00까지 억제된다.
 8. **온보딩(Android 12+)**: 위치 허용을 누르면 "정확한 위치/대략적 위치" 선택 대화상자가 뜬다. 대략적 위치만 고르면 홈 배너가 "정확한 위치 권한이 필요해요"가 된다.
-9. **에디터**: 브랜드를 입력만 하고 [+] 없이 저장해도 홈 칩에 브랜드가 보인다. 저장을 빠르게 두 번 눌러도 항목은 하나다.
-10. **완료 실행 취소**: 스와이프 완료 → [실행 취소] → 행이 정상 모양으로 돌아온다(스와이프된 채로 끼지 않는다). TalkBack에서 카드의 "작업" 메뉴로도 완료할 수 있다.
+9. **에디터**: 브랜드를 입력만 하고 [추가] 없이 저장해도 홈 카드의 트리거 줄에 브랜드가 보인다. 저장을 빠르게 두 번 눌러도 항목은 하나다.
+10. **완료 실행 취소**: 스와이프 완료 → [실행 취소] → 행이 정상 모양으로 돌아온다(스와이프된 채로 끼지 않는다). 끝→시작 방향으로는 밀리지 않는다. TalkBack에서 카드의 "작업" 메뉴로도 완료할 수 있다.
 11. **다크 모드 + 키보드**: 에디터에서 장소 검색란을 누르면 키보드가 입력란과 결과를 가리지 않는다.
 12. **뒤로 연타**: 설정·주변 보기·에디터에서 뒤로를 빠르게 여러 번 눌러도 홈에서 멈춘다.
 13. **백업 차단**: `adb shell dumpsys package com.recordofp.app | grep -i backup`에서 `ALLOW_BACKUP` 플래그가 없는지 확인한다.
 14. **권한 없이 재부팅**: 위치 권한을 끈 채 `adb reboot` → 진단에 `BOOT → STOOD_DOWN`이 한 줄 남고 `FAILED`가 반복되지 않는다(권한 없이 PendingIntent 단위 해제가 되는지 확인).
 15. **센티널 즉시 이탈**(에뮬레이터): 재배치 직후 `adb emu geo fix`로 2km 이상 떨어진 곳으로 옮긴다 → `SENTINEL_EXIT → SKIPPED_DEBOUNCE` → 10분 뒤 `SENTINEL_EXIT → APPLIED`가 남는다.
+16. **개편안 2 라이트·다크 스크린샷**: 홈(목록·보호 배너·빈 상태·완료 스와이프·실행 취소 스낵바), 에디터(새 기록·수정·저장 실패), 주변 보기, 근처 알림(단건·여러 항목)을 라이트·다크로 찍어 개편안 2 목업과 비교한다. 다르면 개편안 2 문서에 차이를 적고, 맞으면 개편안 2 머리말 상태를 "완료"로 바꾼다.
+17. **큰 글꼴**: 시스템 글꼴 크기를 최대로 올리고 홈(개수 pill·카드·배너·스낵바)·에디터(칩·[추가])·주변 보기(거리 숫자)를 본다. 글자가 잘리거나 겹치지 않아야 한다.
+18. **빠른 설정으로 기기 위치 바꾸기**: 홈을 연 채 알림창에서 위치를 끄면 앱을 떠나지 않아도 배너가 "기기 위치가 꺼져 있어요"로 바뀌고, 다시 켜면 사라진다(설정 화면의 보호 상태도 같다). 켜자마자 진단에 `APP_OPEN`이 남는다(보호 복구 재배치, F1).
+19. **TalkBack**: 개수 pill은 "5개", 카테고리 칩은 "편의점, 선택됨", 고른 브랜드 칩은 "GS25 삭제", 주변 보기 그룹 머리는 제목으로 읽는다. 저장 실패 문구는 나타날 때 자동으로 읽고, 빈 상태 그래픽은 건너뛴다.
+20. **근처 알림 모양**: 제목에 📍가 없고("CU 역삼점 근처예요"), 작은 아이콘과 앱 이름이 블루다. 다크 모드에서도 블루가 보인다.
