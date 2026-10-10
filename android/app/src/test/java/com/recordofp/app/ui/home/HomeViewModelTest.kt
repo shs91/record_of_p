@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
@@ -64,12 +65,24 @@ class HomeViewModelTest {
         val repo = FakeRepo()
         val vm = HomeViewModel(repo, noopTrigger())
         vm.items.test {
-            assertEquals(0, awaitItem().size)
+            assertNull(awaitItem()) // Room 첫 값 전
+            assertEquals(0, awaitItem()!!.size)
             repo.flow.value = listOf(Reminder(id = 1, title = "휴지", createdAt = 0, updatedAt = 0))
-            assertEquals("휴지", awaitItem().single().title)
+            assertEquals("휴지", awaitItem()!!.single().title)
         }
         vm.complete(1)
         dispatcher.scheduler.advanceUntilIdle()
         assertEquals(listOf(1L), repo.completed)
+    }
+
+    @Test
+    fun `Room 첫 값 전에는 아직 모름 null이고 첫 값 뒤에는 목록이다`() = runTest {
+        val repo = FakeRepo()
+        val vm = HomeViewModel(repo, noopTrigger())
+        assertNull(vm.items.value) // 구독 전·첫 값 전: 빈 목록이 아니라 "모름"
+        vm.items.test {
+            assertNull(awaitItem())
+            assertEquals(emptyList<Reminder>(), awaitItem()) // 기록 0개가 확인된 뒤에야 빈 상태
+        }
     }
 }

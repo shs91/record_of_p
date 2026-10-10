@@ -18,8 +18,9 @@ class HomeViewModel @Inject constructor(
     private val protectionTrigger: ProtectionReseedTrigger,
 ) : ViewModel() {
 
-    val items: StateFlow<List<Reminder>> = repository.observeActive()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    /** null = Room 첫 값 전("아직 모름"). 빈 목록과 달리 빈 상태 그래픽을 그리지 않는다 */
+    val items: StateFlow<List<Reminder>?> = repository.observeActive()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun complete(id: Long) = viewModelScope.launch { repository.complete(id) }
 

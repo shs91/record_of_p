@@ -30,10 +30,11 @@ import com.recordofp.app.ui.theme.Spacing
 @Composable
 internal fun HomeEmptyState(modifier: Modifier = Modifier) {
     Column(
-        // 아래 여백은 FAB를 피해 그래픽을 조금 위로 올린다
-        modifier = modifier.padding(start = Spacing.xxl, end = Spacing.xxl, bottom = 120.dp),
+        // 높이는 내용만큼 — 세로 가운데·스크롤은 HomeScreen이 맡는다.
+        // 아래 88dp = 확장 FAB(56) + 여백(32): 스크롤 끝에서 본문이 FAB에 가리지 않게
+        modifier = modifier.padding(start = Spacing.xxl, end = Spacing.xxl, bottom = 88.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(28.dp),
     ) {
         EmptyGraphic()
         Column(

@@ -61,3 +61,15 @@ private fun HomeEmptyPreview() = Home(emptyList(), issue = null)
 @Preview(name = "큰 글꼴", showBackground = true, fontScale = 2f)
 @Composable
 private fun HomeLargeFontPreview() = Home(listOf(crowded) + sample.take(2), issue = null)
+
+/** 첫 화면 — 기록 0개 + '항상 허용' 배너. 360x740dp에서 빈 상태가 가운데에 오고, 모자라면 스크롤된다 */
+@Preview(name = "빈 상태 + 배너", showBackground = true, device = "spec:width=360dp,height=740dp")
+@Composable
+private fun HomeEmptyBannerPreview() = Home(emptyList(), ProtectionIssue.BACKGROUND_LOCATION_OFF)
+
+@Preview(
+    name = "빈 상태 + 배너, 큰 글꼴", showBackground = true, fontScale = 2f,
+    device = "spec:width=360dp,height=740dp",
+)
+@Composable
+private fun HomeEmptyBannerLargeFontPreview() = Home(emptyList(), ProtectionIssue.BACKGROUND_LOCATION_OFF)

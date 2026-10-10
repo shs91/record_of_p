@@ -30,7 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -100,7 +101,7 @@ fun ProtectionBanner(issue: ProtectionIssue, modifier: Modifier = Modifier) {
     }
 }
 
-/** 설정 → 권한 → 위치 → 항상 허용. 마지막 칩만 앰버 바탕. TalkBack은 한 줄로 읽는다 */
+/** 설정 → 권한 → 위치 → 항상 허용. 마지막 칩만 앰버 바탕. TalkBack은 네 단계를 쉼표로 끊어 한 번에 읽는다 */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun BackgroundLocationSteps() {
@@ -111,9 +112,10 @@ private fun BackgroundLocationSteps() {
         R.string.banner_background_step_location,
         R.string.banner_background_step_always,
     )
+    val description = steps.map { stringResource(it) }.joinToString(", ")
     FlowRow(
         // 원 아이콘(36) + 간격(12) 만큼 들여 제목과 줄을 맞춘다
-        modifier = Modifier.padding(start = 48.dp).semantics(mergeDescendants = true) {},
+        modifier = Modifier.padding(start = 48.dp).clearAndSetSemantics { contentDescription = description },
         horizontalArrangement = Arrangement.spacedBy(Spacing.xxs),
         verticalArrangement = Arrangement.spacedBy(Spacing.xxs),
     ) {

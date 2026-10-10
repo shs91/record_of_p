@@ -68,6 +68,9 @@ fun EditorContent(
     actions: EditorActions,
     onClose: () -> Unit,
 ) {
+    val scrollState = rememberScrollState()
+    // 저장 실패 면은 본문 맨 위에 있다 — 아래 섹션까지 내려가 있어도 보이게 올린다 (최종 리뷰 M6)
+    LaunchedEffect(state.saveFailed) { if (state.saveFailed) scrollState.animateScrollTo(0) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     if (showDeleteConfirm) {
         AlertDialog(
@@ -120,7 +123,7 @@ fun EditorContent(
                 // 키보드가 아래쪽 장소 검색란·결과를 가리지 않게 — Scaffold가 이미 준 시스템 바 여백은 빼고 더한다
                 .consumeWindowInsets(padding)
                 .imePadding()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.xs, bottom = Spacing.xl),
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {

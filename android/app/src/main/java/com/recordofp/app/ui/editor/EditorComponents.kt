@@ -44,8 +44,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -165,15 +170,22 @@ internal fun CategoryChip(
 
 /**
  * 고른 브랜드·지점 칩 — 칩 전체를 누르면 뺀다(터치 영역 48dp). 브랜드는 회색 + 검색 아이콘,
- * 지점은 연블루 + 핀 (개편안 2 §2). ✕의 설명("삭제")이 칩 이름과 합쳐져 TalkBack이 "GS25 삭제"로 읽는다.
+ * 지점은 연블루 + 핀 (개편안 2 §2). 접근성 의미는 "<이름> 삭제" 버튼 하나로 바꾼다 —
+ * InputChip(selected = false)의 체크박스·선택 안 됨 의미를 지우고 칩 전체를 버튼으로 읽게 한다 (최종 리뷰 M3).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun RemovableChip(visual: TriggerVisual, onRemove: () -> Unit) {
     val tile = visual.tileColors()
+    val removeDescription = "${visual.label()} ${stringResource(R.string.action_remove)}"
     InputChip(
         selected = false,
         onClick = onRemove,
+        modifier = Modifier.clearAndSetSemantics {
+            contentDescription = removeDescription
+            role = Role.Button
+            onClick(label = removeDescription) { onRemove(); true }
+        },
         label = {
             Text(
                 visual.label(),
@@ -188,7 +200,7 @@ internal fun RemovableChip(visual: TriggerVisual, onRemove: () -> Unit) {
         trailingIcon = {
             Icon(
                 Icons.Filled.Close,
-                contentDescription = stringResource(R.string.action_remove),
+                contentDescription = null, // 칩 전체의 설명이 읽는다
                 tint = tile.ink,
                 modifier = Modifier.size(14.dp),
             )

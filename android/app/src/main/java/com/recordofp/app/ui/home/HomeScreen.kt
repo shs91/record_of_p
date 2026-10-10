@@ -4,14 +4,18 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -99,7 +103,7 @@ fun HomeScreen(
 /** 홈 본체 — 상태와 동작만 받는다(미리보기는 HomePreviews.kt) */
 @Composable
 fun HomeContent(
-    items: List<Reminder>,
+    items: List<Reminder>?, // null = Room 첫 값 전 — 빈 상태·목록·개수 pill은 그리지 않는다
     issue: ProtectionIssue?,
     snackbarHostState: SnackbarHostState,
     onAddClick: () -> Unit,
@@ -110,7 +114,7 @@ fun HomeContent(
 ) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        // 떠 있는 동안 FAB은 Scaffold가 스낵바 위로 올린다 (개편안 2 §2)
+        // 스낵바는 FAB 위에 뜬다 — Material 3 Scaffold 기본 동작(겹치지 않음, 최종 리뷰 I2)
         snackbarHost = {
             SnackbarHost(snackbarHostState, Modifier.padding(horizontal = Spacing.m, vertical = Spacing.xs)) { data ->
                 UndoSnackbar(
@@ -143,15 +147,10 @@ fun HomeContent(
                     Icon(Icons.Outlined.Settings, stringResource(R.string.title_settings))
                 }
             }
-            HomeTitle(count = items.size)
-            issue?.let {
-                ProtectionBanner(
-                    issue = it,
-                    modifier = Modifier.padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m),
-                )
-            }
-            if (items.isEmpty()) {
-                HomeEmptyState(Modifier.fillMaxSize())
+            HomeTitle(count = items?.size ?: 0)
+            if (items.isNullOrEmpty()) {
+                // 배너와 빈 상태는 한 스크롤 영역 — 큰 글꼴·작은 화면에서도 끝까지 닿는다 (최종 리뷰 I1)
+                BannerAndEmpty(issue = issue, showEmpty = items != null)
             } else {
                 val motion = tween<Float>(Motion.STANDARD_MS, easing = Motion.easing)
                 LazyColumn(
@@ -159,11 +158,18 @@ fun HomeContent(
                     contentPadding = PaddingValues(
                         start = Spacing.screen,
                         end = Spacing.screen,
-                        top = if (issue == null) Spacing.m else Spacing.s,
+                        top = if (issue == null) Spacing.m else 0.dp, // 배너가 있으면 배너 항목이 위 여백을 갖는다
                         bottom = 100.dp, // 확장 FAB(56) 아래로 마지막 카드가 숨지 않게
                     ),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
+                    // 배너는 목록과 함께 스크롤된다 — 큰 글꼴·가로 화면에서도 [설정 열기]에 닿는다
+                    issue?.let {
+                        item(key = "banner") {
+                            // 아래 2dp + 항목 간격 10dp = 배너와 첫 카드 사이 12dp(Spacing.s)
+                            ProtectionBanner(it, Modifier.padding(top = Spacing.m, bottom = 2.dp))
+                        }
+                    }
                     // 키에 updatedAt을 넣는다 — 실행 취소로 되살아난 행이 스와이프된 옛 상태를 물려받지 않게 (N1)
                     items(items, key = { "${it.id}:${it.updatedAt}" }) { item ->
                         ReminderRow(
@@ -178,6 +184,33 @@ fun HomeContent(
                             ),
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 기록이 0개(또는 아직 모름)일 때의 본문. 바깥은 세로 스크롤, 안쪽 Column의 최소 높이를 보이는 높이로 둔다.
+ * 위아래 weight Spacer는 남는 높이를 반반 나눠 빈 상태를 가운데에 놓고, 내용이 더 크면 0이 되어 스크롤로 넘어간다.
+ * (Column은 최대 높이가 무한이면 weight를 최소 높이 기준으로 나눈다.)
+ */
+@Composable
+private fun BannerAndEmpty(issue: ProtectionIssue?, showEmpty: Boolean) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val visibleHeight = maxHeight
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            Column(Modifier.heightIn(min = visibleHeight).fillMaxWidth()) {
+                issue?.let {
+                    ProtectionBanner(
+                        issue = it,
+                        modifier = Modifier.padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m),
+                    )
+                }
+                if (showEmpty) {
+                    Spacer(Modifier.weight(1f))
+                    HomeEmptyState(Modifier.fillMaxWidth())
+                    Spacer(Modifier.weight(1f))
                 }
             }
         }
