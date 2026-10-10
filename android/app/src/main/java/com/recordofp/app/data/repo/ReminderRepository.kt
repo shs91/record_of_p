@@ -28,6 +28,9 @@ interface ReminderRepository {
     fun observeActive(): Flow<List<Reminder>>
     suspend fun upsert(reminder: Reminder): Long
     suspend fun complete(id: Long)
+
+    /** 완료 실행 취소 — 다시 활성으로 (§4.1 처리, 최종 리뷰 I5) */
+    suspend fun reactivate(id: Long)
     suspend fun muteUntil(id: Long, untilEpochMs: Long)
     suspend fun delete(id: Long)
     suspend fun activeTriggers(): List<TriggerSpec>
@@ -62,6 +65,11 @@ class RoomReminderRepository @Inject constructor(
         val now = clock.millis()
         reminderDao.setStatus(id, ReminderStatus.DONE.name, completedAt = now, updatedAt = now)
         reseedRequester.requestItemChange()
+    }
+
+    override suspend fun reactivate(id: Long) {
+        reminderDao.setStatus(id, ReminderStatus.ACTIVE.name, completedAt = null, updatedAt = clock.millis())
+        reseedRequester.requestItemChange() // 다시 활성 — 펜스가 돌아와야 한다
     }
 
     override suspend fun muteUntil(id: Long, untilEpochMs: Long) {

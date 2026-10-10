@@ -46,6 +46,7 @@ class EditorViewModelTest {
             return 1
         }
         override suspend fun complete(id: Long) {}
+        override suspend fun reactivate(id: Long) {}
         override suspend fun muteUntil(id: Long, untilEpochMs: Long) {}
         override suspend fun delete(id: Long) { deleteCount++; deletedId = id }
         override suspend fun activeTriggers() = emptyList<com.recordofp.app.domain.model.TriggerSpec>()

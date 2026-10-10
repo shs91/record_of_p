@@ -17,6 +17,7 @@
     <string name="notif_more_items">\'%1$s\' and %2$d more</string>
     <string name="action_complete">Done</string>
     <string name="action_mute_today">Not today</string>
+    <string name="action_undo">Undo</string>
     <string name="action_remove">Remove</string>
     <string name="action_refresh">Refresh</string>
     <string name="action_back">Back</string>

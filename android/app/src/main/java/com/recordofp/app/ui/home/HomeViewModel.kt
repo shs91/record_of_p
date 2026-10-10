@@ -23,6 +23,9 @@ class HomeViewModel @Inject constructor(
 
     fun complete(id: Long) = viewModelScope.launch { repository.complete(id) }
 
+    /** 완료 스낵바의 [실행 취소] (최종 리뷰 I5) */
+    fun reactivate(id: Long) = viewModelScope.launch { repository.reactivate(id) }
+
     /** 화면 재개 시 보호 상태 보고 — 미보호→보호 전이면 기회적 재배치 (F1) */
     fun reportProtection(fullyProtected: Boolean) = protectionTrigger.onSnapshot(fullyProtected)
 }
