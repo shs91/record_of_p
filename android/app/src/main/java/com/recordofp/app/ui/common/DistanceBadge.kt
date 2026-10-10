@@ -11,8 +11,8 @@ import androidx.compose.ui.unit.dp
 import com.recordofp.app.ui.theme.PillShape
 
 /**
- * 거리 배지 — 연블루 pill, tabular-nums (개편안 §2).
- * 에디터 장소 검색 결과와 주변 보기 POI 행이 함께 쓴다.
+ * 거리 배지 — 연블루 pill + 블루 숫자, tabular-nums (개편안 §2).
+ * 숫자는 onPrimaryContainer — 연블루 위 4.5:1 (개편안 2 §1.1). 에디터 장소 검색 결과와 주변 보기 POI 행이 함께 쓴다.
  */
 @Composable
 fun DistanceBadge(distanceM: Int) {
@@ -20,7 +20,7 @@ fun DistanceBadge(distanceM: Int) {
         Text(
             text = formatDistance(distanceM),
             style = tabularNums(MaterialTheme.typography.labelSmall),
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
         )
     }

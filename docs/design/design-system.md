@@ -3,10 +3,10 @@
 | | |
 |---|---|
 | 상태 | 승인 — 현재 UI의 기준 |
-| 버전 | 1.1 |
-| 최종 수정 | 2026-10-09 |
-| 구현 | Android `ui/theme/{Color,Type,Shape,Theme}.kt` · iOS 미착수 |
-| 근거 | 디자인 개편안 `docs/superpowers/specs/2026-09-03-design-refresh-clean-minimal.md`(결정 기록)과 현재 코드 값 |
+| 버전 | 1.2 |
+| 최종 수정 | 2026-10-10 |
+| 구현 | Android `ui/theme/{Color,CategoryColors,Type,Shape,Spacing,Motion,Theme,Previews}.kt`, 아이콘 `res/drawable/ic_cat_*`·`ic_trigger_*` · iOS 미착수 |
+| 근거 | 디자인 개편안 `docs/superpowers/specs/2026-09-03-design-refresh-clean-minimal.md`, 개편안 2 `docs/superpowers/specs/2026-10-10-design-refresh-heydealer.md`(결정 기록)과 현재 코드 값 |
 
 Android와 iOS 테마는 이 문서의 표를 따른다. 토큰을 바꾸면 이 문서와 코드를 **같은 커밋**에서 바꾸고 끝의 변경 이력에 한 줄 남긴다.
 
@@ -25,12 +25,12 @@ Android와 iOS 테마는 이 문서의 표를 따른다. 토큰을 바꾸면 이
 
 ### 1.3 더할 것 — 헤이딜러의 성격
 
-바탕을 해치지 않는 선에서 화면에 성격을 준다. 아래 항목은 방향이고, 실제 모양은 다음 디자인 라운드의 목업에서 정한다(§4).
+바탕을 해치지 않는 선에서 화면에 성격을 준다. 실제 모양은 개편안 2(방향 B "카테고리 타일", 2026-10-10 승인)에서 정했다. 카드 왼쪽에 카테고리 색 타일을 두어 목록을 훑을 때 장소 종류가 먼저 보이게 한다.
 
-- **숫자 강조**: 거리·개수처럼 사용자가 판단에 쓰는 숫자를 크고 굵게 보여 준다.
-- **브랜드 그래픽**: P-핀 모티프를 빈 상태, 온보딩, 완료 순간에 쓴다.
-- **마이크로 인터랙션**: 완료 체크, 카드 눌림, 항목 등장에 짧은 모션을 준다.
-- **카테고리 컬러 포인트**: 카테고리마다 색을 하나씩 정해 칩·아이콘 배경으로 구분한다.
+- **숫자 강조**: 거리·개수처럼 사용자가 판단에 쓰는 숫자를 크고 굵게 보여 준다. (§2.2 추가 스타일 — 홈 개수 pill, 주변 보기 거리)
+- **브랜드 그래픽**: P-핀 모티프를 빈 상태, 온보딩, 완료 순간에 쓴다. (홈 빈 상태)
+- **마이크로 인터랙션**: 완료 체크, 카드 눌림, 항목 등장에 짧은 모션을 준다. (§2.5)
+- **카테고리 컬러 포인트**: 카테고리마다 색을 하나씩 정해 칩·아이콘 배경으로 구분한다. (§2.6)
 
 ### 1.4 피할 것
 
@@ -48,20 +48,28 @@ Android와 iOS 테마는 이 문서의 표를 따른다. 토큰을 바꾸면 이
 | 종이(화면 배경) | background | `#F7F8FA` | `#101418` | `Paper*` |
 | 카드 | surface | `#FFFFFF` | `#1B2027` | `Card*` |
 | 잉크(본문) | onSurface, onBackground | `#191F28` | `#E9EDF2` | `Ink*` |
-| 보조 글자 | onSurfaceVariant | `#6B7684` | `#8B95A1` | `SubInk*` |
+| 보조 글자 | onSurfaceVariant | `#636E7C` | `#8B95A1` | `SubInk*` |
 | 행동(블루) | primary | `#1B6EF3` | `#5B95F8` | `Blue*` |
 | 연블루 면 | primaryContainer | `#EAF1FE` | `#1E2C42` | `BlueContainer*` |
+| 블루 글자(연블루·카드·종이 위) | onPrimaryContainer | `#1762D8` | `#5B95F8` | `BlueTextLight` · 다크는 `BlueDark` |
 | 회색 pill 칩 | secondaryContainer, surfaceVariant | `#F2F4F6` | `#242B34` | `Chip*` |
 | 칩 글자 | onSecondaryContainer, secondary | `#4E5968` | `#B0B8C1` | `ChipInk*` |
 | 경고 면(보호 배너) | tertiaryContainer | `#FFF4E0` | `#332916` | `AmberContainer*` |
 | 경고 글자 | onTertiaryContainer | `#96660A` | `#F0C070` | `AmberInk*` |
-| 오류 | error | `#F04452` | `#FF6B6B` | `Error*` |
+| 오류 | error | `#D62C3A` | `#FF6B6B` | `Error*` |
 | 헤어라인 | outlineVariant | `#E5E8EB` | `#232A33` | `Line*` |
-| 테두리 | outline | `#C9D0D8` | `#3A424D` | `Outline*` |
-| 성공(완료) | — (`successColor()`) | `#12B76A` | `#2ED07E` | `Success*` |
+| 테두리(입력 필드) | outline | `#878F9B` | `#646E7C` | `Outline*` |
+| 성공(완료) | — (`successColor()`) | `#0A8049` | `#2ED07E` | `Success*` |
+| 성공 면 위 글자 | — (`onSuccessColor()`) | `#FFFFFF` | `#1B2027` | `OnSuccess*` |
+| 스낵바 바탕 | inverseSurface | `#191F28` | `#E9EDF2` | `InverseSurface*` |
+| 스낵바 글자 | inverseOnSurface | `#F7F8FA` | `#101418` | `InverseOnSurface*` |
+| 스낵바 액션 | inversePrimary | `#9EC1FF` | `#1762D8` | `InversePrimary*` |
+| 스낵바 성공 원 | — (`inverseSuccessColor()`) | `#2ED07E` | `#0A8049` | `InverseSuccess*` |
 
 - 다크 블루는 채도를 낮췄다. 어두운 화면에서 눈부시지 않게 하기 위해서다.
 - 경고(앰버)와 오류(빨강)를 구분한다. 보호 상태가 꺼진 것은 경고다.
+- 글자는 WCAG 4.5:1, 테두리·아이콘은 3:1을 넘는다. 라이트의 보조 글자·블루 글자·오류·테두리·성공은 이 기준에 맞춰 보정했다(개편안 2 §1.1). 오류는 개편안의 `#DC2E3C`보다 한 단계 어두운 `#D62C3A`로, 종이 위에서도 4.5:1을 넘는다. `ThemeContrastTest`가 쓰이는 면 위의 대비를 확인한다.
+- `primary`는 종이 위 글자로 4.32:1이라 기준에 못 미친다. 블루 면 위 흰 글자(4.59:1)와 아이콘에만 쓰고, 종이·카드·연블루 위의 블루 글자(거리 숫자, 에디터 [저장]·[추가])는 `onPrimaryContainer`를 쓴다.
 
 ### 2.2 타입
 
@@ -83,6 +91,15 @@ Android와 iOS 테마는 이 문서의 표를 따른다. 토큰을 바꾸면 이
 
 숫자를 세로로 맞춰야 하는 곳(거리 배지, 진단 시각)은 tabular-nums(`ui/common`의 `tabularNums()`)를 쓴다.
 
+Material 슬롯 밖의 스타일은 `AppTextStyles`(`Type.kt`)에 둔다.
+
+| 이름 | 크기/행간(sp) | 굵기 | 자간(em) | 쓰임 |
+|---|---|---|---|---|
+| `numberLarge` | 22 / 26 | Bold, tabular | -0.02 | 주변 보기 거리 숫자 |
+| `emptyTitle` | 20 / 28 | Bold | -0.01 | 빈 상태 제목 |
+
+굵기만 바꿀 때는 슬롯 스타일의 `copy(fontWeight = …)`를 쓴다(개수 pill·완료 글자 Bold, 칩 Medium·SemiBold). 크기를 새로 만들지 않는다.
+
 ### 2.3 형태
 
 | 토큰 | 값 | 쓰임 |
@@ -96,15 +113,61 @@ Android와 iOS 테마는 이 문서의 표를 따른다. 토큰을 바꾸면 이
 
 ### 2.4 간격
 
-화면 좌우 여백과 카드 그리드의 기준은 20dp다. 아직 토큰이 아니라 화면 코드에 dp 리터럴로 있다. 현재 많이 쓰는 값은 8·20·16·12·24·10dp 순이다. 다음 UI 작업에서 `Spacing` 토큰으로 옮기고, 그때 값의 단계를 이 절에 확정한다.
+`ui/theme/Spacing.kt`의 단계를 쓴다.
+
+| 토큰 | 값 | 쓰임 |
+|---|---|---|
+| `xxs` | 4dp | 단계 칩 사이, 제목 위 |
+| `xs` | 8dp | 칩 사이, 섹션 안 줄 |
+| `s` | 12dp | 입력 사이, 배너 안 |
+| `m` | 16dp | 배너·필드 안쪽, 스낵바 좌우 |
+| `l` | 20dp | 화면 좌우 여백(`screen`), 주변 보기 그룹 사이 |
+| `xl` | 24dp | 화면 아래 여백 |
+| `xxl` | 32dp | 빈 상태 좌우 |
+
+단계 밖의 값(카드 사이 10, 카드 안쪽 14, 칩 패딩 9, 행 좌우 18 등)은 그 컴포넌트 안에 둔다. 온보딩·설정·진단 화면은 다음에 다시 그릴 때 토큰으로 옮긴다.
 
 ### 2.5 모션
 
-토큰은 아직 없다. 현재 쓰는 모션은 두 가지다.
-- 홈 목록의 항목 등장·제거·재배열: `Modifier.animateItem()`
-- 스와이프 완료: `SwipeToDismissBox`. 성공 색 배경에 체크를 표시한다.
+`ui/theme/Motion.kt`의 값을 쓴다. 이징은 Material 표준(`FastOutSlowInEasing`)이다.
 
-§1.3의 마이크로 인터랙션을 넣을 때 지속 시간과 이징을 이 절에 토큰으로 정한다.
+| 토큰 | 값 | 쓰임 |
+|---|---|---|
+| `SHORT_MS` | 150ms | 칩 선택 색 전환 |
+| `STANDARD_MS` | 250ms | 홈 카드 등장·제거·재배열(`animateItem`) |
+
+스낵바는 Material `SnackbarHost`의 기본 전환을 쓴다. 스와이프 완료는 `SwipeToDismissBox`(시작→끝 한 방향)다.
+
+### 2.6 카테고리 색
+
+카테고리마다 타일 바탕(tint)과 아이콘·글자(ink) 한 쌍을 둔다. ink는 tint 위에서 라이트 4.5:1, 다크 6:1을 넘는다. 색은 아이콘·이름과 함께 쓴다 — 색만으로 구분하지 않는다. 코드는 `CategoryPalette`(`ui/theme/CategoryColors.kt`)이고, 화면은 `TriggerVisual.tileColors()`(`ui/common`)로 쓴다. 도메인 카탈로그에는 색을 넣지 않는다.
+
+| 카테고리 | 라이트 tint | 라이트 ink | 다크 tint | 다크 ink |
+|---|---|---|---|---|
+| 편의점 | `#E5F6EC` | `#137444` | `#163024` | `#5CCB8C` |
+| 대형마트 | `#FFF0E2` | `#B4520A` | `#3A2614` | `#FF9F57` |
+| 약국 | `#FCEAF3` | `#B42A72` | `#3A1A2D` | `#F27DBB` |
+| 은행 | `#ECEEFC` | `#3A49B8` | `#1F2444` | `#9AA5F7` |
+| 우체국 | `#FDECE7` | `#B83A18` | `#3B1F17` | `#FF8C69` |
+| 주유소·충전소 | `#E2F4F4` | `#0C7276` | `#123335` | `#52C7CC` |
+| 세탁소 | `#F1EAFD` | `#6A3CBC` | `#2A1F42` | `#B99AF7` |
+| 카페 | `#F4EDE6` | `#835532` | `#2F251D` | `#D9A67E` |
+| 병원 | `#E3F2F9` | `#0B6A8F` | `#12303D` | `#5CC0E6` |
+| 지하철역 | `#EDF5DE` | `#4F7212` | `#243016` | `#B0D66A` |
+| 브랜드(프리셋·직접 입력)·카탈로그에 없는 id | secondaryContainer | onSecondaryContainer | 같음 | 같음 |
+| 특정 지점 | primaryContainer | onPrimaryContainer | 같음 | 같음 |
+
+### 2.7 아이콘
+
+카테고리·트리거 아이콘은 Material Symbols Rounded(Apache 2.0, 0.47.0 고정)를 VectorDrawable로 가져와 쓴다. `tools/design/material_symbols.py`의 `ICONS`에 한 줄 넣고 저장소 루트에서 `python3 -I tools/design/material_symbols.py`를 다시 실행한다. drawable을 손으로 고치지 않고, 아이콘 라이브러리를 더하지 않는다. P-핀 마크(`ic_pin_mark`, 알림용 `ic_stat_pin`)는 직접 그린 브랜드 그래픽이다.
+
+| 쓰임 | drawable | Material Symbols |
+|---|---|---|
+| 편의점 · 대형마트 · 약국 · 은행 · 우체국 | `ic_cat_convenience` · `ic_cat_mart` · `ic_cat_pharmacy` · `ic_cat_bank` · `ic_cat_post` | storefront · shopping_cart · medication · account_balance · local_post_office |
+| 주유소 · 세탁소 · 카페 · 병원 · 지하철역 | `ic_cat_fuel` · `ic_cat_laundry` · `ic_cat_cafe` · `ic_cat_hospital` · `ic_cat_subway` | local_gas_station · checkroom · local_cafe · local_hospital · subway |
+| 브랜드 프리셋 · 브랜드 직접 입력 · 특정 지점 | `ic_trigger_brand` · `ic_trigger_search` · `ic_trigger_place` | shopping_bag · search · location_on |
+
+화면은 `TriggerVisual.iconRes()`로 고른다. 카탈로그의 이모지(`TriggerCatalog.emoji`)는 화면에서 쓰지 않는다.
 
 ## 3. 컴포넌트 (현재 구현)
 
@@ -133,14 +196,16 @@ Android와 iOS 테마는 이 문서의 표를 따른다. 토큰을 바꾸면 이
 
 ## 5. 코드 규칙
 
-- 색·글꼴은 `MaterialTheme.colorScheme`·`MaterialTheme.typography`와 이 문서의 헬퍼(`successColor()`, `PillShape`, `tabularNums()`)로만 쓴다. 화면 코드에 `Color(0x…)`나 `.sp` 리터럴을 쓰지 않는다. 현재 화면 코드는 이 규칙을 지키고 있다.
-- 간격은 §2.4의 `Spacing` 토큰을 도입한 뒤로는 토큰만 쓴다.
-- 새로 만들거나 고치는 화면에는 `@Preview`를 라이트·다크 두 벌 둔다. 이 규칙은 다음 UI 작업에서 도입한다. 현재 `@Preview`는 0개다.
+- 색·글꼴은 `MaterialTheme.colorScheme`·`MaterialTheme.typography`와 이 문서의 헬퍼로만 쓴다: `successColor()`·`onSuccessColor()`·`inverseSuccessColor()`, `TriggerVisual.tileColors()`(카테고리 색), `AppTextStyles`, `PillShape`, `tabularNums()`. 화면 코드에 `Color(0x…)`나 `.sp` 리터럴을 쓰지 않는다.
+- 간격은 §2.4의 `Spacing` 단계에 있는 값을 토큰으로 쓴다. 단계 밖의 값은 컴포넌트 안에 둔다.
+- 새로 만들거나 다시 그리는 화면은 본체를 상태와 동작만 받는 `XxxContent`로 떼고, `@LightDarkPreviews`(라이트·다크 두 벌)와 큰 글꼴(`fontScale = 2f`) 미리보기를 둔다. 미리보기 안은 `RecordOfPTheme { }`를 기본값으로 감싼다.
+- 고정 높이 대신 `heightIn(min = …)`을 쓴다(큰 글꼴). 색은 아이콘·이름과 함께 쓴다 — 색만으로 구분하지 않는다.
 - 사용자에게 보이는 문자열은 ko·en 둘 다 넣는다(CLAUDE.md 작업 규칙).
 
 ## 변경 이력
 
 | 버전 | 날짜 | 바뀐 § | 무엇·왜 | 근거 |
 |---|---|---|---|---|
+| 1.2 | 2026-10-10 | §1.3, §2.1, §2.2, §2.4, §2.5, §2.6, §2.7, §5 | 개편안 2 토큰 반영 — 라이트 대비 보정(보조 글자·블루 글자·오류·테두리·성공), 완료·스낵바 색, 카테고리 10색, 글자 추가 스타일, 간격·모션 토큰, Material Symbols 아이콘, 미리보기·간격 규칙. 오류색은 종이 위 4.5:1을 위해 개편안의 `#DC2E3C` 대신 `#D62C3A` | 개편안 2 §1·§4(2026-10-10 승인), 보강 계획 Task 16 |
 | 1.1 | 2026-10-09 | §3 | 진단 행 도트에 PASS(발화, 성공색)·ERROR(리시버 오류, 오류색)를 더하고 더는 기록되지 않는 NO_PERMISSION을 뺐다 | 보강 계획 T9·T10, 묶음 C 최종 리뷰 |
 | 1.0 | 2026-10-09 | 전체 | 최초 작성. 개편안(2026-09-03)의 결정과 현재 코드 값을 옮기고, 레퍼런스(토스·당근·헤이딜러)와 방향을 더했다. | 프로젝트 규칙 확정(2026-10-09) |

@@ -8,15 +8,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 /**
- * "클린 미니멀" 고정 브랜드 테마 (디자인 개편안 2026-09-03).
+ * 고정 브랜드 테마 (디자인 시스템 §2).
  * 다이나믹 컬러를 제거하고 라이트/다크 모두 고정 팔레트를 쓴다 — 콘텐츠가 주인공,
- * 크롬은 물러난다. 토큰 값은 Color.kt, 타입은 Type.kt, 형태는 Shape.kt.
+ * 크롬은 물러난다. 토큰 값은 Color.kt·CategoryColors.kt, 타입은 Type.kt, 형태는 Shape.kt, 간격·모션은 Spacing.kt·Motion.kt.
+ * 스킴은 ThemeContrastTest가 대비를 확인하도록 internal로 둔다.
  */
-private val LightColors = lightColorScheme(
+internal val LightColors = lightColorScheme(
     primary = BlueLight,
     onPrimary = Color.White,
     primaryContainer = BlueContainerLight,
-    onPrimaryContainer = BlueLight,
+    onPrimaryContainer = BlueTextLight,
     secondary = ChipInkLight,
     onSecondary = Color.White,
     secondaryContainer = ChipLight,
@@ -41,9 +42,13 @@ private val LightColors = lightColorScheme(
     onErrorContainer = Color(0xFFB92330),
     outline = OutlineLight,
     outlineVariant = LineLight,
+    // 스낵바 (개편안 2 §1.2)
+    inverseSurface = InverseSurfaceLight,
+    inverseOnSurface = InverseOnSurfaceLight,
+    inversePrimary = InversePrimaryLight,
 )
 
-private val DarkColors = darkColorScheme(
+internal val DarkColors = darkColorScheme(
     primary = BlueDark,
     onPrimary = Color(0xFF0B1D3A),
     primaryContainer = BlueContainerDark,
@@ -71,6 +76,9 @@ private val DarkColors = darkColorScheme(
     onErrorContainer = Color(0xFFFFB3B8),
     outline = OutlineDark,
     outlineVariant = LineDark,
+    inverseSurface = InverseSurfaceDark,
+    inverseOnSurface = InverseOnSurfaceDark,
+    inversePrimary = InversePrimaryDark,
 )
 
 @Composable
