@@ -25,6 +25,10 @@
     <string name="nearby_empty">Nothing to do nearby.</string>
     <string name="nearby_no_location">Can\'t get your current location. Check location permission and GPS.</string>
     <string name="nearby_open_map">Open in KakaoMap</string>
+    <plurals name="nearby_place_count">
+        <item quantity="one">%d place</item>
+        <item quantity="other">%d places</item>
+    </plurals>
 
     <string name="cat_convenience">Convenience store</string>
     <string name="cat_mart">Supermarket</string>

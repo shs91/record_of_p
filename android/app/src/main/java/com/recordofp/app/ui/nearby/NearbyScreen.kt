@@ -7,18 +7,20 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,27 +35,31 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.recordofp.app.R
-import com.recordofp.app.ui.common.BackButton
 import com.recordofp.app.domain.engine.PoiCandidate
-import com.recordofp.app.domain.model.TriggerCatalog
-import com.recordofp.app.ui.common.DistanceBadge
-import com.recordofp.app.ui.common.catalogLabelRes
+import com.recordofp.app.ui.common.BackButton
+import com.recordofp.app.ui.common.TriggerTile
+import com.recordofp.app.ui.common.distanceParts
+import com.recordofp.app.ui.common.isFarDistance
+import com.recordofp.app.ui.common.label
+import com.recordofp.app.ui.theme.AppTextStyles
+import com.recordofp.app.ui.theme.Spacing
 import kotlin.math.roundToInt
 
 /**
  * 백그라운드 권한 없이도(위치 '사용 중'만으로) 앱을 열면 지금 주변에서 처리할 수 있는 일이
  * 보이는 화면 — 열화 모드의 핵심 (설계 §3.1, §4.2). 지도 SDK는 v1.1 — 카카오맵 앱 딥링크로
- * 대체한다(§3.2).
- * 클린 미니멀 개편 (개편안 §2 주변 보기): 그룹 헤더 이모지+SemiBold, POI 행 카드화,
- * 거리는 오른쪽 연블루 배지.
+ * 대체한다(§3.2). 모양은 개편안 2 §2 주변 보기 — 그룹 머리 타일, 그룹당 카드 하나, 큰 거리 숫자.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NearbyScreen(
     onBack: () -> Unit = {},
@@ -61,9 +67,24 @@ fun NearbyScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-
     LaunchedEffect(Unit) { viewModel.load() }
+    NearbyContent(
+        state = state,
+        onBack = onBack,
+        onRefresh = viewModel::load,
+        onPoiClick = { openInKakaoMap(context, it) },
+    )
+}
 
+/** 주변 보기 본체 — 상태와 동작만 받는다(미리보기는 NearbyPreviews.kt) */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NearbyContent(
+    state: NearbyUiState,
+    onBack: () -> Unit,
+    onRefresh: () -> Unit,
+    onPoiClick: (PoiCandidate) -> Unit,
+) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -71,13 +92,11 @@ fun NearbyScreen(
                 navigationIcon = { BackButton(onClick = onBack) },
                 title = { Text(stringResource(R.string.title_nearby)) },
                 actions = {
-                    IconButton(onClick = viewModel::load) {
+                    IconButton(onClick = onRefresh) {
                         Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.action_refresh))
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                ),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
     ) { padding ->
@@ -91,20 +110,13 @@ fun NearbyScreen(
                 state.groups.isEmpty() -> CenteredNote(stringResource(R.string.nearby_empty))
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(
+                        start = Spacing.screen, end = Spacing.screen, top = Spacing.xs, bottom = Spacing.xl,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.l),
                 ) {
-                    state.groups.forEach { group ->
-                        item(key = "header:${group.matchKey}") {
-                            Text(
-                                group.headerText(),
-                                style = MaterialTheme.typography.titleSmall,
-                                modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
-                            )
-                        }
-                        items(group.pois, key = { "${group.matchKey}:${it.id}" }) { poi ->
-                            NearbyPoiCard(poi = poi, onClick = { openInKakaoMap(context, poi) })
-                        }
+                    items(state.groups, key = { it.matchKey }) { group ->
+                        NearbyGroupSection(group = group, onPoiClick = onPoiClick)
                     }
                 }
             }
@@ -119,45 +131,75 @@ private fun BoxScope.CenteredNote(text: String) {
         textAlign = TextAlign.Center,
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.align(Alignment.Center).padding(24.dp),
+        modifier = Modifier.align(Alignment.Center).padding(Spacing.xl),
     )
 }
 
-/** 그룹 헤더 표시: matchKey 접두로 트리거 종류를 분기한다 (cat:/brand:/place:, 스펙 §5.3) */
+/** 그룹 — 머리(32dp 타일 + 이름 + "N곳") 아래 카드 하나에 지점 행을 헤어라인으로 나눈다 */
 @Composable
-private fun NearbyGroup.headerText(): String = when {
-    matchKey.startsWith("cat:") -> {
-        val entry = TriggerCatalog.byId(matchKey.removePrefix("cat:"))
-        val label = entry?.let { stringResource(catalogLabelRes(it.id)) } ?: matchKey
-        "${entry?.emoji ?: ""} $label".trim()
+private fun NearbyGroupSection(group: NearbyGroup, onPoiClick: (PoiCandidate) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        Row(
+            modifier = Modifier.semantics(mergeDescendants = true) { heading() },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            TriggerTile(group.visual, size = 32.dp, cornerRadius = 10.dp, iconSize = 18.dp)
+            Text(group.visual.label(), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(
+                pluralStringResource(R.plurals.nearby_place_count, group.pois.size, group.pois.size),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surface) {
+            Column {
+                group.pois.forEachIndexed { index, poi ->
+                    if (index > 0) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 18.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                    }
+                    NearbyPoiRow(poi = poi, onClick = { onPoiClick(poi) })
+                }
+            }
+        }
     }
-    matchKey.startsWith("brand:") -> "🔎 ${matchKey.removePrefix("brand:")}"
-    matchKey.startsWith("place:") -> "📌 ${pois.firstOrNull()?.name.orEmpty()}"
-    else -> matchKey
 }
 
-/** POI 행 카드 — 이름 + 거리 배지. 탭하면 카카오맵 (개편안 §2) */
+/** 지점 행 64dp — 이름 + "카카오맵에서 보기", 오른쪽에 거리 숫자 22 Bold + 단위. 1km를 넘으면 숫자를 보조 글자색으로 */
 @Composable
-private fun NearbyPoiCard(poi: PoiCandidate, onClick: () -> Unit) {
+private fun NearbyPoiRow(poi: PoiCandidate, onClick: () -> Unit) {
+    val distanceM = poi.distanceM.roundToInt()
+    val (number, unit) = distanceParts(distanceM)
+    val numberColor = if (isFarDistance(distanceM)) {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    }
     val openMapLabel = stringResource(R.string.nearby_open_map)
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface,
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClickLabel = openMapLabel, onClick = onClick),
+            .heightIn(min = 64.dp)
+            .clickable(onClickLabel = openMapLabel, onClick = onClick)
+            .padding(horizontal = 18.dp, vertical = Spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(poi.name, style = MaterialTheme.typography.titleSmall)
+            Text(openMapLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Row {
+            Text(number, style = AppTextStyles.numberLarge, color = numberColor, modifier = Modifier.alignByBaseline())
             Text(
-                poi.name,
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(1f, fill = false).padding(end = 12.dp),
+                unit,
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                color = numberColor,
+                modifier = Modifier.alignByBaseline().padding(start = 1.dp),
             )
-            DistanceBadge(poi.distanceM.roundToInt())
         }
     }
 }
