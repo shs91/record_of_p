@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.recordofp.app.R
+import com.recordofp.app.ui.common.BackButton
 import com.recordofp.app.data.db.EngineRunLogEntity
 import com.recordofp.app.ui.common.tabularNums
 import com.recordofp.app.ui.theme.successColor
@@ -67,11 +67,7 @@ fun DiagnosticsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
+                navigationIcon = { BackButton(onClick = onBack) },
                 title = { Text(stringResource(R.string.diag_title)) },
                 actions = {
                     IconButton(onClick = {

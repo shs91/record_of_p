@@ -41,6 +41,7 @@ private class FakeReminders(var triggers: List<TriggerSpec>) : ReminderRepositor
     override fun observeActive(): Flow<List<Reminder>> = emptyFlow()
     override suspend fun upsert(reminder: Reminder) = 0L
     override suspend fun complete(id: Long) {}
+    override suspend fun reactivate(id: Long) {}
     override suspend fun muteUntil(id: Long, untilEpochMs: Long) {}
     override suspend fun delete(id: Long) {}
     override suspend fun activeTriggers() = triggers

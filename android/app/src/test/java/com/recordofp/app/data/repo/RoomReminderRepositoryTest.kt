@@ -26,8 +26,10 @@ private class FakeDao : ReminderDao {
     override fun observeActiveWithTriggers(): Flow<List<ReminderWithTriggers>> = flow
     override suspend fun byId(id: Long): ReminderEntity? = byIdResult
     override suspend fun upsert(entity: ReminderEntity): Long = 42L
+    val completedAts = mutableListOf<Long?>()
     override suspend fun setStatus(id: Long, status: String, completedAt: Long?, updatedAt: Long) {
         statusCalls += id to status
+        completedAts += completedAt
     }
     override suspend fun setSnooze(id: Long, until: Long?, updatedAt: Long) {}
     override suspend fun delete(id: Long) {}
@@ -92,6 +94,14 @@ class RoomReminderRepositoryTest {
         repo.delete(2)
         assertEquals(listOf(1L to "DONE"), dao.statusCalls)
         assertEquals(2, requester.count)
+    }
+
+    @Test
+    fun `reactivate는 ACTIVE로 되돌리고 완료 시각을 지운 뒤 재배치를 요청한다`() = runTest {
+        repo.reactivate(5)
+        assertEquals(listOf(5L to "ACTIVE"), dao.statusCalls)
+        assertEquals(listOf<Long?>(null), dao.completedAts)
+        assertEquals(1, requester.count) // 다시 활성 — 펜스가 돌아와야 한다
     }
 
     @Test

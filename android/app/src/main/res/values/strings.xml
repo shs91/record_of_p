@@ -12,18 +12,22 @@
     <string name="channel_status_name">서비스 상태</string>
     <string name="channel_status_desc">권한·동작 상태 관련 안내</string>
 
-    <string name="notif_nearby_title">📍 %1$s 근처예요</string>
-    <string name="notif_nearby_title_dist">📍 %1$s 근처예요 (약 %2$dm)</string>
+    <string name="notif_nearby_title">%1$s 근처예요</string>
+    <string name="notif_nearby_title_dist">%1$s 근처예요 (약 %2$dm)</string>
     <string name="notif_more_items">\'%1$s\' 외 %2$d건</string>
     <string name="action_complete">완료</string>
     <string name="action_mute_today">오늘 그만</string>
-    <string name="action_add_brand">브랜드 추가</string>
+    <string name="action_undo">실행 취소</string>
     <string name="action_remove">삭제</string>
     <string name="action_refresh">새로고침</string>
+    <string name="action_back">뒤로</string>
 
     <string name="nearby_empty">주변에 처리할 일이 없어요.</string>
     <string name="nearby_no_location">현재 위치를 확인할 수 없어요. 위치 권한과 GPS를 확인해주세요.</string>
     <string name="nearby_open_map">카카오맵에서 보기</string>
+    <plurals name="nearby_place_count">
+        <item quantity="other">%d곳</item>
+    </plurals>
 
     <string name="cat_convenience">편의점</string>
     <string name="cat_mart">대형마트</string>
@@ -42,6 +46,8 @@
     <string name="editor_section_category">어디서 알려드릴까요?</string>
     <string name="editor_section_brand">브랜드 추가</string>
     <string name="editor_brand_example">예: GS25</string>
+    <string name="editor_brand_add">추가</string>
+    <string name="editor_brand_pending_hint">추가를 누르지 않아도 저장할 때 함께 추가돼요</string>
     <string name="editor_section_place">특정 장소</string>
     <string name="editor_place_hint">특정 장소 검색</string>
     <string name="editor_place_error_network">네트워크 연결을 확인해주세요.</string>
@@ -50,7 +56,12 @@
     <string name="editor_title_edit">기록 수정</string>
     <string name="editor_delete">삭제</string>
     <string name="editor_delete_confirm">이 기록을 삭제할까요?</string>
-    <string name="home_empty">아직 기록이 없어요.\n생각난 순간, 여기에 적어두세요.</string>
+    <string name="editor_save_failed">변경 내용을 저장하지 못했어요. 다시 시도해 주세요.</string>
+    <string name="home_empty_title">아직 기록이 없어요</string>
+    <string name="home_empty_body">생각난 순간, 여기에 적어두세요.\n근처를 지날 때 알려드릴게요.</string>
+    <plurals name="home_count">
+        <item quantity="other">%d개</item>
+    </plurals>
     <string name="home_completed">완료했어요</string>
     <string name="home_fab">기록</string>
 
@@ -68,8 +79,19 @@
     <string name="onboard_allow">허용하기</string>
     <string name="onboard_skip">나중에</string>
     <string name="onboard_start">시작하기</string>
-    <string name="banner_protection_title">알림이 꺼질 수 있는 상태예요</string>
-    <string name="banner_protection_action">설정에서 확인</string>
+    <string name="banner_notifications_title">알림이 꺼져 있어요</string>
+    <string name="banner_notifications_body">근처를 지날 때 알려드리려면 \'근처 알림\'을 포함해 알림을 켜 주세요.</string>
+    <string name="banner_precise_title">정확한 위치 권한이 필요해요</string>
+    <string name="banner_precise_body">근처 가게를 찾으려면 위치 권한을 허용하고 \'정확한 위치 사용\'을 켜 주세요.</string>
+    <string name="banner_background_title">앱을 닫아도 알려드리려면</string>
+    <string name="banner_background_body">근처를 지날 때 알려드리려면 위치 권한을 \'항상 허용\'으로 바꿔 주세요.</string>
+    <string name="banner_background_step_settings">설정</string>
+    <string name="banner_background_step_permissions">권한</string>
+    <string name="banner_background_step_location">위치</string>
+    <string name="banner_background_step_always">항상 허용</string>
+    <string name="banner_location_off_title">기기 위치가 꺼져 있어요</string>
+    <string name="banner_location_off_body">기기의 위치를 켜야 근처 알림이 동작해요.</string>
+    <string name="banner_action_open_settings">설정 열기</string>
 
     <string name="settings_section_protection">보호 상태</string>
     <string name="settings_perm_notifications">근처 알림</string>

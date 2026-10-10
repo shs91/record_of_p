@@ -10,6 +10,8 @@ import com.recordofp.app.domain.engine.PoiCandidate
 import com.recordofp.app.domain.engine.QueryRequest
 import com.recordofp.app.domain.engine.TriggerResolver
 import com.recordofp.app.domain.model.distanceMeters
+import com.recordofp.app.ui.common.TriggerVisual
+import com.recordofp.app.ui.common.categoryVisual
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -19,7 +21,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class NearbyGroup(val matchKey: String, val pois: List<PoiCandidate>)
+/** 주변 보기 그룹 — 트리거 하나(matchKey)와 그 근처 지점들. visual은 그룹 머리에 그릴 타일·이름 (개편안 2 §2) */
+data class NearbyGroup(val matchKey: String, val visual: TriggerVisual, val pois: List<PoiCandidate>)
 
 data class NearbyUiState(
     val loading: Boolean = true,
@@ -59,10 +62,11 @@ class NearbyViewModel @Inject constructor(
                         } catch (e: Exception) {
                             emptyList()
                         }
-                        if (pois.isEmpty()) null else NearbyGroup(req.matchKey, pois)
+                        if (pois.isEmpty()) null else NearbyGroup(req.matchKey, req.visual(), pois)
                     }
                     is PlaceRequest -> NearbyGroup(
                         req.matchKey,
+                        TriggerVisual.Place(req.name.orEmpty()),
                         listOf(
                             PoiCandidate(
                                 id = req.matchKey, name = req.name ?: "", point = req.point,
@@ -76,3 +80,7 @@ class NearbyViewModel @Inject constructor(
         }
     }
 }
+
+/** 그룹 머리에 그릴 트리거 — 브랜드는 matchKey(소문자)가 아니라 입력한 검색어 그대로 보인다 */
+private fun QueryRequest.visual(): TriggerVisual =
+    if (matchKey.startsWith("cat:")) categoryVisual(matchKey.removePrefix("cat:")) else TriggerVisual.BrandKeyword(query)

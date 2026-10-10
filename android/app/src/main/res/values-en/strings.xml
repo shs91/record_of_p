@@ -12,18 +12,23 @@
     <string name="channel_status_name">Service status</string>
     <string name="channel_status_desc">Permission and health notices</string>
 
-    <string name="notif_nearby_title">📍 Near %1$s</string>
-    <string name="notif_nearby_title_dist">📍 Near %1$s (~%2$dm)</string>
+    <string name="notif_nearby_title">Near %1$s</string>
+    <string name="notif_nearby_title_dist">Near %1$s (~%2$dm)</string>
     <string name="notif_more_items">\'%1$s\' and %2$d more</string>
     <string name="action_complete">Done</string>
     <string name="action_mute_today">Not today</string>
-    <string name="action_add_brand">Add brand</string>
+    <string name="action_undo">Undo</string>
     <string name="action_remove">Remove</string>
     <string name="action_refresh">Refresh</string>
+    <string name="action_back">Back</string>
 
     <string name="nearby_empty">Nothing to do nearby.</string>
     <string name="nearby_no_location">Can\'t get your current location. Check location permission and GPS.</string>
     <string name="nearby_open_map">Open in KakaoMap</string>
+    <plurals name="nearby_place_count">
+        <item quantity="one">%d place</item>
+        <item quantity="other">%d places</item>
+    </plurals>
 
     <string name="cat_convenience">Convenience store</string>
     <string name="cat_mart">Supermarket</string>
@@ -42,6 +47,8 @@
     <string name="editor_section_category">Where should we remind you?</string>
     <string name="editor_section_brand">Add a brand</string>
     <string name="editor_brand_example">e.g. GS25</string>
+    <string name="editor_brand_add">Add</string>
+    <string name="editor_brand_pending_hint">Saved with the note even if you don\'t tap Add</string>
     <string name="editor_section_place">Specific place</string>
     <string name="editor_place_hint">Search for a specific place</string>
     <string name="editor_place_error_network">Check your network connection.</string>
@@ -50,7 +57,13 @@
     <string name="editor_title_edit">Edit note</string>
     <string name="editor_delete">Delete</string>
     <string name="editor_delete_confirm">Delete this note?</string>
-    <string name="home_empty">No notes yet.\nWrite it down the moment you think of it.</string>
+    <string name="editor_save_failed">Couldn\'t save your changes. Please try again.</string>
+    <string name="home_empty_title">No notes yet</string>
+    <string name="home_empty_body">Jot it down the moment it comes to mind.\nWe\'ll remind you when you pass by.</string>
+    <plurals name="home_count">
+        <item quantity="one">%d note</item>
+        <item quantity="other">%d notes</item>
+    </plurals>
     <string name="home_completed">Done</string>
     <string name="home_fab">Note</string>
 
@@ -68,8 +81,19 @@
     <string name="onboard_allow">Allow</string>
     <string name="onboard_skip">Later</string>
     <string name="onboard_start">Get started</string>
-    <string name="banner_protection_title">Notifications may not go through</string>
-    <string name="banner_protection_action">Check in settings</string>
+    <string name="banner_notifications_title">Notifications are off</string>
+    <string name="banner_notifications_body">Turn on notifications, including \'Nearby alerts\', so we can remind you as you pass by.</string>
+    <string name="banner_precise_title">Precise location is needed</string>
+    <string name="banner_precise_body">To find stores near you, allow location access and turn on \'Use precise location\'.</string>
+    <string name="banner_background_title">Get reminders even when the app is closed</string>
+    <string name="banner_background_body">To remind you as you pass by, change location access to \'Allow all the time\'.</string>
+    <string name="banner_background_step_settings">Settings</string>
+    <string name="banner_background_step_permissions">Permissions</string>
+    <string name="banner_background_step_location">Location</string>
+    <string name="banner_background_step_always">Allow all the time</string>
+    <string name="banner_location_off_title">Location is turned off</string>
+    <string name="banner_location_off_body">Turn on your device\'s location so nearby alerts can work.</string>
+    <string name="banner_action_open_settings">Open settings</string>
 
     <string name="settings_section_protection">Protection status</string>
     <string name="settings_perm_notifications">Nearby alerts</string>

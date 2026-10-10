@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.recordofp.app.MainActivity
 import com.recordofp.app.R
 import com.recordofp.app.data.engine.AlertGroup
@@ -41,6 +42,8 @@ class NearbyNotifier @Inject constructor(
         }
         val builder = NotificationCompat.Builder(context, NotificationChannels.NEARBY)
             .setSmallIcon(R.drawable.ic_stat_pin)
+            // 작은 아이콘·앱 이름에 브랜드 블루 — 제목의 이모지 대신 앱을 알아보게 한다 (개편안 2 §2)
+            .setColor(ContextCompat.getColor(context, R.color.notification_accent))
             .setContentTitle(title)
             .setContentText(text)
             .setAutoCancel(true)

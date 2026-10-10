@@ -18,10 +18,14 @@ class HomeViewModel @Inject constructor(
     private val protectionTrigger: ProtectionReseedTrigger,
 ) : ViewModel() {
 
-    val items: StateFlow<List<Reminder>> = repository.observeActive()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    /** null = Room 첫 값 전("아직 모름"). 빈 목록과 달리 빈 상태 그래픽을 그리지 않는다 */
+    val items: StateFlow<List<Reminder>?> = repository.observeActive()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun complete(id: Long) = viewModelScope.launch { repository.complete(id) }
+
+    /** 완료 스낵바의 [실행 취소] (최종 리뷰 I5) */
+    fun reactivate(id: Long) = viewModelScope.launch { repository.reactivate(id) }
 
     /** 화면 재개 시 보호 상태 보고 — 미보호→보호 전이면 기회적 재배치 (F1) */
     fun reportProtection(fullyProtected: Boolean) = protectionTrigger.onSnapshot(fullyProtected)

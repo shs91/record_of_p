@@ -56,3 +56,16 @@ val AppTypography = Typography(
     // 칩·배지
     labelSmall = style(12, FontWeight.Medium, 16, letterSpacing = 0.0),
 )
+
+/**
+ * Material 슬롯 밖의 글자 스타일 (디자인 시스템 §2.2 추가 스타일, 개편안 2 §2).
+ * 굵기만 바꿀 때는 슬롯 스타일의 copy(fontWeight = …)를 쓴다 — 크기를 새로 만들지 않는다.
+ */
+object AppTextStyles {
+    /** 판단에 쓰는 숫자 — 주변 보기 거리 22/26 Bold, tabular */
+    val numberLarge: TextStyle =
+        style(22, FontWeight.Bold, 26, letterSpacing = -0.02).copy(fontFeatureSettings = "tnum")
+
+    /** 빈 상태 제목 20/28 Bold */
+    val emptyTitle: TextStyle = style(20, FontWeight.Bold, 28, letterSpacing = -0.01)
+}

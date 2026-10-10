@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -69,14 +70,22 @@ private fun MainGraph(deepLinkReminderId: Long? = null) {
         composable(
             route = Routes.EDITOR,
             arguments = listOf(navArgument("reminderId") { type = NavType.LongType; defaultValue = -1L }),
-        ) { EditorScreen(onDone = { navController.popBackStack() }) }
-        composable(Routes.NEARBY) { NearbyScreen(onBack = { navController.popBackStack() }) }
+        ) { EditorScreen(onDone = { navController.popFrom(Routes.EDITOR) }) }
+        composable(Routes.NEARBY) { NearbyScreen(onBack = { navController.popFrom(Routes.NEARBY) }) }
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 onDiagnosticsClick = { navController.navigate(Routes.DIAGNOSTICS) },
-                onBack = { navController.popBackStack() },
+                onBack = { navController.popFrom(Routes.SETTINGS) },
             )
         }
-        composable(Routes.DIAGNOSTICS) { DiagnosticsScreen(onBack = { navController.popBackStack() }) }
+        composable(Routes.DIAGNOSTICS) { DiagnosticsScreen(onBack = { navController.popFrom(Routes.DIAGNOSTICS) }) }
     }
+}
+
+/**
+ * 지금 화면이 route일 때만 뒤로 간다 — 뒤로·✕ 연타나 저장 직후 ✕가 시작 화면까지 꺼내 빈 화면이 되는 것을 막는다.
+ * 백 스택은 popBackStack 즉시 바뀌므로 두 번째 호출은 무시된다 (최종 리뷰 C2)
+ */
+private fun NavController.popFrom(route: String) {
+    if (currentDestination?.route == route) popBackStack()
 }
