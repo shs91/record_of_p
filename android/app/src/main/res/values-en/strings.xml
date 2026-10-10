@@ -20,6 +20,7 @@
     <string name="action_add_brand">Add brand</string>
     <string name="action_remove">Remove</string>
     <string name="action_refresh">Refresh</string>
+    <string name="action_back">Back</string>
 
     <string name="nearby_empty">Nothing to do nearby.</string>
     <string name="nearby_no_location">Can\'t get your current location. Check location permission and GPS.</string>

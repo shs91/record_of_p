@@ -23,9 +23,11 @@
         tools:targetApi="31"
         tools:ignore="DataExtractionRules">
 
+        <!-- adjustResize: edge-to-edge에서 키보드 인셋을 Compose(imePadding)로 받는다 — 에디터 아래쪽 장소 검색란 (최종 리뷰 C2) -->
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

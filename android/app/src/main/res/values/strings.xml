@@ -20,6 +20,7 @@
     <string name="action_add_brand">브랜드 추가</string>
     <string name="action_remove">삭제</string>
     <string name="action_refresh">새로고침</string>
+    <string name="action_back">뒤로</string>
 
     <string name="nearby_empty">주변에 처리할 일이 없어요.</string>
     <string name="nearby_no_location">현재 위치를 확인할 수 없어요. 위치 권한과 GPS를 확인해주세요.</string>
