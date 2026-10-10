@@ -54,7 +54,11 @@
     <string name="editor_delete">삭제</string>
     <string name="editor_delete_confirm">이 기록을 삭제할까요?</string>
     <string name="editor_save_failed">변경 내용을 저장하지 못했어요. 다시 시도해 주세요.</string>
-    <string name="home_empty">아직 기록이 없어요.\n생각난 순간, 여기에 적어두세요.</string>
+    <string name="home_empty_title">아직 기록이 없어요</string>
+    <string name="home_empty_body">생각난 순간, 여기에 적어두세요.\n근처를 지날 때 알려드릴게요.</string>
+    <plurals name="home_count">
+        <item quantity="other">%d개</item>
+    </plurals>
     <string name="home_completed">완료했어요</string>
     <string name="home_fab">기록</string>
 
