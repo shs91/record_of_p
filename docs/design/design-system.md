@@ -182,13 +182,13 @@ Material 슬롯 밖의 스타일은 `AppTextStyles`(`Type.kt`)에 둔다.
 | 기록 카드 `ReminderRow` | home(`ReminderCard.kt`) | 대표 트리거 타일(카테고리 → 특정 지점 → 브랜드) + 제목(두 줄) + 트리거 이름 줄(한 줄). 시작→끝 스와이프 완료(성공 면·원 체크), TalkBack 사용자 지정 동작 "완료" |
 | 개수 pill | home | 큰 타이틀 옆, 잉크 바탕·종이 글자 15 Bold tabular. 0개면 숨김, TalkBack은 "N개" |
 | 빈 상태 `HomeEmptyState` | home | 연블루 원 안 P-핀 + 카테고리 타일 셋(편의점·약국·카페), 제목 20 Bold + 본문 두 줄 |
-| 보호 배너 `ProtectionBanner` | home | 앰버 면 20dp, 36dp 원 아이콘, 제목·본문, '항상 허용' 단계 칩(마지막만 강조), [설정 열기] pill |
+| 보호 배너 `ProtectionBanner` | home | 앰버 면 20dp, 36dp 원 아이콘, 제목·본문, '항상 허용' 단계 칩(마지막만 강조, TalkBack은 쉼표로 끊어 읽음), [설정 열기] pill. 기록이 있으면 목록 첫 항목으로 함께 스크롤되고, 0개면 빈 상태와 한 스크롤 영역에 놓인다 |
 | 실행 취소 스낵바 `UndoSnackbar` | home | inverse 면 16dp, 성공 체크 원, [실행 취소](inversePrimary) |
-| 확장 FAB "＋ 기록" | home | 새 기록. 스낵바가 뜨면 위로 올라간다 |
+| 확장 FAB "＋ 기록" | home | 새 기록. 실행 취소 스낵바는 FAB 위에 뜬다(Material 3 Scaffold 기본) |
 | 거리 배지 `DistanceBadge` | `ui/common` | 에디터 장소 결과 — 연블루 pill + onPrimaryContainer 숫자, 999m 넘으면 km 한 자리 |
 | 주변 보기 그룹 `NearbyGroupSection` · 지점 행 `NearbyPoiRow` | nearby | 32dp 타일 + 이름 + "N곳", 그룹마다 카드 하나에 헤어라인 행(64dp). 거리 숫자 22 Bold(1km 넘으면 보조색) + 단위 |
 | TopAppBar · 뒤로 `BackButton` | editor, settings, nearby, diagnostics · `ui/common` | 상태바 인셋을 처리하는 상단 바. 에디터는 ✕ · 제목 · 저장(onPrimaryContainer), 나머지는 뒤로(TalkBack "뒤로") · 제목 |
-| 에디터 `EditorSection` · `EditorField` · `CategoryChip` · `RemovableChip` · `AddBrandButton` · `SearchPlaceButton` · `SaveFailedNotice` · `PlaceResultCard` | editor(`EditorComponents.kt`) | 섹션 제목 15 SemiBold, 카드 바탕 입력(1dp 테두리·포커스 2dp 블루, 56dp), 카테고리 칩(선택 = tint + ink 테두리 + 체크), 브랜드 [추가]·안내, 고른 브랜드(회색)·지점(연블루) 칩, 저장 실패 오류 면 |
+| 에디터 `EditorSection` · `EditorField` · `CategoryChip` · `RemovableChip` · `AddBrandButton` · `SearchPlaceButton` · `SaveFailedNotice` · `PlaceResultCard` | editor(`EditorComponents.kt`) | 섹션 제목 15 SemiBold, 카드 바탕 입력(1dp 테두리·포커스 2dp 블루, 56dp), 카테고리 칩(선택 = tint + ink 테두리 + 체크), 브랜드 [추가]·안내, 고른 브랜드(회색)·지점(연블루) 칩(TalkBack은 '<이름> 삭제' 버튼으로 읽음), 저장 실패 오류 면(실패하면 맨 위로 스크롤) |
 | 섹션 레이블 `SectionLabel` | settings | labelMedium. 에디터는 섹션 제목으로 바뀌어 설정에만 남았다 |
 | 그룹 카드 `GroupCard` · 상태 pill `StatusPill` | settings | 보호 상태, 알림 정책, 문제 해결 묶음. pill은 "켜짐"/"꺼짐" |
 | 진단 행 `DiagnosticsRow` | diagnostics | 결과별 8dp 컬러 도트: APPLIED·PASS 성공색, BLOCK·FAILED·ERROR 오류색, 나머지(STOOD_DOWN·STALE 등) 테두리 회색 |
@@ -212,7 +212,7 @@ Material 슬롯 밖의 스타일은 `AppTextStyles`(`Type.kt`)에 둔다.
 
 | 버전 | 날짜 | 바뀐 § | 무엇·왜 | 근거 |
 |---|---|---|---|---|
-| 1.3 | 2026-10-10 | §2.1, §2.7, §3 | 개편안 2 컴포넌트 반영 — 카테고리 타일 기록 카드·개수 pill·빈 상태, 보호 배너, 실행 취소 스낵바, 에디터 컴포넌트, 주변 보기 그룹·행, 트리거 타일·뒤로 버튼 공통화, 알림 강조색, 배너·오류 아이콘 | 개편안 2 §2, 보강 계획 Task 13·14·17~20 |
+| 1.3 | 2026-10-10 | §2.1, §2.7, §3 | 개편안 2 컴포넌트 반영 — 카테고리 타일 기록 카드·개수 pill·빈 상태, 보호 배너, 실행 취소 스낵바, 에디터 컴포넌트, 주변 보기 그룹·행, 트리거 타일·뒤로 버튼 공통화, 알림 강조색, 배너·오류 아이콘. 최종 리뷰 반영: 배너·빈 상태 스크롤, 스낵바는 FAB 위, 칩·단계 접근성 의미 | 개편안 2 §2, 보강 계획 Task 13·14·17~20, 묶음 D 최종 리뷰 |
 | 1.2 | 2026-10-10 | §1.3, §2.1, §2.2, §2.4, §2.5, §2.6, §2.7, §5 | 개편안 2 토큰 반영 — 라이트 대비 보정(보조 글자·블루 글자·오류·테두리·성공), 완료·스낵바 색, 카테고리 10색, 글자 추가 스타일, 간격·모션 토큰, Material Symbols 아이콘, 미리보기·간격 규칙. 오류색은 종이 위 4.5:1을 위해 개편안의 `#DC2E3C` 대신 `#D62C3A` | 개편안 2 §1·§4(2026-10-10 승인), 보강 계획 Task 16 |
 | 1.1 | 2026-10-09 | §3 | 진단 행 도트에 PASS(발화, 성공색)·ERROR(리시버 오류, 오류색)를 더하고 더는 기록되지 않는 NO_PERMISSION을 뺐다 | 보강 계획 T9·T10, 묶음 C 최종 리뷰 |
 | 1.0 | 2026-10-09 | 전체 | 최초 작성. 개편안(2026-09-03)의 결정과 현재 코드 값을 옮기고, 레퍼런스(토스·당근·헤이딜러)와 방향을 더했다. | 프로젝트 규칙 확정(2026-10-09) |
