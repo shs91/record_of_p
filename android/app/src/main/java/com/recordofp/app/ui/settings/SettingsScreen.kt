@@ -44,7 +44,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.recordofp.app.R
 import com.recordofp.app.ui.common.BackButton
@@ -56,7 +55,7 @@ import com.recordofp.app.ui.permissions.appNotificationSettingsIntent
 import com.recordofp.app.ui.permissions.batteryOptimizationSettingsIntent
 import com.recordofp.app.ui.permissions.locationSourceSettingsIntent
 import com.recordofp.app.ui.permissions.openSettings
-import com.recordofp.app.ui.permissions.readPermissionSnapshot
+import com.recordofp.app.ui.permissions.rememberPermissionSnapshot
 import com.recordofp.app.ui.theme.PillShape
 
 private val COOLDOWN_HOUR_OPTIONS = listOf(1, 4, 12, 24)
@@ -78,12 +77,8 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val policy by viewModel.policy.collectAsStateWithLifecycle()
-    var snapshot by remember { mutableStateOf(readPermissionSnapshot(context)) }
-    LifecycleResumeEffect(Unit) { // 시스템 설정에서 돌아오면 갱신
-        snapshot = readPermissionSnapshot(context)
-        viewModel.reportProtection(snapshot.fullyProtected) // 보호 복구 전이 → 재배치 (F1)
-        onPauseOrDispose { }
-    }
+    // 시스템 설정·빠른 설정에서 돌아오면 갱신하고, 보호 복구 전이면 재배치한다 (F1)
+    val snapshot = rememberPermissionSnapshot(onRead = { viewModel.reportProtection(it.fullyProtected) })
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,

@@ -14,6 +14,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.location.LocationManagerCompat
 import com.recordofp.app.data.notify.nearbyAlertsEnabled
 
+/** 근처 알림을 막고 있는 것 (§4.3 "왜 알림이 안 오지?"의 답) */
+enum class ProtectionIssue { NOTIFICATIONS_OFF, PRECISE_LOCATION_OFF, BACKGROUND_LOCATION_OFF, LOCATION_SERVICES_OFF }
+
 data class PermissionSnapshot(
     /** 앱 알림과 "근처 알림" 채널이 모두 켜져 있는가 — 채널만 꺼도 알림은 오지 않는다 (최종 리뷰 I4) */
     val notifications: Boolean,
@@ -27,6 +30,16 @@ data class PermissionSnapshot(
     // 배터리 최적화는 의도적으로 제외 — 배너 과잉 노출 방지, 대시보드(§4.3)에서만 표시
     val fullyProtected: Boolean
         get() = notifications && fineLocation && backgroundLocation && locationServicesOn
+
+    /** 홈 배너에 보여줄 한 가지 — 우선순위: 알림 → 정확한 위치 → 항상 허용 → 기기 위치 (§4.2·§4.3, 최종 리뷰 I3) */
+    val topIssue: ProtectionIssue?
+        get() = when {
+            !notifications -> ProtectionIssue.NOTIFICATIONS_OFF
+            !fineLocation -> ProtectionIssue.PRECISE_LOCATION_OFF
+            !backgroundLocation -> ProtectionIssue.BACKGROUND_LOCATION_OFF
+            !locationServicesOn -> ProtectionIssue.LOCATION_SERVICES_OFF
+            else -> null
+        }
 }
 
 fun readPermissionSnapshot(context: Context): PermissionSnapshot {

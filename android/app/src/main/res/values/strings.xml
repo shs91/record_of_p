@@ -71,8 +71,19 @@
     <string name="onboard_allow">허용하기</string>
     <string name="onboard_skip">나중에</string>
     <string name="onboard_start">시작하기</string>
-    <string name="banner_protection_title">알림이 꺼질 수 있는 상태예요</string>
-    <string name="banner_protection_action">설정에서 확인</string>
+    <string name="banner_notifications_title">알림이 꺼져 있어요</string>
+    <string name="banner_notifications_body">근처를 지날 때 알려드리려면 \'근처 알림\'을 포함해 알림을 켜 주세요.</string>
+    <string name="banner_precise_title">정확한 위치 권한이 필요해요</string>
+    <string name="banner_precise_body">근처 가게를 찾으려면 위치 권한을 허용하고 \'정확한 위치 사용\'을 켜 주세요.</string>
+    <string name="banner_background_title">앱을 닫아도 알려드리려면</string>
+    <string name="banner_background_body">근처를 지날 때 알려드리려면 위치 권한을 \'항상 허용\'으로 바꿔 주세요.</string>
+    <string name="banner_background_step_settings">설정</string>
+    <string name="banner_background_step_permissions">권한</string>
+    <string name="banner_background_step_location">위치</string>
+    <string name="banner_background_step_always">항상 허용</string>
+    <string name="banner_location_off_title">기기 위치가 꺼져 있어요</string>
+    <string name="banner_location_off_body">기기의 위치를 켜야 근처 알림이 동작해요.</string>
+    <string name="banner_action_open_settings">설정 열기</string>
 
     <string name="settings_section_protection">보호 상태</string>
     <string name="settings_perm_notifications">근처 알림</string>

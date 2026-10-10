@@ -32,18 +32,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.recordofp.app.R
 import com.recordofp.app.domain.model.Reminder
@@ -51,8 +46,9 @@ import com.recordofp.app.domain.model.TriggerCatalog
 import com.recordofp.app.domain.model.TriggerSpec
 import com.recordofp.app.domain.model.TriggerType
 import com.recordofp.app.ui.common.catalogLabelRes
-import com.recordofp.app.ui.permissions.readPermissionSnapshot
+import com.recordofp.app.ui.permissions.rememberPermissionSnapshot
 import com.recordofp.app.ui.theme.PillShape
+import com.recordofp.app.ui.theme.Spacing
 import com.recordofp.app.ui.theme.successColor
 
 /**
@@ -81,13 +77,8 @@ fun HomeScreen(
             )
         },
     ) { padding ->
-        val context = LocalContext.current
-        var snapshot by remember { mutableStateOf(readPermissionSnapshot(context)) }
-        LifecycleResumeEffect(Unit) { // 설정에서 돌아오면 갱신
-            snapshot = readPermissionSnapshot(context)
-            viewModel.reportProtection(snapshot.fullyProtected) // 보호 복구 전이 → 재배치 (F1)
-            onPauseOrDispose { }
-        }
+        // 설정·빠른 설정에서 돌아오면 갱신하고, 보호 복구 전이면 재배치한다 (F1)
+        val snapshot = rememberPermissionSnapshot(onRead = { viewModel.reportProtection(it.fullyProtected) })
         Column(Modifier.fillMaxSize().padding(padding)) {
             // 큰 타이틀 헤더 — 앱바 없이 종이 위에 바로 (개편안 §2)
             Row(
@@ -106,21 +97,11 @@ fun HomeScreen(
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
             )
-            if (!snapshot.fullyProtected) {
-                // 보호 배너 — 앰버 톤: 경고이지 오류가 아니다 (개편안 §2)
-                Card(
-                    onClick = onSettingsClick,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                    ),
-                ) {
-                    Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                        Text(stringResource(R.string.banner_protection_title), style = MaterialTheme.typography.titleSmall)
-                        Text(stringResource(R.string.banner_protection_action), style = MaterialTheme.typography.bodySmall)
-                    }
-                }
+            snapshot.topIssue?.let { issue ->
+                ProtectionBanner(
+                    issue = issue,
+                    modifier = Modifier.padding(start = Spacing.screen, end = Spacing.screen, top = Spacing.m, bottom = Spacing.xxs),
+                )
             }
             if (items.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

@@ -30,6 +30,9 @@ ICONS = {
     "ic_trigger_search": "search",
     "ic_trigger_place": "location_on",
     "ic_alert_error": "error",
+    "ic_banner_notifications_off": "notifications_off",
+    "ic_banner_precise": "my_location",
+    "ic_banner_location_off": "location_off",
 }
 
 # VectorPath: 원본 경로를 그대로 옮긴다(정밀도를 줄이면 모양이 바뀐다). 24dp 아이콘이라 성능 영향이 작다

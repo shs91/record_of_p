@@ -71,8 +71,19 @@
     <string name="onboard_allow">Allow</string>
     <string name="onboard_skip">Later</string>
     <string name="onboard_start">Get started</string>
-    <string name="banner_protection_title">Notifications may not go through</string>
-    <string name="banner_protection_action">Check in settings</string>
+    <string name="banner_notifications_title">Notifications are off</string>
+    <string name="banner_notifications_body">Turn on notifications, including \'Nearby alerts\', so we can remind you as you pass by.</string>
+    <string name="banner_precise_title">Precise location is needed</string>
+    <string name="banner_precise_body">To find stores near you, allow location access and turn on \'Use precise location\'.</string>
+    <string name="banner_background_title">Get reminders even when the app is closed</string>
+    <string name="banner_background_body">To remind you as you pass by, change location access to \'Allow all the time\'.</string>
+    <string name="banner_background_step_settings">Settings</string>
+    <string name="banner_background_step_permissions">Permissions</string>
+    <string name="banner_background_step_location">Location</string>
+    <string name="banner_background_step_always">Allow all the time</string>
+    <string name="banner_location_off_title">Location is turned off</string>
+    <string name="banner_location_off_body">Turn on your device\'s location so nearby alerts can work.</string>
+    <string name="banner_action_open_settings">Open settings</string>
 
     <string name="settings_section_protection">Protection status</string>
     <string name="settings_perm_notifications">Nearby alerts</string>
